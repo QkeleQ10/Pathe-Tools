@@ -1,0 +1,74 @@
+@font-face {
+    font-family: 'Trade Gothic Bold Condensed 20';
+    src: url('./TradeGothicLTPro-BdCn20.woff') format('woff'),
+        url('./TradeGothicLTPro-BdCn20.woff2') format('woff2');
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    color: #6d6e71;
+    background: #f5f5f5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #151515;
+    font-family: "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+h2 {
+    font-size: 18px;
+}
+
+section {
+    width: 100%;
+    max-width: 1180px;
+    margin-inline: auto;
+    padding: 40px 20px 50px;
+}
+
+section+section {
+    padding-top: 0;
+}
+
+div.container.dark {
+    background-color: #171717;
+    color: #fff;
+    background-image: radial-gradient(ellipse at center, #464646 0%, #171717 100%);
+}
+
+div.container.dark h2,
+div.container.dark h3,
+div.container.dark p {
+    color: #fff;
+}
+
+.small {
+    font-size: 0.85714em;
+}
+
+.italic {
+    font-style: italic;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.translucent {
+    opacity: .5;
+}
+
+.flex {
+    display: flex;
+    gap: 16px;
+}
