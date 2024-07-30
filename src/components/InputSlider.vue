@@ -30,7 +30,6 @@ label {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-inline: -8px;
 }
 
 .indicator {
@@ -57,8 +56,7 @@ input[type="range"] {
     appearance: none;
     background: transparent;
     cursor: pointer;
-    width: calc(100% + 16px);
-    margin-inline: -8px;
+    width: 100%;
 }
 
 input[type="range"]::-webkit-slider-runnable-track {

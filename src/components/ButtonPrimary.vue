@@ -6,6 +6,7 @@
 
 <style scoped>
 button.primary {
+    display: block;
     box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .12);
     border: none;
     border-radius: 6px;
@@ -22,5 +23,11 @@ button.primary {
     text-transform: uppercase;
     background-color: #ffc426;
     background-image: linear-gradient(to bottom, #f7da66, #ffc426);
+}
+
+button.primary:hover, button.primary:focus-visible {
+    background-color: #e3af24;
+    background-image: -webkit-linear-gradient(top, #dcc25c, #e3af24);
+    background-image: linear-gradient(to bottom, #dcc25c, #e3af24);
 }
 </style>

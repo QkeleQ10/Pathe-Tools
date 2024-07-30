@@ -4,8 +4,10 @@ import { useVueToPrint } from "vue-to-print"
 
 import ButtonPrimary from '@/components/ButtonPrimary.vue'
 import DropZone from '@/components/DropZone.vue'
+import InputCheckbox from '@/components/InputCheckbox.vue'
 import InputSlider from '@/components/InputSlider.vue'
 
+const splitExtra = ref(true)
 const plfTimeBefore = ref(16) // usher-in will begin 16 minutes before start
 const plfTimeAfter = ref(16) // usher-in will end 16 minutes after start
 const shortGapInterval = ref(10) // double usher-out if the difference is less than 10 minutes
@@ -56,7 +58,6 @@ async function addFiles(fileList) {
         }
         jsonObj.push(obj)
     }
-    console.log(jsonObj)
     table.value = jsonObj
 }
 
@@ -108,36 +109,41 @@ const { handlePrint } = useVueToPrint({
         </section>
         <section id="edit" v-show="table.length > 0">
             <h2>Tijdenlijstje bewerken</h2>
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 32px;">
+            <div class="flex" style="flex-wrap: wrap;">
                 <div id="printComponent" ref="printComponent">
                     <table spellcheck="false">
                         <colgroup></colgroup>
                         <thead>
                             <td nowrap contenteditable
-                                v-for="header in ['Zaal', 'Inloop', 'Aftiteling', 'Titel', 'Lftd.']">
+                                v-for="header in ['Zaal', 'Inloop', '', 'Aftiteling', 'Film', '']">
                                 {{ header }}
                             </td>
                         </thead>
                         <tr v-for="(row, i) in transformedTable" v-show="i != 0"
                             :class="{ italic: row.AUDITORIUM?.includes('4DX'), bold: row.FEATURE_RATING === '16' || row.FEATURE_RATING === '18' }">
                             <td nowrap contenteditable width="1px">
-                                {{ row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                {{ row.AUDITORIUM === 'PULR 8' ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </td>
-                            <td nowrap contenteditable width="20%">
+                            <td nowrap contenteditable>
                                 {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
                             </td>
-                            <td nowrap contenteditable width="15%">
+                            <td nowrap contenteditable width="13%" class="special-cell">
+                                {{ row.isNearPlf ? '4DX' : ' ' }}
+                            </td>
+                            <td nowrap width="19%">
                                 <div class="double-usherout" v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
                                 </div>
                                 <div class="long-gap" v-if="row.timeToNextUsherout >= longGapInterval * 60000">
                                 </div>
                                 <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
-                                <div class="near-plf">{{ row.isNearPlf ? '4DX' : ' ' }}</div>
                                 {{ row.CREDITS_TIME }}
                             </td>
-                            <td nowrap contenteditable>
+                            <td nowrap contenteditable v-if="splitExtra">
                                 <span>{{ row.title }}</span>
                                 <span style="float: right">{{ row.extra }}</span>
+                            </td>
+                            <td nowrap contenteditable v-else>
+                                {{ row.PLAYLIST }}
                             </td>
                             <td nowrap contenteditable width="1px" style="text-align: end;"
                                 :class="{ translucent: row.FEATURE_RATING !== '16' && row.FEATURE_RATING !== '18' }">
@@ -147,31 +153,39 @@ const { handlePrint } = useVueToPrint({
                     </table>
                     <div class="custom-content" contenteditable></div>
                 </div>
-                <div id="parameters">
+                <div id="parameters" style="display: flex; flex-direction: column; flex: 229px 1 1;">
+                    <InputCheckbox v-model="splitExtra">Extra informatie scheiden van filmtitel</InputCheckbox>
                     <InputSlider v-model="plfTimeBefore" min="0" max="30" unit="min">Tijd vóór inloop 4DX
-                        <div class="small">Uitlopen vanaf {{ plfTimeBefore }} minuten voor een 4DX-inloop krijgen een
-                            stippellijntje</div>
+                        <div class="small" v-if="plfTimeBefore > 0">Uitlopen vanaf {{ plfTimeBefore }} minuten voor een
+                            4DX-inloop krijgen een
+                            streeplijntje</div>
+                        <div class="small" v-else>Uitlopen vlak voor een 4DX-inloop worden niet gemarkeerd</div>
                     </InputSlider>
                     <InputSlider v-model="plfTimeAfter" min="0" max="30" unit="min">Tijd na inloop 4DX
-                        <div class="small">Uitlopen tot {{ plfTimeAfter }} minuten na een 4DX-inloop krijgen een
-                            stippellijntje</div>
+                        <div class="small" v-if="plfTimeAfter > 0">Uitlopen tot {{ plfTimeAfter }} minuten na een
+                            4DX-inloop krijgen een
+                            streeplijntje</div>
+                        <div class="small" v-else>Uitlopen vlak na een 4DX-inloop worden niet gemarkeerd</div>
                     </InputSlider>
-                    <InputSlider v-model="shortGapInterval" min="0" max="30" unit="min">Interval voor dubbele uitloop
-                        <div class="small">Uitlopen met minder dan {{ shortGapInterval }} minuten ertussen krijgen een
+                    <InputSlider v-model="shortGapInterval" min="0" max="20" unit="min">Interval voor dubbele uitloop
+                        <div class="small" v-if="shortGapInterval > 0">Uitlopen met minder dan {{ shortGapInterval }}
+                            minuten ertussen krijgen een
                             boogje</div>
+                        <div class="small" v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</div>
                     </InputSlider>
                     <InputSlider v-model="longGapInterval" min="20" max="80" unit="min">Interval voor gat tussen
                         uitlopen
-                        <div class="small">Gaten van meer dan {{ longGapInterval }} minuten worden
-                            aangegeven met een stippellijntje</div>
+                        <div class="small">Gaten van meer dan {{ longGapInterval }} minuten krijgen een stippellijntje
+                        </div>
                     </InputSlider>
+                    <ButtonPrimary @click="handlePrint" style="margin-top: auto">Afdrukken</ButtonPrimary>
                 </div>
             </div>
         </section>
-        <section id="print" v-show="table.length > 0">
+        <!-- <section id="print" v-show="table.length > 0">
             <h2>Tijdenlijstje afdrukken</h2>
             <ButtonPrimary @click="handlePrint">Afdrukken</ButtonPrimary>
-        </section>
+        </section> -->
     </div>
 </template>
 
@@ -228,6 +242,7 @@ button[data-active=true] {
     padding: 16px;
 
     --border-color: #ffffff3d;
+    --row-color: transparent;
     --banded-row-color: #ffffff14;
     --header-color: #ffffff96;
     --color: #fff;
@@ -244,7 +259,8 @@ button[data-active=true] {
         background-color: transparent;
 
         --border-color: #525252;
-        --banded-row-color: #d3d3d3;
+        --row-color: #fff;
+        --banded-row-color: #e4e4e4;
         --header-color: #525252;
         --color: #000;
         --inverse-color: #fff;
@@ -275,6 +291,10 @@ thead {
     height: 22px;
 }
 
+tr {
+    background-color: var(--row-color);
+}
+
 tr:nth-child(even) {
     background-color: var(--banded-row-color);
 }
@@ -284,10 +304,22 @@ td {
     padding: 2px 6px;
 }
 
+td:focus-visible {
+    outline: 1px solid #ffc426;
+    border-radius: 3px;
+}
+
+td.special-cell {
+    translate: 0 50%;
+    text-align: end;
+    padding-right: 16px;
+    font-weight: normal;
+}
+
 td .double-usherout {
     position: absolute;
     top: 50%;
-    left: -2px;
+    left: -4px;
     height: 100%;
     aspect-ratio: 1;
     border-radius: 50%;
@@ -299,29 +331,19 @@ td .double-usherout {
 td .long-gap {
     position: absolute;
     bottom: -1px;
-    width: 52px;
+    left: 0;
+    width: 64px;
     border-bottom: 2px dotted var(--color);
-    opacity: .5;
+    opacity: .25;
 }
 
 td .plf-overlap {
     position: absolute;
     top: 0;
     bottom: 0;
-    left: -8px;
-    border-left: 2px dotted var(--color);
-    opacity: .5;
-}
-
-td .near-plf {
-    position: absolute;
     left: -12px;
-    top: 100%;
-    height: 0;
-    width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: end;
+    border-left: 2px dashed var(--color);
+    opacity: .5;
 }
 
 div.custom-content {
@@ -342,6 +364,5 @@ div.custom-content:empty:after {
 
 #parameters .input-slider {
     margin-bottom: 16px;
-    width: 100%;
 }
 </style>

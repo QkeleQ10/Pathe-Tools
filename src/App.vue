@@ -14,6 +14,10 @@ import { RouterLink, RouterView } from 'vue-router'
     </header>
 
     <RouterView />
+
+    <footer>
+        <span>© 2024 Quinten Althues</span>
+    </footer>
 </template>
 
 <style scoped>
@@ -55,5 +59,22 @@ nav>a {
     font: 700 16px Arial, Helvetica, sans-serif;
     text-decoration: none;
     text-shadow: 0 1px #ffda74;
+}
+
+footer {
+    height: 70px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: #ffc426;
+    z-index: 10;
+}
+
+footer a,
+footer span {
+    color: #151515;
+    text-decoration: none;
 }
 </style>
