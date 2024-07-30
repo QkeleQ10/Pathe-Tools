@@ -6,14 +6,17 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/Pathe-Tools/',
-  plugins: [
-    vue(),
-    vueDevTools(),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+    base: '/Pathe-Tools/',
+    plugins: [
+        vue(),
+        vueDevTools(),
+    ],
+    resolve: {
+        alias: {
+            '@': fileURLToPath(new URL('./src', import.meta.url))
+        }
+    },
+    build: {
+        outDir: 'docs'
     }
-  }
 })

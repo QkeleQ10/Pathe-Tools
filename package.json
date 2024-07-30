@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cd docs && copy index.html 404.html && copy index.html timetable-transformer.html && cd ...",
     "preview": "vite preview"
   },
   "dependencies": {
