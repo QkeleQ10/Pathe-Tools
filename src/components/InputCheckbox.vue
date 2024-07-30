@@ -52,6 +52,13 @@ input[type="checkbox"]::before {
     background-image: linear-gradient(to bottom, #f7da66, #ffc426);
 }
 
+label:hover input[type="checkbox"]::before,
+input[type="checkbox"]:focus-visible:before {
+    background-color: #e3af24;
+    background-image: -webkit-linear-gradient(top, #dcc25c, #e3af24);
+    background-image: linear-gradient(to bottom, #dcc25c, #e3af24);
+}
+
 input[type="checkbox"]:checked::before {
     transform: scale(1);
 }

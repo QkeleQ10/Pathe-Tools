@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useVueToPrint } from "vue-to-print"
 
 import ButtonPrimary from '@/components/ButtonPrimary.vue'
@@ -15,6 +15,8 @@ const longGapInterval = ref(35) // long gap if the difference is greater than 30
 
 const fileInput = ref(null)
 const printComponent = ref(null)
+const editSection = ref(null)
+
 const table = ref([])
 const transformedTable = computed(() => {
     let transformedTable = table.value.map((row, i) => {
@@ -59,6 +61,10 @@ async function addFiles(fileList) {
         jsonObj.push(obj)
     }
     table.value = jsonObj
+
+    nextTick(() => {
+        editSection.value.scrollIntoView({ behavior: "smooth" })
+    })
 }
 
 function getTimeDifferenceInMs(time1, time2) {
@@ -107,7 +113,7 @@ const { handlePrint } = useVueToPrint({
             <input type="file" ref="fileInput" accept="text/csv" style="display: none"
                 @change="addFiles($event.target.files)" />
         </section>
-        <section id="edit" v-show="table.length > 0">
+        <section id="edit" ref="editSection" v-show="table.length > 0">
             <h2>Tijdenlijstje bewerken</h2>
             <div class="flex" style="flex-wrap: wrap;">
                 <div id="printComponent" ref="printComponent">
@@ -136,7 +142,7 @@ const { handlePrint } = useVueToPrint({
                                 <div class="long-gap" v-if="row.timeToNextUsherout >= longGapInterval * 60000">
                                 </div>
                                 <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
-                                {{ row.CREDITS_TIME }}
+                                <span>{{ row.CREDITS_TIME }}</span>
                             </td>
                             <td nowrap contenteditable v-if="splitExtra">
                                 <span>{{ row.title }}</span>
@@ -304,7 +310,7 @@ td {
     padding: 2px 6px;
 }
 
-td:focus-visible {
+[contenteditable]:focus-visible {
     outline: 1px solid #ffc426;
     border-radius: 3px;
 }

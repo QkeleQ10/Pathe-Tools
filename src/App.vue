@@ -5,10 +5,12 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
     <header>
         <div class="wrapper">
-            <img alt="Vue logo" class="logo" src="@/assets/logo-01.png" height="46" />
+            <RouterLink to="/">
+                <img alt="Pathé logo" class="logo" src="@/assets/logo-01.png" height="46" />
+            </RouterLink>
 
             <nav>
-                <RouterLink to="/timetable-transformer">Tijdenlijstje</RouterLink>
+                <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
             </nav>
         </div>
     </header>
@@ -39,6 +41,7 @@ header {
 div.wrapper {
     width: 100%;
     max-width: 1180px;
+    padding-inline: 20px;
 
     display: grid;
     grid-template-columns: 80px 1fr;
@@ -53,12 +56,16 @@ nav {
     display: flex;
 }
 
-nav>a {
+nav a {
     padding: 20px;
     color: #4c3c0c;
     font: 700 16px Arial, Helvetica, sans-serif;
     text-decoration: none;
     text-shadow: 0 1px #ffda74;
+}
+
+main {
+    min-height: calc(100vh - 70px);
 }
 
 footer {

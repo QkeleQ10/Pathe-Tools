@@ -8,6 +8,10 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-padding-top: calc(70px + 40px);
+}
+
 body {
     margin: 0;
     font-family: Arial, Helvetica, sans-serif;
