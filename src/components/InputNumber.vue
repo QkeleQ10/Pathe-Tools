@@ -1,15 +1,15 @@
 <script setup>
-const props = defineProps(['unit'])
+const props = defineProps(['unit', 'identifier'])
 const model = defineModel()
 </script>
 
 <template>
-    <label class="input-slider" :for="this._uid">
+    <label class="input-slider" :for="identifier">
         <div class="title">
             <slot></slot>
         </div>
         <div class="input" :class="{ 'has-unit': !!unit }">
-            <input type="number" inputmode="numeric" pattern="[0-9]+" name="" :id="this._uid" v-model.number="model">
+            <input type="number" inputmode="numeric" pattern="[0-9]+" name="" :id="identifier" v-model.number="model">
             <span class="unit" v-if="unit">{{ unit }}</span>
         </div>
     </label>

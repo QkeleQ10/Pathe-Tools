@@ -162,27 +162,27 @@ const { handlePrint } = useVueToPrint({
                     <div class="custom-content" contenteditable></div>
                 </div>
                 <div id="parameters" style="display: flex; flex-direction: column; flex: 229px 1 1;">
-                    <InputCheckbox v-model="splitExtra">Extra informatie scheiden van filmtitel</InputCheckbox>
-                    <InputNumber v-model.number="plfTimeBefore" min="0" max="30" unit="min">Tijd vóór inloop 4DX
+                    <InputCheckbox v-model="splitExtra" identifier="splitExtra">Extra informatie scheiden van filmtitel</InputCheckbox>
+                    <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30" unit="min">Tijd vóór inloop 4DX
                         <div class="small" v-if="plfTimeBefore > 0">Uitlopen vanaf {{ plfTimeBefore }} minuten voor een
                             4DX-inloop krijgen een
                             streeplijntje</div>
                         <div class="small" v-else>Uitlopen vlak voor een 4DX-inloop worden niet gemarkeerd</div>
                     </InputNumber>
-                    <InputNumber v-model.number="plfTimeAfter" min="0" max="30" unit="min">Tijd na inloop 4DX
+                    <InputNumber v-model.number="plfTimeAfter" identifier="plfTimeAfter" min="0" max="30" unit="min">Tijd na inloop 4DX
                         <div class="small" v-if="plfTimeAfter > 0">Uitlopen tot {{ plfTimeAfter }} minuten na een
                             4DX-inloop krijgen een
                             streeplijntje</div>
                         <div class="small" v-else>Uitlopen vlak na een 4DX-inloop worden niet gemarkeerd</div>
                     </InputNumber>
-                    <InputNumber v-model.number="shortGapInterval" min="0" max="20" unit="min">Interval voor dubbele
+                    <InputNumber v-model.number="shortGapInterval" identifier="shortGapInterval" min="0" max="20" unit="min">Interval voor dubbele
                         uitloop
                         <div class="small" v-if="shortGapInterval > 0">Uitlopen met minder dan {{ shortGapInterval }}
                             minuten ertussen krijgen een
                             boogje</div>
                         <div class="small" v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</div>
                     </InputNumber>
-                    <InputNumber v-model.number="longGapInterval" min="20" max="80" unit="min">Interval voor gat tussen
+                    <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20" max="80" unit="min">Interval voor gat tussen
                         uitlopen
                         <div class="small" v-if="longGapInterval > 0">Gaten van meer dan {{ longGapInterval }} minuten
                             krijgen een stippellijntje

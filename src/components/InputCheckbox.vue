@@ -1,13 +1,14 @@
 <script setup>
+const props = defineProps(['identifier'])
 const model = defineModel()
 </script>
 
 <template>
-    <label class="input-slider" :for="this._uid">
+    <label class="input-slider" :for="identifier">
         <div class="title">
             <slot></slot>
         </div>
-        <input type="checkbox" name="" :id="this._uid" v-model="model">
+        <input type="checkbox" name="" :id="identifier" v-model="model">
     </label>
 </template>
 
