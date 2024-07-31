@@ -5,7 +5,7 @@ import { useVueToPrint } from "vue-to-print"
 import ButtonPrimary from '@/components/ButtonPrimary.vue'
 import DropZone from '@/components/DropZone.vue'
 import InputCheckbox from '@/components/InputCheckbox.vue'
-import InputSlider from '@/components/InputSlider.vue'
+import InputNumber from '@/components/InputNumber.vue'
 
 const splitExtra = ref(true)
 const plfTimeBefore = ref(16) // usher-in will begin 16 minutes before start
@@ -20,7 +20,7 @@ const editSection = ref(null)
 const table = ref([])
 const transformedTable = computed(() => {
     let transformedTable = table.value.map((row, i) => {
-        let extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(3D)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
+        let extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(3D)|(Music)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
         let title = row.PLAYLIST?.replace(extra, '')
         let overlapWithPlf = table.value.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
         let timeToNextUsherout = getTimeDifferenceInMs(row.CREDITS_TIME, table.value.at(i + 1)?.CREDITS_TIME)
@@ -139,10 +139,12 @@ const { handlePrint } = useVueToPrint({
                             <td nowrap width="19%">
                                 <div class="double-usherout" v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
                                 </div>
-                                <div class="long-gap" v-if="row.timeToNextUsherout >= longGapInterval * 60000">
+                                <div class="long-gap"
+                                    v-if="row.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
                                 </div>
                                 <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
                                 <span>{{ row.CREDITS_TIME }}</span>
+                                <span v-if="row.hasPostCredits">⋆</span>
                             </td>
                             <td nowrap contenteditable v-if="splitExtra">
                                 <span>{{ row.title }}</span>
@@ -161,30 +163,34 @@ const { handlePrint } = useVueToPrint({
                 </div>
                 <div id="parameters" style="display: flex; flex-direction: column; flex: 229px 1 1;">
                     <InputCheckbox v-model="splitExtra">Extra informatie scheiden van filmtitel</InputCheckbox>
-                    <InputSlider v-model="plfTimeBefore" min="0" max="30" unit="min">Tijd vóór inloop 4DX
+                    <InputNumber v-model.number="plfTimeBefore" min="0" max="30" unit="min">Tijd vóór inloop 4DX
                         <div class="small" v-if="plfTimeBefore > 0">Uitlopen vanaf {{ plfTimeBefore }} minuten voor een
                             4DX-inloop krijgen een
                             streeplijntje</div>
                         <div class="small" v-else>Uitlopen vlak voor een 4DX-inloop worden niet gemarkeerd</div>
-                    </InputSlider>
-                    <InputSlider v-model="plfTimeAfter" min="0" max="30" unit="min">Tijd na inloop 4DX
+                    </InputNumber>
+                    <InputNumber v-model.number="plfTimeAfter" min="0" max="30" unit="min">Tijd na inloop 4DX
                         <div class="small" v-if="plfTimeAfter > 0">Uitlopen tot {{ plfTimeAfter }} minuten na een
                             4DX-inloop krijgen een
                             streeplijntje</div>
                         <div class="small" v-else>Uitlopen vlak na een 4DX-inloop worden niet gemarkeerd</div>
-                    </InputSlider>
-                    <InputSlider v-model="shortGapInterval" min="0" max="20" unit="min">Interval voor dubbele uitloop
+                    </InputNumber>
+                    <InputNumber v-model.number="shortGapInterval" min="0" max="20" unit="min">Interval voor dubbele
+                        uitloop
                         <div class="small" v-if="shortGapInterval > 0">Uitlopen met minder dan {{ shortGapInterval }}
                             minuten ertussen krijgen een
                             boogje</div>
                         <div class="small" v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</div>
-                    </InputSlider>
-                    <InputSlider v-model="longGapInterval" min="20" max="80" unit="min">Interval voor gat tussen
+                    </InputNumber>
+                    <InputNumber v-model.number="longGapInterval" min="20" max="80" unit="min">Interval voor gat tussen
                         uitlopen
-                        <div class="small">Gaten van meer dan {{ longGapInterval }} minuten krijgen een stippellijntje
+                        <div class="small" v-if="longGapInterval > 0">Gaten van meer dan {{ longGapInterval }} minuten
+                            krijgen een stippellijntje
                         </div>
-                    </InputSlider>
-                    <ButtonPrimary @click="handlePrint" style="margin-top: auto">Afdrukken</ButtonPrimary>
+                        <div class="small" v-else>Uitlopen met veel tijd ertussen worden niet gemarkeerd</div>
+                    </InputNumber>
+                    <ButtonPrimary @click="handlePrint" style="margin-top: auto; position: sticky; bottom: 16px;">
+                        Afdrukken</ButtonPrimary>
                 </div>
             </div>
         </section>
@@ -208,7 +214,6 @@ h2 {
     width: 100%;
     height: 100%;
     min-height: 170px;
-    min-width: 512px;
 
     display: flex;
     flex-direction: column;
@@ -247,6 +252,9 @@ button[data-active=true] {
     background-color: #ffffff14;
     padding: 16px;
 
+    max-width: 100%;
+    overflow: auto;
+
     --border-color: #ffffff3d;
     --row-color: transparent;
     --banded-row-color: #ffffff14;
@@ -257,12 +265,15 @@ button[data-active=true] {
 
 @media print {
     #printComponent {
-        width: 21cm;
-        height: 29.7cm;
+        position: fixed;
+        inset: 1.5cm;
+        width: auto;
+        height: auto;
         box-sizing: border-box;
         padding: 0;
-        padding-top: 1.6cm;
         background-color: transparent;
+        max-width: none;
+        overflow: visible;
 
         --border-color: #525252;
         --row-color: #fff;
@@ -270,7 +281,22 @@ button[data-active=true] {
         --header-color: #525252;
         --color: #000;
         --inverse-color: #fff;
+
+        break-inside: avoid;
+        break-after: avoid;
+        break-before: avoid;
     }
+
+    /* #printComponent:after {
+        content: 'Tijdenlijstje Pathé Utrecht Leidsche Rijn • Quinten Althues';
+        position: absolute;
+        top: -0.5cm;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 9px;
+        opacity: 0.05;
+    } */
 
     div.custom-content:empty {
         display: none;
@@ -360,7 +386,7 @@ div.custom-content {
 }
 
 div.custom-content:empty:after {
-    content: "Tekst";
+    content: "Eigen tekst toevoegen";
     opacity: .3;
 }
 

@@ -4,7 +4,7 @@ const model = defineModel()
 </script>
 
 <template>
-    <label class="input-slider" for="input">
+    <label class="input-slider" :for="this._uid">
         <div class="title">
             <slot></slot>
         </div>
@@ -12,7 +12,7 @@ const model = defineModel()
             :style="{ '--normalised-position': (model - Number(min)) / (Number(max) - Number(min)) }">
             {{ model + (unit ? ` ${unit}` : '') }}
         </div>
-        <input type="range" name="" id="input" v-model="model" :min="min" :max="max" :step="step">
+        <input type="range" name="" :id="this._uid" v-model="model" :min="min" :max="max" :step="step">
     </label>
 </template>
 

@@ -3,11 +3,11 @@ const model = defineModel()
 </script>
 
 <template>
-    <label class="input-slider" for="input">
+    <label class="input-slider" :for="this._uid">
         <div class="title">
             <slot></slot>
         </div>
-        <input type="checkbox" name="" id="input" v-model="model">
+        <input type="checkbox" name="" :id="this._uid" v-model="model">
     </label>
 </template>
 
