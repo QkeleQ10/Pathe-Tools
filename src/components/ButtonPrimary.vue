@@ -6,7 +6,10 @@
 
 <style scoped>
 button.primary {
-    display: block;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    justify-content: center;
     box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .12);
     border: none;
     border-radius: 6px;

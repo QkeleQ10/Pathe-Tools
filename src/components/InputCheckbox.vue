@@ -25,6 +25,7 @@ label {
 
 .title {
     display: flex;
+    align-items: start;
     flex-direction: column;
     gap: 4px;
 }

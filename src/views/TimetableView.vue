@@ -3,9 +3,11 @@ import { ref, computed, nextTick } from 'vue'
 import { useVueToPrint } from "vue-to-print"
 
 import ButtonPrimary from '@/components/ButtonPrimary.vue'
+import ButtonText from '@/components/ButtonText.vue'
 import DropZone from '@/components/DropZone.vue'
 import InputCheckbox from '@/components/InputCheckbox.vue'
 import InputNumber from '@/components/InputNumber.vue'
+import Chip from '@/components/Chip.vue'
 
 const splitExtra = ref(true)
 const plfTimeBefore = ref(16) // usher-in will begin 16 minutes before start
@@ -92,6 +94,12 @@ const { handlePrint } = useVueToPrint({
     content: () => printComponent.value,
     documentTitle: "Tijdenlijstje",
 })
+
+function preferToiletRound(index) {
+    console.log(transformedTable.value[index].preferToiletRound)
+    transformedTable.value[index].preferToiletRound = !transformedTable.value[index].preferToiletRound
+    console.log(transformedTable.value[index].preferToiletRound)
+}
 </script>
 
 <template>
@@ -116,27 +124,39 @@ const { handlePrint } = useVueToPrint({
         <section id="edit" ref="editSection" v-show="table.length > 0">
             <h2>Tijdenlijstje bewerken</h2>
             <div class="flex" style="flex-wrap: wrap;">
-                <div id="printComponent" ref="printComponent">
+                <div id="print-component" ref="printComponent">
                     <table spellcheck="false">
-                        <colgroup></colgroup>
+                        <colgroup>
+                            <col span="1" style="width: 0;">
+                            <col span="1" style="width: 0;">
+                            <col span="1" style="width: 16%;">
+                            <col span="1" style="width: 28%;">
+                            <col span="1" style="width: 50%;">
+                            <col span="1" style="width: 0;">
+                        </colgroup>
                         <thead>
-                            <td nowrap contenteditable
-                                v-for="header in ['Zaal', 'Inloop', '', 'Aftiteling', 'Film', '']">
-                                {{ header }}
-                            </td>
+                            <td nowrap contenteditable width="1px">Zaal</td>
+                            <td nowrap contenteditable>Inloop</td>
+                            <td nowrap contenteditable></td>
+                            <td nowrap contenteditable>Aftiteling</td>
+                            <td nowrap contenteditable>Film</td>
+                            <td nowrap contenteditable></td>
                         </thead>
                         <tr v-for="(row, i) in transformedTable" v-show="i != 0"
                             :class="{ italic: row.AUDITORIUM?.includes('4DX'), bold: row.FEATURE_RATING === '16' || row.FEATURE_RATING === '18' }">
-                            <td nowrap contenteditable width="1px">
+                            <td nowrap contenteditable>
+                                <!--:style="`padding-left: calc(${row.AUDITORIUM.replace(/^\D+/g, '')} * 6px)`"-->
                                 {{ row.AUDITORIUM === 'PULR 8' ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </td>
                             <td nowrap contenteditable>
                                 {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
                             </td>
-                            <td nowrap contenteditable width="13%" class="special-cell">
+                            <td nowrap contenteditable class="special-cell"
+                                :class="{ 'toilet-round': !!row.preferToiletRound }"
+                                @dblclick="preferToiletRound(i)">
                                 {{ row.isNearPlf ? '4DX' : ' ' }}
                             </td>
-                            <td nowrap width="19%">
+                            <td nowrap>
                                 <div class="double-usherout" v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
                                 </div>
                                 <div class="long-gap"
@@ -153,44 +173,67 @@ const { handlePrint } = useVueToPrint({
                             <td nowrap contenteditable v-else>
                                 {{ row.PLAYLIST }}
                             </td>
-                            <td nowrap contenteditable width="1px" style="text-align: end;"
+                            <td nowrap contenteditable style="text-align: end;"
                                 :class="{ translucent: row.FEATURE_RATING !== '16' && row.FEATURE_RATING !== '18' }">
                                 {{ row.FEATURE_RATING }}
                             </td>
                         </tr>
                     </table>
                     <div class="custom-content" contenteditable></div>
+                    <div class="footer">
+                        gegenereerd op
+                        {{ new Date().toLocaleDateString('nl-NL', {
+                        weekday: 'short', day: 'numeric', month: 'short',
+                        year: 'numeric'
+                        }) }}
+                        om
+                        {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
+                        • Pathé Utrecht Leidsche Rijn
+                        • Quinten Althues
+                    </div>
                 </div>
                 <div id="parameters" style="display: flex; flex-direction: column; flex: 229px 1 1;">
-                    <InputCheckbox v-model="splitExtra" identifier="splitExtra">Extra informatie scheiden van filmtitel</InputCheckbox>
-                    <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30" unit="min">Tijd vóór inloop 4DX
+                    <InputCheckbox v-model="splitExtra" identifier="splitExtra">Extra informatie scheiden van filmtitel
+                    </InputCheckbox>
+                    <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30" unit="min">
+                        Tijd vóór inloop 4DX
                         <div class="small" v-if="plfTimeBefore > 0">Uitlopen vanaf {{ plfTimeBefore }} minuten voor een
                             4DX-inloop krijgen een
                             streeplijntje</div>
                         <div class="small" v-else>Uitlopen vlak voor een 4DX-inloop worden niet gemarkeerd</div>
                     </InputNumber>
-                    <InputNumber v-model.number="plfTimeAfter" identifier="plfTimeAfter" min="0" max="30" unit="min">Tijd na inloop 4DX
+                    <InputNumber v-model.number="plfTimeAfter" identifier="plfTimeAfter" min="0" max="30" unit="min">
+                        Tijd na inloop 4DX
                         <div class="small" v-if="plfTimeAfter > 0">Uitlopen tot {{ plfTimeAfter }} minuten na een
                             4DX-inloop krijgen een
                             streeplijntje</div>
                         <div class="small" v-else>Uitlopen vlak na een 4DX-inloop worden niet gemarkeerd</div>
                     </InputNumber>
-                    <InputNumber v-model.number="shortGapInterval" identifier="shortGapInterval" min="0" max="20" unit="min">Interval voor dubbele
+                    <InputNumber v-model.number="shortGapInterval" identifier="shortGapInterval" min="0" max="20"
+                        unit="min">Interval voor dubbele
                         uitloop
                         <div class="small" v-if="shortGapInterval > 0">Uitlopen met minder dan {{ shortGapInterval }}
                             minuten ertussen krijgen een
                             boogje</div>
                         <div class="small" v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</div>
                     </InputNumber>
-                    <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20" max="80" unit="min">Interval voor gat tussen
+                    <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20" max="80"
+                        unit="min">Interval voor gat tussen
                         uitlopen
                         <div class="small" v-if="longGapInterval > 0">Gaten van meer dan {{ longGapInterval }} minuten
                             krijgen een stippellijntje
                         </div>
                         <div class="small" v-else>Uitlopen met veel tijd ertussen worden niet gemarkeerd</div>
                     </InputNumber>
-                    <ButtonPrimary @click="handlePrint" style="margin-top: auto; position: sticky; bottom: 16px;">
-                        Afdrukken</ButtonPrimary>
+                    <div class="buttons"
+                        style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-inline: 16px;">
+                        <!-- <ButtonText @click="determineToiletRounds" style="color: #fff;">
+                            <Chip>Experimenteel</Chip>
+                            Toiletrondes indelen
+                        </ButtonText> -->
+                        <ButtonPrimary @click="handlePrint">
+                            Afdrukken</ButtonPrimary>
+                    </div>
                 </div>
             </div>
         </section>
@@ -244,7 +287,9 @@ button[data-active=true] {
     opacity: .3;
 }
 
-#printComponent {
+#print-component {
+    position: relative;
+
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -263,10 +308,35 @@ button[data-active=true] {
     --inverse-color: #000;
 }
 
+div.custom-content {
+    width: 100%;
+    margin: -10px;
+    margin-top: 6px;
+    padding: 10px;
+    color: var(--color);
+    text-align: center;
+}
+
+div.custom-content:empty:after {
+    content: "Eigen tekst toevoegen";
+    opacity: .3;
+}
+
+div.footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    opacity: 0.07;
+    display: none;
+    font-size: 10px;
+    text-align: center;
+}
+
 @media print {
-    #printComponent {
+    #print-component {
         position: fixed;
-        inset: 1.5cm;
+        inset: 1.4cm;
         width: auto;
         height: auto;
         box-sizing: border-box;
@@ -287,19 +357,12 @@ button[data-active=true] {
         break-before: avoid;
     }
 
-    /* #printComponent:after {
-        content: 'Tijdenlijstje Pathé Utrecht Leidsche Rijn • Quinten Althues';
-        position: absolute;
-        top: -0.5cm;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 9px;
-        opacity: 0.05;
-    } */
-
     div.custom-content:empty {
         display: none;
+    }
+
+    div.footer {
+        display: block;
     }
 }
 
@@ -309,7 +372,7 @@ table {
     color: var(--color);
     width: 18cm;
     max-height: 26cm;
-    font-size: 13px;
+    font-size: 12.5px;
 }
 
 thead {
@@ -320,7 +383,9 @@ thead {
 
 tr,
 thead {
-    height: 22px;
+    height: 21.5px;
+    min-height: 21.5px;
+    max-height: 21.5px;
 }
 
 tr {
@@ -336,27 +401,43 @@ td {
     padding: 2px 6px;
 }
 
+[contenteditable]:hover {
+    outline: 1px solid #ffffff88;
+    background-color: #ffc52631;
+}
+
 [contenteditable]:focus-visible {
     outline: 1px solid #ffc426;
-    border-radius: 3px;
+    background-color: #ffc52631;
 }
 
 td.special-cell {
     translate: 0 50%;
     text-align: end;
-    padding-right: 16px;
+    padding-right: 14px;
     font-weight: normal;
+}
+
+td.toilet-round:before {
+    position: absolute;
+    right: 42px;
+    content: '';
+    border: 1px solid var(--color);
+    background-color: var(--row-color);
+    opacity: 0.5;
+    height: 12px;
+    aspect-ratio: 1;
 }
 
 td .double-usherout {
     position: absolute;
     top: 50%;
-    left: -4px;
+    left: -3px;
     height: 100%;
     aspect-ratio: 1;
     border-radius: 50%;
     outline: 2px solid var(--color);
-    clip-path: inset(-3px calc(100% - 6px) -3px -3px);
+    clip-path: inset(-3px calc(100% - 5px) -3px -3px);
     opacity: .5;
 }
 
@@ -364,30 +445,18 @@ td .long-gap {
     position: absolute;
     bottom: -1px;
     left: 0;
-    width: 64px;
+    width: 62px;
     border-bottom: 2px dotted var(--color);
-    opacity: .25;
+    opacity: .35;
 }
 
 td .plf-overlap {
     position: absolute;
     top: 0;
     bottom: 0;
-    left: -12px;
+    left: -10px;
     border-left: 2px dashed var(--color);
     opacity: .5;
-}
-
-div.custom-content {
-    margin: -10px;
-    margin-top: 6px;
-    padding: 10px;
-    color: var(--color)
-}
-
-div.custom-content:empty:after {
-    content: "Eigen tekst toevoegen";
-    opacity: .3;
 }
 
 #parameters {
