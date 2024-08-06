@@ -1,23 +1,50 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
+import { useUrlSearchParams, useStorage } from '@vueuse/core'
 import { useVueToPrint } from "vue-to-print"
 
-import ButtonPrimary from '@/components/ButtonPrimary.vue'
-import ButtonText from '@/components/ButtonText.vue'
-import DropZone from '@/components/DropZone.vue'
-import InputCheckbox from '@/components/InputCheckbox.vue'
-import InputNumber from '@/components/InputNumber.vue'
-import Chip from '@/components/Chip.vue'
-
 const splitExtra = ref(true)
-const plfTimeBefore = ref(16) // usher-in will begin 16 minutes before start
+const plfTimeBefore = ref(17) // usher-in will begin 17 minutes before start
 const plfTimeAfter = ref(16) // usher-in will end 16 minutes after start
 const shortGapInterval = ref(10) // double usher-out if the difference is less than 10 minutes
 const longGapInterval = ref(35) // long gap if the difference is greater than 30 minutes
+const calculatePostCredits = ref(true)
+const postCreditsFilms = useStorage('post-credits-films', new Set())
+while (postCreditsFilms.value.size > 20) {
+    console.log(postCreditsFilms.value)
+    postCreditsFilms.value.delete(Array.from(postCreditsFilms.value)[0])
+}
 
 const fileInput = ref(null)
 const printComponent = ref(null)
 const editSection = ref(null)
+
+const showMenu = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const targetRow = ref({})
+const targetI = ref(0)
+
+const showContextMenu = (event, row, i) => {
+    event.preventDefault()
+    document.activeElement.blur()
+    showMenu.value = true
+    targetRow.value = row
+    targetI.value = i
+    menuX.value = event.clientX
+    menuY.value = event.clientY
+}
+
+const closeContextMenu = () => {
+    nextTick(() => showMenu.value = false)
+}
+
+const params = useUrlSearchParams('history')
+const theatres = [
+    { id: 'pulr', name: "Pathé Utrecht Leidsche Rijn", image: 'https://media.pathe.nl/gfx_content//bioscoop/LeidscheRijn-pulr_foto_1600x590.png' }
+]
+params.theatre ??= theatres[0].id
+const theatre = computed(() => theatres.find(item => item.id === params.theatre))
 
 const table = ref([])
 const transformedTable = computed(() => {
@@ -25,8 +52,9 @@ const transformedTable = computed(() => {
         let extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(3D)|(Music)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
         let title = row.PLAYLIST?.replace(extra, '')
         let overlapWithPlf = table.value.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
-        let timeToNextUsherout = getTimeDifferenceInMs(row.CREDITS_TIME, table.value.at(i + 1)?.CREDITS_TIME)
-        return { ...row, title, extra, overlapWithPlf, timeToNextUsherout }
+        let hasPostCredits = postCreditsFilms.value.has(title)
+        let timeToNextUsherout = getTimeDifferenceInMs(hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME, table.value.at(i + 1)?.CREDITS_TIME)
+        return { ...row, title, extra, overlapWithPlf, timeToNextUsherout, hasPostCredits }
     })
 
     transformedTable.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).slice(1).forEach(plfRow => {
@@ -94,17 +122,21 @@ const { handlePrint } = useVueToPrint({
     content: () => printComponent.value,
     documentTitle: "Tijdenlijstje",
 })
-
-function preferToiletRound(index) {
-    console.log(transformedTable.value[index].preferToiletRound)
-    transformedTable.value[index].preferToiletRound = !transformedTable.value[index].preferToiletRound
-    console.log(transformedTable.value[index].preferToiletRound)
-}
 </script>
 
 <template>
     <div class="container dark">
-        <section id="upload">
+        <section id="theatre" v-if="!(params.theatre && theatres.length < 2)">
+            <h2>Theater selecteren</h2>
+            <div class="flex">
+                <button v-for="item in theatres" class="theatre-button"
+                    :class="{ selected: item.id === params.theatre }" @click="theatre.id = item.id">
+                    <img :src="item.image">
+                    <span style="z-index:1">{{ item.name }}</span>
+                </button>
+            </div>
+        </section>
+        <section id="upload" v-if="params.theatre">
             <h2>Bestand uploaden</h2>
             <DropZone id="drop-zone" @files-dropped="addFiles" #default="{ dropZoneActive }" @click="fileInput.click()"
                 style="cursor: pointer;">
@@ -121,7 +153,7 @@ function preferToiletRound(index) {
             <input type="file" ref="fileInput" accept="text/csv" style="display: none"
                 @change="addFiles($event.target.files)" />
         </section>
-        <section id="edit" ref="editSection" v-show="table.length > 0">
+        <section id="edit" ref="editSection" v-if="params.theatre && table.length > 0">
             <h2>Tijdenlijstje bewerken</h2>
             <div class="flex" style="flex-wrap: wrap;">
                 <div id="print-component" ref="printComponent">
@@ -143,19 +175,23 @@ function preferToiletRound(index) {
                             <td nowrap contenteditable></td>
                         </thead>
                         <tr v-for="(row, i) in transformedTable" v-show="i != 0"
-                            :class="{ italic: row.AUDITORIUM?.includes('4DX'), bold: row.FEATURE_RATING === '16' || row.FEATURE_RATING === '18' }">
+                            :class="{ targeting: showMenu && targetI === i, italic: row.AUDITORIUM?.includes('4DX'), bold: row.FEATURE_RATING === '16' || row.FEATURE_RATING === '18' }"
+                            @contextmenu.prevent="showContextMenu($event, row, i)">
                             <td nowrap contenteditable>
-                                <!--:style="`padding-left: calc(${row.AUDITORIUM.replace(/^\D+/g, '')} * 6px)`"-->
-                                {{ row.AUDITORIUM === 'PULR 8' ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                <!-- :style="`padding-left: calc(${row.AUDITORIUM.replace(/^\D+/g, '')} * 6px)`" -->
+                                {{ (theatre.id === 'pulr' && row.AUDITORIUM === 'PULR 8')
+                                ? 'RT'
+                                : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </td>
                             <td nowrap contenteditable>
                                 {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
                             </td>
-                            <td nowrap contenteditable class="special-cell"
+                            <td nowrap contenteditable v-if="i !== transformedTable.length - 1" class="special-cell"
                                 :class="{ 'toilet-round': !!row.preferToiletRound }"
-                                @dblclick="preferToiletRound(i)">
+                                @dblclick="table.at(i).preferToiletRound = !row.preferToiletRound">
                                 {{ row.isNearPlf ? '4DX' : ' ' }}
                             </td>
+                            <td v-else></td>
                             <td nowrap>
                                 <div class="double-usherout" v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
                                 </div>
@@ -163,8 +199,11 @@ function preferToiletRound(index) {
                                     v-if="row.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
                                 </div>
                                 <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
-                                <span>{{ row.CREDITS_TIME }}</span>
-                                <span v-if="row.hasPostCredits">⋆</span>
+                                <span contenteditable
+                                    style="position: absolute; inset: 0; padding: 2px 6px; display: flex; align-items: center;">{{
+                                    row.CREDITS_TIME }}
+                                    <span v-if="row.hasPostCredits"
+                                        style="opacity: .35; font-weight: 100; font-style: normal; margin-left: 4px">+</span></span>
                             </td>
                             <td nowrap contenteditable v-if="splitExtra">
                                 <span>{{ row.title }}</span>
@@ -188,12 +227,13 @@ function preferToiletRound(index) {
                         }) }}
                         om
                         {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
-                        • Pathé Utrecht Leidsche Rijn
+                        • {{ theatre.name }}
                         • Quinten Althues
                     </div>
                 </div>
                 <div id="parameters" style="display: flex; flex-direction: column; flex: 229px 1 1;">
-                    <InputCheckbox v-model="splitExtra" identifier="splitExtra">Extra informatie scheiden van filmtitel
+                    <InputCheckbox v-model="splitExtra" identifier="splitExtra">
+                        Extra informatie scheiden van filmtitel
                     </InputCheckbox>
                     <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30" unit="min">
                         Tijd vóór inloop 4DX
@@ -210,7 +250,8 @@ function preferToiletRound(index) {
                         <div class="small" v-else>Uitlopen vlak na een 4DX-inloop worden niet gemarkeerd</div>
                     </InputNumber>
                     <InputNumber v-model.number="shortGapInterval" identifier="shortGapInterval" min="0" max="20"
-                        unit="min">Interval voor dubbele
+                        unit="min">Interval
+                        voor dubbele
                         uitloop
                         <div class="small" v-if="shortGapInterval > 0">Uitlopen met minder dan {{ shortGapInterval }}
                             minuten ertussen krijgen een
@@ -218,13 +259,25 @@ function preferToiletRound(index) {
                         <div class="small" v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</div>
                     </InputNumber>
                     <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20" max="80"
-                        unit="min">Interval voor gat tussen
+                        unit="min">Interval
+                        voor gat tussen
                         uitlopen
                         <div class="small" v-if="longGapInterval > 0">Gaten van meer dan {{ longGapInterval }} minuten
                             krijgen een stippellijntje
                         </div>
                         <div class="small" v-else>Uitlopen met veel tijd ertussen worden niet gemarkeerd</div>
                     </InputNumber>
+                    <InputCheckbox v-model="calculatePostCredits" identifier="calculatePostCredits">
+                        Post-credits-scènes meerekenen
+                        <div class="small" v-if="calculatePostCredits">
+                            Bij uitlopen met post-credits-scènes wordt de tijd 'Einde voorstelling' wordt gebruikt voor het
+                            berekenen van de tijd tot de volgende uitloop.
+                        </div>
+                        <div class="small" v-else>
+                            Bij alle uitlopen wordt de tijd 'Aftiteling' wordt gebruikt voor het
+                            berekenen van de tijd tot de volgende uitloop.
+                        </div>
+                    </InputCheckbox>
                     <div class="buttons"
                         style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-inline: 16px;">
                         <!-- <ButtonText @click="determineToiletRounds" style="color: #fff;">
@@ -242,6 +295,19 @@ function preferToiletRound(index) {
             <ButtonPrimary @click="handlePrint">Afdrukken</ButtonPrimary>
         </section> -->
     </div>
+    <Transition>
+        <ContextMenu v-if="showMenu" class="dark" :x="menuX" :y="menuY" @click-outside="closeContextMenu">
+            <button @click="table.at(targetI).preferToiletRound = !targetRow.preferToiletRound; closeContextMenu()">
+                <div class="check" :class="{ 'empty': !transformedTable.at(targetI).preferToiletRound }"></div>
+                Toiletronde na deze uitloop
+            </button>
+            <button
+                @click="postCreditsFilms.has(targetRow.title) ? postCreditsFilms.delete(targetRow.title) : postCreditsFilms.add(targetRow.title); closeContextMenu()">
+                <div class="check" :class="{ 'empty': !postCreditsFilms.has(targetRow.title) }"></div>
+                Post-credits-scène bij {{ targetRow.title }}
+            </button>
+        </ContextMenu>
+    </Transition>
 </template>
 
 <style scoped>
@@ -251,6 +317,45 @@ div.container {
 
 h2 {
     margin-bottom: 16px;
+}
+
+.theatre-button {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    height: 128px;
+    width: 256px;
+
+    background-color: #ffffff14;
+    border-radius: 5px;
+    border: none;
+    color: #fff;
+    font: 16px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    text-transform: uppercase;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.theatre-button img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.1;
+    z-index: 0;
+}
+
+.theatre-button.selected img,
+.theatre-button:hover img,
+.theatre-button:focus-visible img {
+    opacity: 0.5;
+}
+
+.theatre-button.selected {
+    outline: 1px solid #ffc426;
 }
 
 #drop-zone {
@@ -396,6 +501,10 @@ tr:nth-child(even) {
     background-color: var(--banded-row-color);
 }
 
+tr.targeting {
+    background-color: #ffc52631;
+}
+
 td {
     position: relative;
     padding: 2px 6px;
@@ -403,11 +512,13 @@ td {
 
 [contenteditable]:hover {
     outline: 1px solid #ffffff88;
+    outline-offset: -1px;
     background-color: #ffc52631;
 }
 
 [contenteditable]:focus-visible {
     outline: 1px solid #ffc426;
+    outline-offset: -1px;
     background-color: #ffc52631;
 }
 

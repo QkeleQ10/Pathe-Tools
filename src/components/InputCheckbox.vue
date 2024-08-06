@@ -21,6 +21,7 @@ label {
     margin-inline: 8px;
     padding-bottom: 8px;
     cursor: pointer;
+    user-select: none;
 }
 
 .title {
@@ -31,6 +32,7 @@ label {
 }
 
 input[type="checkbox"] {
+    flex-shrink: 0;
     position: relative;
     appearance: none;
     background: transparent;
@@ -73,7 +75,7 @@ input[type="checkbox"]::after {
     border-radius: 3px;
     background-color: #000;
     transform-origin: bottom left;
-    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    clip-path: polygon(16% 46%, 0 62%, 39% 100%, 100% 20%, 83% 6%, 38% 65%);
 }
 
 input[type="checkbox"]:checked::after {

@@ -49,8 +49,9 @@ section+section {
 }
 
 div.container.dark {
-    background-color: #171717;
     color: #fff;
+    background-color: #000;
+    background-color: #171717;
     background-image: radial-gradient(ellipse at center, #464646 0%, #171717 100%);
 }
 
@@ -79,4 +80,27 @@ div.container.dark p {
 .flex {
     display: flex;
     gap: 16px;
+}
+
+.check {
+    width: 12px;
+    height: 12px;
+    margin-inline-end: 8px;
+    border-radius: 3px;
+    background-color: currentColor;
+    transform-origin: bottom left;
+    clip-path: polygon(16% 46%, 0 62%, 39% 100%, 100% 20%, 83% 6%, 38% 65%);
+}
+
+.check.empty {
+    opacity: 0;
+}
+
+.v-leave-active {
+    transition: opacity 200ms ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+    opacity: 0;
 }

@@ -24,6 +24,7 @@ label {
     margin-inline: 8px;
     padding-bottom: 8px;
     cursor: pointer;
+    user-select: none;
 }
 
 .title {
@@ -64,5 +65,6 @@ div.input span.unit {
     top: 50%;
     translate: 0 -50%;
     color: #6d6e71;
+    pointer-events: none;
 }
 </style>

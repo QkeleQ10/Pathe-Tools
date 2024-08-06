@@ -24,6 +24,7 @@ label {
     gap: 16px;
     margin-inline: 8px;
     padding-bottom: 8px;
+    user-select: none;
 }
 
 .title {

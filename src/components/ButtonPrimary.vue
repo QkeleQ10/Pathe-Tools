@@ -26,6 +26,7 @@ button.primary {
     text-transform: uppercase;
     background-color: #ffc426;
     background-image: linear-gradient(to bottom, #f7da66, #ffc426);
+    user-select: none;
 }
 
 button.primary:hover, button.primary:focus-visible {

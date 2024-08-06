@@ -19,6 +19,7 @@ button.primary {
     text-decoration: none;
     text-transform: uppercase;
     background-color: transparent;
+    user-select: none;
 }
 
 button.primary:hover,
