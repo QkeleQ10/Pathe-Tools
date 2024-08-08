@@ -49,7 +49,7 @@ const theatre = computed(() => theatres.find(item => item.id === params.theatre)
 const table = ref([])
 const transformedTable = computed(() => {
     let transformedTable = table.value.map((row, i) => {
-        let extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(3D)|(Music)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
+        let extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
         let title = row.PLAYLIST?.replace(extra, '')
         let overlapWithPlf = table.value.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
         let hasPostCredits = postCreditsFilms.value.has(title)
