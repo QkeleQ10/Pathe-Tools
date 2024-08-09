@@ -4,6 +4,8 @@ import { useUrlSearchParams, useStorage } from '@vueuse/core'
 import { useVueToPrint } from "vue-to-print"
 
 const splitExtra = ref(true)
+const showNextStartTime = ref(false)
+const showTimeToNextStart = ref(false)
 const plfTimeBefore = ref(17) // usher-in will begin 17 minutes before start
 const plfTimeAfter = ref(16) // usher-in will end 16 minutes after start
 const shortGapInterval = ref(10) // double usher-out if the difference is less than 10 minutes
@@ -49,12 +51,15 @@ const theatre = computed(() => theatres.find(item => item.id === params.theatre)
 const table = ref([])
 const transformedTable = computed(() => {
     let transformedTable = table.value.map((row, i) => {
-        let extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
-        let title = row.PLAYLIST?.replace(extra, '')
-        let overlapWithPlf = table.value.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
-        let hasPostCredits = postCreditsFilms.value.has(title)
-        let timeToNextUsherout = getTimeDifferenceInMs(hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME, table.value.at(i + 1)?.CREDITS_TIME)
-        return { ...row, title, extra, overlapWithPlf, timeToNextUsherout, hasPostCredits }
+        let obj = { ...row }
+        obj.extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
+        obj.title = row.PLAYLIST?.replace(obj.extra, '')
+        obj.overlapWithPlf = table.value.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
+        obj.hasPostCredits = postCreditsFilms.value.has(obj.title)
+        obj.timeToNextUsherout = getTimeDifferenceInMs(obj.hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME, table.value.at(i + 1)?.CREDITS_TIME)
+        obj.nextStartTime = table.value.find((testRow, testI) => testI > i && testRow.AUDITORIUM === row.AUDITORIUM)?.SCHEDULED_TIME
+        obj.timeToNextStart = getTimeDifferenceInMs(obj.hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME, obj.nextStartTime)
+        return obj
     })
 
     transformedTable.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).slice(1).forEach(plfRow => {
@@ -163,6 +168,8 @@ const { handlePrint } = useVueToPrint({
                             <col span="1" style="width: 0;">
                             <col span="1" style="width: 16%;">
                             <col span="1" style="width: 28%;">
+                            <col span="1" style="width: 0;" v-if="showNextStartTime">
+                            <col span="1" style="width: 0;" v-if="showTimeToNextStart">
                             <col span="1" style="width: 50%;">
                             <col span="1" style="width: 0;">
                         </colgroup>
@@ -171,6 +178,8 @@ const { handlePrint } = useVueToPrint({
                             <td nowrap contenteditable>Inloop</td>
                             <td nowrap contenteditable></td>
                             <td nowrap contenteditable>Aftiteling</td>
+                            <td nowrap contenteditable v-if="showNextStartTime">Volgende</td>
+                            <td nowrap contenteditable v-if="showTimeToNextStart">Volgende</td>
                             <td nowrap contenteditable>Film</td>
                             <td nowrap contenteditable></td>
                         </thead>
@@ -180,8 +189,8 @@ const { handlePrint } = useVueToPrint({
                             <td nowrap contenteditable>
                                 <!-- :style="`padding-left: calc(${row.AUDITORIUM.replace(/^\D+/g, '')} * 6px)`" -->
                                 {{ (theatre.id === 'pulr' && row.AUDITORIUM === 'PULR 8')
-                                ? 'RT'
-                                : row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                    ? 'RT'
+                                    : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </td>
                             <td nowrap contenteditable>
                                 {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
@@ -201,9 +210,17 @@ const { handlePrint } = useVueToPrint({
                                 <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
                                 <span contenteditable
                                     style="position: absolute; inset: 0; padding: 2px 6px; display: flex; align-items: center;">{{
-                                    row.CREDITS_TIME }}
+                                        row.CREDITS_TIME }}
                                     <span v-if="row.hasPostCredits"
                                         style="opacity: .35; font-weight: 100; font-style: normal; margin-left: 4px">+</span></span>
+                            </td>
+                            <td nowrap contenteditable v-if="showNextStartTime" class="translucent"
+                                style="font-weight: 100; font-style: normal;">
+                                {{ row.nextStartTime?.replace(/(:00)$/, '') || '⏾' }}
+                            </td>
+                            <td nowrap contenteditable v-if="showTimeToNextStart" class="translucent"
+                                style="font-weight: 100; font-style: normal;">
+                                {{ row.timeToNextStart ? Math.floor(row.timeToNextStart / 60000) + ' min' : '⏾' }}
                             </td>
                             <td nowrap contenteditable v-if="splitExtra">
                                 <span>{{ row.title }}</span>
@@ -222,8 +239,8 @@ const { handlePrint } = useVueToPrint({
                     <div class="footer">
                         gegenereerd op
                         {{ new Date().toLocaleDateString('nl-NL', {
-                        weekday: 'short', day: 'numeric', month: 'short',
-                        year: 'numeric'
+                            weekday: 'short', day: 'numeric', month: 'short',
+                            year: 'numeric'
                         }) }}
                         om
                         {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
@@ -268,15 +285,30 @@ const { handlePrint } = useVueToPrint({
                         <div class="small" v-else>Uitlopen met veel tijd ertussen worden niet gemarkeerd</div>
                     </InputNumber>
                     <InputCheckbox v-model="calculatePostCredits" identifier="calculatePostCredits">
-                        Post-credits-scènes meerekenen
+                        <span>
+                            <Chip>Nieuw</Chip>
+                            Post-credits-scènes meerekenen
+                        </span>
                         <div class="small" v-if="calculatePostCredits">
-                            Bij uitlopen met post-credits-scènes wordt de tijd 'Einde voorstelling' wordt gebruikt voor het
+                            Bij uitlopen met post-credits-scènes wordt de tijd 'Einde voorstelling' gebruikt voor het
                             berekenen van de tijd tot de volgende uitloop.
                         </div>
                         <div class="small" v-else>
                             Bij alle uitlopen wordt de tijd 'Aftiteling' wordt gebruikt voor het
                             berekenen van de tijd tot de volgende uitloop.
                         </div>
+                    </InputCheckbox>
+                    <InputCheckbox v-model="showNextStartTime" identifier="showNextStartTime">
+                        <span>
+                            <Chip>Nieuw</Chip>
+                            Kolom 'Starttijd volgende voorstelling' tonen
+                        </span>
+                    </InputCheckbox>
+                    <InputCheckbox v-model="showTimeToNextStart" identifier="showTimeToNextStart">
+                        <span>
+                            <Chip>Nieuw</Chip>
+                            Kolom 'Tijd voor schoonmaak' tonen
+                        </span>
                     </InputCheckbox>
                     <div class="buttons"
                         style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-inline: 16px;">

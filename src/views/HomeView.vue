@@ -8,6 +8,7 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue'
     <main>
         <section>
             <h2>Startpagina</h2>
+            <br>
             <RouterLink to="/timetable" style="text-decoration: none;">
                 <ButtonPrimary>Tijdenlijstje maken</ButtonPrimary>
             </RouterLink>
