@@ -39,6 +39,7 @@ div.input {
     width: 52px;
     flex-shrink: 0;
     font: 15px Arial, Helvetica, sans-serif;
+    color: #000;
 }
 
 input {

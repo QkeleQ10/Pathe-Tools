@@ -2,15 +2,38 @@
 import { ref, computed, nextTick } from 'vue'
 import { useUrlSearchParams, useStorage } from '@vueuse/core'
 import { useVueToPrint } from "vue-to-print"
+import { Tabs, Tab } from 'super-vue3-tabs'
+
+const columns = {
+    mainTime: {
+        header: "Start",
+        title: "Start hoofdfilm",
+        optional: true
+    },
+    endTime: {
+        header: "Einde",
+        title: "Einde voorstelling",
+        optional: true
+    },
+    nextStartTime: {
+        header: "Volgende",
+        title: "Volgende inloop",
+        optional: true
+    }
+}
+const optionalColumns = Object.fromEntries(Object.entries(columns).filter(([key, value]) => value.optional))
 
 const splitExtra = ref(true)
-const showNextStartTime = ref(false)
-const showTimeToNextStart = ref(false)
-const plfTimeBefore = ref(17) // usher-in will begin 17 minutes before start
-const plfTimeAfter = ref(16) // usher-in will end 16 minutes after start
-const shortGapInterval = ref(10) // double usher-out if the difference is less than 10 minutes
-const longGapInterval = ref(35) // long gap if the difference is greater than 30 minutes
-const calculatePostCredits = ref(true)
+const optionalColumnsSetting = useStorage('optional-columns', {
+    mainTime: false,
+    endTime: false,
+    nextStartTime: false
+})
+const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
+const plfTimeAfter = useStorage('plf-time-after', 16) // usher-in will end 16 minutes after start
+const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
+const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
+const calculatePostCredits = useStorage('calculate-post-credits',true)
 const postCreditsFilms = useStorage('post-credits-films', new Set())
 while (postCreditsFilms.value.size > 20) {
     console.log(postCreditsFilms.value)
@@ -56,9 +79,9 @@ const transformedTable = computed(() => {
         obj.title = row.PLAYLIST?.replace(obj.extra, '')
         obj.overlapWithPlf = table.value.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
         obj.hasPostCredits = postCreditsFilms.value.has(obj.title)
-        obj.timeToNextUsherout = getTimeDifferenceInMs(obj.hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME, table.value.at(i + 1)?.CREDITS_TIME)
+        obj.assumedEndTime = obj.hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME
+        obj.timeToNextUsherout = getTimeDifferenceInMs(obj.assumedEndTime, table.value.at(i + 1)?.CREDITS_TIME)
         obj.nextStartTime = table.value.find((testRow, testI) => testI > i && testRow.AUDITORIUM === row.AUDITORIUM)?.SCHEDULED_TIME
-        obj.timeToNextStart = getTimeDifferenceInMs(obj.hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME, obj.nextStartTime)
         return obj
     })
 
@@ -167,19 +190,27 @@ const { handlePrint } = useVueToPrint({
                             <col span="1" style="width: 0;">
                             <col span="1" style="width: 0;">
                             <col span="1" style="width: 16%;">
+                            <col span="1" style="width: 0;" v-if="optionalColumnsSetting.mainTime">
                             <col span="1" style="width: 28%;">
-                            <col span="1" style="width: 0;" v-if="showNextStartTime">
-                            <col span="1" style="width: 0;" v-if="showTimeToNextStart">
+                            <col span="1" style="width: 0;" v-if="optionalColumnsSetting.endTime">
+                            <col span="1" style="width: 0;" v-if="optionalColumnsSetting.nextStartTime">
                             <col span="1" style="width: 50%;">
                             <col span="1" style="width: 0;">
                         </colgroup>
                         <thead>
                             <td nowrap contenteditable width="1px">Zaal</td>
                             <td nowrap contenteditable>Inloop</td>
+                            <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime">
+                                {{ columns.mainTime.header }}
+                            </td>
                             <td nowrap contenteditable></td>
                             <td nowrap contenteditable>Aftiteling</td>
-                            <td nowrap contenteditable v-if="showNextStartTime">Volgende</td>
-                            <td nowrap contenteditable v-if="showTimeToNextStart">Volgende</td>
+                            <td nowrap contenteditable v-if="optionalColumnsSetting.endTime">
+                                {{ columns.endTime.header }}
+                            </td>
+                            <td nowrap contenteditable v-if="optionalColumnsSetting.nextStartTime">
+                                {{ columns.nextStartTime.header }}
+                            </td>
                             <td nowrap contenteditable>Film</td>
                             <td nowrap contenteditable></td>
                         </thead>
@@ -194,6 +225,9 @@ const { handlePrint } = useVueToPrint({
                             </td>
                             <td nowrap contenteditable>
                                 {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
+                            </td>
+                            <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
+                                {{ row.FEATURE_TIME }}
                             </td>
                             <td nowrap contenteditable v-if="i !== transformedTable.length - 1" class="special-cell"
                                 :class="{ 'toilet-round': !!row.preferToiletRound }"
@@ -212,15 +246,14 @@ const { handlePrint } = useVueToPrint({
                                     style="position: absolute; inset: 0; padding: 2px 6px; display: flex; align-items: center;">{{
                                         row.CREDITS_TIME }}
                                     <span v-if="row.hasPostCredits"
-                                        style="opacity: .35; font-weight: 100; font-style: normal; margin-left: 4px">+</span></span>
+                                        style="opacity: .35; font-weight: normal; font-style: normal; margin-left: 4px">+</span></span>
                             </td>
-                            <td nowrap contenteditable v-if="showNextStartTime" class="translucent"
-                                style="font-weight: 100; font-style: normal;">
-                                {{ row.nextStartTime?.replace(/(:00)$/, '') || '⏾' }}
+                            <td nowrap contenteditable v-if="optionalColumnsSetting.endTime" class="translucent">
+                                {{ row.END_TIME }}
                             </td>
-                            <td nowrap contenteditable v-if="showTimeToNextStart" class="translucent"
-                                style="font-weight: 100; font-style: normal;">
-                                {{ row.timeToNextStart ? Math.floor(row.timeToNextStart / 60000) + ' min' : '⏾' }}
+                            <td nowrap contenteditable v-if="optionalColumnsSetting.nextStartTime" class="translucent"
+                                style="font-weight: normal; font-style: normal;">
+                                {{ row.nextStartTime?.replace(/(:00)$/, '') || '-' }}
                             </td>
                             <td nowrap contenteditable v-if="splitExtra">
                                 <span>{{ row.title }}</span>
@@ -249,67 +282,69 @@ const { handlePrint } = useVueToPrint({
                     </div>
                 </div>
                 <div id="parameters" style="display: flex; flex-direction: column; flex: 229px 1 1;">
-                    <InputCheckbox v-model="splitExtra" identifier="splitExtra">
-                        Extra informatie scheiden van filmtitel
-                    </InputCheckbox>
-                    <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30" unit="min">
-                        Tijd vóór inloop 4DX
-                        <div class="small" v-if="plfTimeBefore > 0">Uitlopen vanaf {{ plfTimeBefore }} minuten voor een
-                            4DX-inloop krijgen een
-                            streeplijntje</div>
-                        <div class="small" v-else>Uitlopen vlak voor een 4DX-inloop worden niet gemarkeerd</div>
-                    </InputNumber>
-                    <InputNumber v-model.number="plfTimeAfter" identifier="plfTimeAfter" min="0" max="30" unit="min">
-                        Tijd na inloop 4DX
-                        <div class="small" v-if="plfTimeAfter > 0">Uitlopen tot {{ plfTimeAfter }} minuten na een
-                            4DX-inloop krijgen een
-                            streeplijntje</div>
-                        <div class="small" v-else>Uitlopen vlak na een 4DX-inloop worden niet gemarkeerd</div>
-                    </InputNumber>
-                    <InputNumber v-model.number="shortGapInterval" identifier="shortGapInterval" min="0" max="20"
-                        unit="min">Interval
-                        voor dubbele
-                        uitloop
-                        <div class="small" v-if="shortGapInterval > 0">Uitlopen met minder dan {{ shortGapInterval }}
-                            minuten ertussen krijgen een
-                            boogje</div>
-                        <div class="small" v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</div>
-                    </InputNumber>
-                    <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20" max="80"
-                        unit="min">Interval
-                        voor gat tussen
-                        uitlopen
-                        <div class="small" v-if="longGapInterval > 0">Gaten van meer dan {{ longGapInterval }} minuten
-                            krijgen een stippellijntje
-                        </div>
-                        <div class="small" v-else>Uitlopen met veel tijd ertussen worden niet gemarkeerd</div>
-                    </InputNumber>
-                    <InputCheckbox v-model="calculatePostCredits" identifier="calculatePostCredits">
-                        <span>
-                            <Chip>Nieuw</Chip>
-                            Post-credits-scènes meerekenen
-                        </span>
-                        <div class="small" v-if="calculatePostCredits">
-                            Bij uitlopen met post-credits-scènes wordt de tijd 'Einde voorstelling' gebruikt voor het
-                            berekenen van de tijd tot de volgende uitloop.
-                        </div>
-                        <div class="small" v-else>
-                            Bij alle uitlopen wordt de tijd 'Aftiteling' wordt gebruikt voor het
-                            berekenen van de tijd tot de volgende uitloop.
-                        </div>
-                    </InputCheckbox>
-                    <InputCheckbox v-model="showNextStartTime" identifier="showNextStartTime">
-                        <span>
-                            <Chip>Nieuw</Chip>
-                            Kolom 'Starttijd volgende voorstelling' tonen
-                        </span>
-                    </InputCheckbox>
-                    <InputCheckbox v-model="showTimeToNextStart" identifier="showTimeToNextStart">
-                        <span>
-                            <Chip>Nieuw</Chip>
-                            Kolom 'Tijd voor schoonmaak' tonen
-                        </span>
-                    </InputCheckbox>
+                    <Tabs themeColor="#ffc426">
+                        <Tab value="Opties">
+                            <InputCheckbox v-model="splitExtra" identifier="splitExtra">
+                                Extra informatie scheiden van filmtitel
+                            </InputCheckbox>
+                            <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30"
+                                unit="min">
+                                Tijd vóór inloop 4DX
+                                <div class="small" v-if="plfTimeBefore > 0">Uitlopen vanaf {{ plfTimeBefore }} minuten
+                                    voor een
+                                    4DX-inloop krijgen een
+                                    streeplijntje</div>
+                                <div class="small" v-else>Uitlopen vlak voor een 4DX-inloop worden niet gemarkeerd</div>
+                            </InputNumber>
+                            <InputNumber v-model.number="plfTimeAfter" identifier="plfTimeAfter" min="0" max="30"
+                                unit="min">
+                                Tijd na inloop 4DX
+                                <div class="small" v-if="plfTimeAfter > 0">Uitlopen tot {{ plfTimeAfter }} minuten na
+                                    een
+                                    4DX-inloop krijgen een
+                                    streeplijntje</div>
+                                <div class="small" v-else>Uitlopen vlak na een 4DX-inloop worden niet gemarkeerd</div>
+                            </InputNumber>
+                            <InputNumber v-model.number="shortGapInterval" identifier="shortGapInterval" min="0"
+                                max="20" unit="min">Interval
+                                voor dubbele
+                                uitloop
+                                <div class="small" v-if="shortGapInterval > 0">Uitlopen met minder dan {{
+                                    shortGapInterval }}
+                                    minuten ertussen krijgen een
+                                    boogje</div>
+                                <div class="small" v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</div>
+                            </InputNumber>
+                            <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20" max="80"
+                                unit="min">Interval
+                                voor gat tussen
+                                uitlopen
+                                <div class="small" v-if="longGapInterval > 0">Gaten van meer dan {{ longGapInterval }}
+                                    minuten
+                                    krijgen een stippellijntje
+                                </div>
+                                <div class="small" v-else>Uitlopen met veel tijd ertussen worden niet gemarkeerd</div>
+                            </InputNumber>
+                            <InputCheckbox v-model="calculatePostCredits" identifier="calculatePostCredits">
+                                Post-credits-scènes meerekenen
+                                <div class="small" v-if="calculatePostCredits">
+                                    Bij uitlopen met post-credits-scènes wordt de tijd 'Einde voorstelling' gebruikt
+                                    voor het
+                                    berekenen van de tijd tot de volgende uitloop.
+                                </div>
+                                <div class="small" v-else>
+                                    Bij alle uitlopen wordt de tijd 'Aftiteling' wordt gebruikt voor het
+                                    berekenen van de tijd tot de volgende uitloop.
+                                </div>
+                            </InputCheckbox>
+                        </Tab>
+                        <Tab value="Kolommen">
+                            <InputCheckbox v-for="(value, colId) in optionalColumns"
+                                v-model="optionalColumnsSetting[colId]" :identifier="colId">
+                                {{ columns[colId].title }}
+                            </InputCheckbox>
+                        </Tab>
+                    </Tabs>
                     <div class="buttons"
                         style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-inline: 16px;">
                         <!-- <ButtonText @click="determineToiletRounds" style="color: #fff;">
@@ -322,10 +357,6 @@ const { handlePrint } = useVueToPrint({
                 </div>
             </div>
         </section>
-        <!-- <section id="print" v-show="table.length > 0">
-            <h2>Tijdenlijstje afdrukken</h2>
-            <ButtonPrimary @click="handlePrint">Afdrukken</ButtonPrimary>
-        </section> -->
     </div>
     <Transition>
         <ContextMenu v-if="showMenu" class="dark" :x="menuX" :y="menuY" @click-outside="closeContextMenu">
@@ -600,10 +631,6 @@ td .plf-overlap {
     left: -10px;
     border-left: 2px dashed var(--color);
     opacity: .5;
-}
-
-#parameters {
-    padding-top: 16px;
 }
 
 #parameters .input-slider {
