@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
-import { useUrlSearchParams, useStorage } from '@vueuse/core'
+import { useStorage } from '@vueuse/core'
 import { useVueToPrint } from "vue-to-print"
 import { Tabs, Tab } from 'super-vue3-tabs'
+
+import { useTimetableFileStore } from '@/stores/timetableFile.js'
 
 const columns = {
     mainTime: {
@@ -33,14 +35,13 @@ const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 1
 const plfTimeAfter = useStorage('plf-time-after', 16) // usher-in will end 16 minutes after start
 const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
 const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
-const calculatePostCredits = useStorage('calculate-post-credits',true)
+const calculatePostCredits = useStorage('calculate-post-credits', true)
 const postCreditsFilms = useStorage('post-credits-films', new Set())
 while (postCreditsFilms.value.size > 20) {
     console.log(postCreditsFilms.value)
     postCreditsFilms.value.delete(Array.from(postCreditsFilms.value)[0])
 }
 
-const fileInput = ref(null)
 const printComponent = ref(null)
 const editSection = ref(null)
 
@@ -64,24 +65,18 @@ const closeContextMenu = () => {
     nextTick(() => showMenu.value = false)
 }
 
-const params = useUrlSearchParams('history')
-const theatres = [
-    { id: 'pulr', name: "Pathé Utrecht Leidsche Rijn", image: 'https://media.pathe.nl/gfx_content//bioscoop/LeidscheRijn-pulr_foto_1600x590.png' }
-]
-params.theatre ??= theatres[0].id
-const theatre = computed(() => theatres.find(item => item.id === params.theatre))
+const timetableFileStore = useTimetableFileStore()
 
-const table = ref([])
 const transformedTable = computed(() => {
-    let transformedTable = table.value.map((row, i) => {
+    let transformedTable = timetableFileStore.table.map((row, i) => {
         let obj = { ...row }
         obj.extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
         obj.title = row.PLAYLIST?.replace(obj.extra, '')
-        obj.overlapWithPlf = table.value.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
+        obj.overlapWithPlf = timetableFileStore.table.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
         obj.hasPostCredits = postCreditsFilms.value.has(obj.title)
         obj.assumedEndTime = obj.hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME
-        obj.timeToNextUsherout = getTimeDifferenceInMs(obj.assumedEndTime, table.value.at(i + 1)?.CREDITS_TIME)
-        obj.nextStartTime = table.value.find((testRow, testI) => testI > i && testRow.AUDITORIUM === row.AUDITORIUM)?.SCHEDULED_TIME
+        obj.timeToNextUsherout = getTimeDifferenceInMs(obj.assumedEndTime, timetableFileStore.table.at(i + 1)?.CREDITS_TIME)
+        obj.nextStartTime = timetableFileStore.table.find((testRow, testI) => testI > i && testRow.AUDITORIUM === row.AUDITORIUM)?.SCHEDULED_TIME
         return obj
     })
 
@@ -101,29 +96,6 @@ const transformedTable = computed(() => {
     return transformedTable || []
 
 })
-
-async function addFiles(fileList) {
-    if (fileList?.[0]?.type !== 'text/csv') return
-    const text = await fileList[0].text()
-
-    const arr = text.split('\n')
-
-    let jsonObj = []
-    const headers = arr[0].split(',')
-    for (var i = 0; i < arr.length; i++) {
-        const data = arr[i].split(',')
-        let obj = {}
-        for (let j = 0; j < data.length; j++) {
-            obj[headers[j].trim()] = data[j].trim()
-        }
-        jsonObj.push(obj)
-    }
-    table.value = jsonObj
-
-    nextTick(() => {
-        editSection.value.scrollIntoView({ behavior: "smooth" })
-    })
-}
 
 function getTimeDifferenceInMs(time1, time2) {
     function parseTime(timeStr) {
@@ -154,34 +126,8 @@ const { handlePrint } = useVueToPrint({
 
 <template>
     <div class="container dark">
-        <section id="theatre" v-if="!(params.theatre && theatres.length < 2)">
-            <h2>Theater selecteren</h2>
-            <div class="flex">
-                <button v-for="item in theatres" class="theatre-button"
-                    :class="{ selected: item.id === params.theatre }" @click="theatre.id = item.id">
-                    <img :src="item.image">
-                    <span style="z-index:1">{{ item.name }}</span>
-                </button>
-            </div>
-        </section>
-        <section id="upload" v-if="params.theatre">
-            <h2>Bestand uploaden</h2>
-            <DropZone id="drop-zone" @files-dropped="addFiles" #default="{ dropZoneActive }" @click="fileInput.click()"
-                style="cursor: pointer;">
-                <div v-if="dropZoneActive">
-                    <div>Laat los om te uploaden</div>
-                    <div class="small">CSV-bestand</div>
-                </div>
-                <div v-else>
-                    <div>Sleep een bestand hierheen</div>
-                    <div class="small">CSV-bestand</div>
-                </div>
-                <ButtonPrimary :data-active="dropZoneActive">Bladeren...</ButtonPrimary>
-            </DropZone>
-            <input type="file" ref="fileInput" accept="text/csv" style="display: none"
-                @change="addFiles($event.target.files)" />
-        </section>
-        <section id="edit" ref="editSection" v-if="params.theatre && table.length > 0">
+        <TimetableUploadSection />
+        <section id="edit" ref="editSection" v-if="timetableFileStore.table.length > 0">
             <h2>Tijdenlijstje bewerken</h2>
             <div class="flex" style="flex-wrap: wrap;">
                 <div id="print-component" ref="printComponent">
@@ -219,7 +165,7 @@ const { handlePrint } = useVueToPrint({
                             @contextmenu.prevent="showContextMenu($event, row, i)">
                             <td nowrap contenteditable>
                                 <!-- :style="`padding-left: calc(${row.AUDITORIUM.replace(/^\D+/g, '')} * 6px)`" -->
-                                {{ (theatre.id === 'pulr' && row.AUDITORIUM === 'PULR 8')
+                                {{ (row.AUDITORIUM === 'PULR 8')
                                     ? 'RT'
                                     : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </td>
@@ -231,7 +177,7 @@ const { handlePrint } = useVueToPrint({
                             </td>
                             <td nowrap contenteditable v-if="i !== transformedTable.length - 1" class="special-cell"
                                 :class="{ 'toilet-round': !!row.preferToiletRound }"
-                                @dblclick="table.at(i).preferToiletRound = !row.preferToiletRound">
+                                @dblclick="timetableFileStore.table.at(i).preferToiletRound = !row.preferToiletRound">
                                 {{ row.isNearPlf ? '4DX' : ' ' }}
                             </td>
                             <td v-else></td>
@@ -277,7 +223,7 @@ const { handlePrint } = useVueToPrint({
                         }) }}
                         om
                         {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
-                        • {{ theatre.name }}
+                        • Pathé Tools
                         • Quinten Althues
                     </div>
                 </div>
@@ -360,7 +306,8 @@ const { handlePrint } = useVueToPrint({
     </div>
     <Transition>
         <ContextMenu v-if="showMenu" class="dark" :x="menuX" :y="menuY" @click-outside="closeContextMenu">
-            <button @click="table.at(targetI).preferToiletRound = !targetRow.preferToiletRound; closeContextMenu()">
+            <button
+                @click="timetableFileStore.table.at(targetI).preferToiletRound = !targetRow.preferToiletRound; closeContextMenu()">
                 <div class="check" :class="{ 'empty': !transformedTable.at(targetI).preferToiletRound }"></div>
                 Toiletronde na deze uitloop
             </button>
@@ -380,79 +327,6 @@ div.container {
 
 h2 {
     margin-bottom: 16px;
-}
-
-.theatre-button {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 16px;
-    height: 128px;
-    width: 256px;
-
-    background-color: #ffffff14;
-    border-radius: 5px;
-    border: none;
-    color: #fff;
-    font: 16px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
-    text-transform: uppercase;
-    cursor: pointer;
-    overflow: hidden;
-}
-
-.theatre-button img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.1;
-    z-index: 0;
-}
-
-.theatre-button.selected img,
-.theatre-button:hover img,
-.theatre-button:focus-visible img {
-    opacity: 0.5;
-}
-
-.theatre-button.selected {
-    outline: 1px solid #ffc426;
-}
-
-#drop-zone {
-    width: 100%;
-    height: 100%;
-    min-height: 170px;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-
-    border-radius: 5px;
-    background-color: #ffffff14;
-    border: 4px dashed transparent;
-    color: #ffffffcc;
-    font-size: 14px;
-}
-
-#drop-zone[data-active=true] {
-    border-color: #ffffff14;
-}
-
-#drop-zone>div {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
-
-button[data-active=true] {
-    opacity: .3;
 }
 
 #print-component {

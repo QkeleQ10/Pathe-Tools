@@ -12,6 +12,10 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue'
             <RouterLink to="/timetable" style="text-decoration: none;">
                 <ButtonPrimary>Tijdenlijstje maken</ButtonPrimary>
             </RouterLink>
+            <br>
+            <RouterLink to="/announcer" style="text-decoration: none;">
+                <ButtonPrimary>Omroepsysteem</ButtonPrimary>
+            </RouterLink>
         </section>
     </main>
 </template>

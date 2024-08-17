@@ -29,6 +29,10 @@ button.primary {
     user-select: none;
 }
 
+button[data-active=true] {
+    opacity: .3;
+}
+
 button.primary:hover, button.primary:focus-visible {
     background-color: #e3af24;
     background-image: -webkit-linear-gradient(top, #dcc25c, #e3af24);

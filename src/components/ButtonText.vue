@@ -22,6 +22,10 @@ button.primary {
     user-select: none;
 }
 
+button[data-active=true] {
+    opacity: .3;
+}
+
 button.primary:hover,
 button.primary:focus-visible {
     opacity: 0.8;

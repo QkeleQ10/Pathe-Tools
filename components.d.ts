@@ -17,5 +17,6 @@ declare module 'vue' {
     InputSlider: typeof import('./src/components/InputSlider.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    TimetableUploadSection: typeof import('./src/components/TimetableUploadSection.vue')['default']
   }
 }

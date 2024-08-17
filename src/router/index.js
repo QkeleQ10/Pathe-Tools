@@ -16,6 +16,14 @@ const router = createRouter({
             meta: {
                 title: 'Tijdenlijstje',
             }
+        },
+        {
+            path: '/announcer',
+            name: 'announcer',
+            component: () => import('../views/AnnouncerView.vue'),
+            meta: {
+                title: 'Omroepen',
+            }
         }
     ],
     scrollBehavior(to, from, savedPosition) {
