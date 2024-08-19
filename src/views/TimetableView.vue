@@ -94,7 +94,6 @@ const transformedTable = computed(() => {
     })
 
     return transformedTable || []
-
 })
 
 function getTimeDifferenceInMs(time1, time2) {
