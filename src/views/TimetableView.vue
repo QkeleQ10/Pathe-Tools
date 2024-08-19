@@ -163,10 +163,7 @@ const { handlePrint } = useVueToPrint({
                             :class="{ targeting: showMenu && targetI === i, italic: row.AUDITORIUM?.includes('4DX'), bold: row.FEATURE_RATING === '16' || row.FEATURE_RATING === '18' }"
                             @contextmenu.prevent="showContextMenu($event, row, i)">
                             <td nowrap contenteditable>
-                                <!-- :style="`padding-left: calc(${row.AUDITORIUM.replace(/^\D+/g, '')} * 6px)`" -->
-                                {{ (row.AUDITORIUM === 'PULR 8')
-                                    ? 'RT'
-                                    : row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                {{ (row.AUDITORIUM === 'PULR 8') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </td>
                             <td nowrap contenteditable>
                                 {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
@@ -188,8 +185,8 @@ const { handlePrint } = useVueToPrint({
                                 </div>
                                 <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
                                 <span contenteditable
-                                    style="position: absolute; inset: 0; padding: 2px 6px; display: flex; align-items: center;">{{
-                                        row.CREDITS_TIME }}
+                                    style="position: absolute; inset: 0; padding: 2px 6px; display: flex; align-items: center;">
+                                    {{ row.CREDITS_TIME }}
                                     <span v-if="row.hasPostCredits"
                                         style="opacity: .35; font-weight: normal; font-style: normal; margin-left: 4px">+</span></span>
                             </td>
@@ -217,9 +214,9 @@ const { handlePrint } = useVueToPrint({
                     <div class="footer">
                         gegenereerd op
                         {{ new Date().toLocaleDateString('nl-NL', {
-                            weekday: 'short', day: 'numeric', month: 'short',
-                            year: 'numeric'
-                        }) }}
+            weekday: 'short', day: 'numeric', month: 'short',
+            year: 'numeric'
+        }) }}
                         om
                         {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
                         • Pathé Tools
@@ -255,7 +252,7 @@ const { handlePrint } = useVueToPrint({
                                 voor dubbele
                                 uitloop
                                 <div class="small" v-if="shortGapInterval > 0">Uitlopen met minder dan {{
-                                    shortGapInterval }}
+            shortGapInterval }}
                                     minuten ertussen krijgen een
                                     boogje</div>
                                 <div class="small" v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</div>
@@ -506,7 +503,7 @@ td .plf-overlap {
     opacity: .5;
 }
 
-#parameters .input-slider {
+#parameters .input {
     margin-bottom: 16px;
 }
 </style>

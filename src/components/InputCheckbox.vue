@@ -4,7 +4,7 @@ const model = defineModel()
 </script>
 
 <template>
-    <label class="input-slider" :for="identifier">
+    <label class="input" :for="identifier">
         <div class="title">
             <slot></slot>
         </div>
