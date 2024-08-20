@@ -70,7 +70,7 @@ const timetableFileStore = useTimetableFileStore()
 const transformedTable = computed(() => {
     let transformedTable = timetableFileStore.table.map((row, i) => {
         let obj = { ...row }
-        obj.extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
+        obj.extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(IMX)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
         obj.title = row.PLAYLIST?.replace(obj.extra, '')
         obj.overlapWithPlf = timetableFileStore.table.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
         obj.hasPostCredits = postCreditsFilms.value.has(obj.title)
@@ -119,13 +119,13 @@ function getTimeDifferenceInMs(time1, time2) {
 
 const { handlePrint } = useVueToPrint({
     content: () => printComponent.value,
-    documentTitle: "Tijdenlijstje",
+    documentTitle: "Tijdenlijstje " + new Date().toLocaleDateString('nl-NL'),
 })
 </script>
 
 <template>
     <div class="container dark">
-        <TimetableUploadSection />
+        <RosettaBridgeScheduleUploadSection />
         <section id="edit" ref="editSection" v-if="timetableFileStore.table.length > 0">
             <h2>Tijdenlijstje bewerken</h2>
             <div class="flex" style="flex-wrap: wrap;">
@@ -230,7 +230,7 @@ const { handlePrint } = useVueToPrint({
                                 Extra informatie scheiden van filmtitel
                             </InputCheckbox>
                             <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30"
-                                unit="min">
+                                unit="min" v-if="timetableFileStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
                                 Tijd vóór inloop 4DX
                                 <div class="small" v-if="plfTimeBefore > 0">Uitlopen vanaf {{ plfTimeBefore }} minuten
                                     voor een
@@ -239,7 +239,7 @@ const { handlePrint } = useVueToPrint({
                                 <div class="small" v-else>Uitlopen vlak voor een 4DX-inloop worden niet gemarkeerd</div>
                             </InputNumber>
                             <InputNumber v-model.number="plfTimeAfter" identifier="plfTimeAfter" min="0" max="30"
-                                unit="min">
+                                unit="min" v-if="timetableFileStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
                                 Tijd na inloop 4DX
                                 <div class="small" v-if="plfTimeAfter > 0">Uitlopen tot {{ plfTimeAfter }} minuten na
                                     een
@@ -251,10 +251,9 @@ const { handlePrint } = useVueToPrint({
                                 max="20" unit="min">Interval
                                 voor dubbele
                                 uitloop
-                                <div class="small" v-if="shortGapInterval > 0">Uitlopen met minder dan {{
-            shortGapInterval }}
-                                    minuten ertussen krijgen een
-                                    boogje</div>
+                                <div class="small" v-if="shortGapInterval > 0">
+                                    Uitlopen met minder dan {{ shortGapInterval }} minuten ertussen krijgen een boogje
+                                </div>
                                 <div class="small" v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</div>
                             </InputNumber>
                             <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20" max="80"

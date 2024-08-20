@@ -15,8 +15,8 @@ declare module 'vue' {
     InputCheckbox: typeof import('./src/components/InputCheckbox.vue')['default']
     InputNumber: typeof import('./src/components/InputNumber.vue')['default']
     InputSlider: typeof import('./src/components/InputSlider.vue')['default']
+    RosettaBridgeScheduleUploadSection: typeof import('./src/components/RosettaBridgeScheduleUploadSection.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    TimetableUploadSection: typeof import('./src/components/TimetableUploadSection.vue')['default']
   }
 }

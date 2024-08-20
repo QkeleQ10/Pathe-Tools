@@ -13,25 +13,33 @@ setInterval(() => {
     now.value = new Date()
 }, 1000)
 
-const announceCredits = useStorage('announce-credits', true)
-const announceCreditsGracePeriod = useStorage('announce-credits-grace-period', 60)
-const announceEnds = useStorage('announce-end', false)
+const announceStart = useStorage('announce-start', false)
 const announcePlfStart = useStorage('announce-plf-start', true)
 const announcePlfStartGracePeriod = useStorage('announce-plf-start-grace-period', 15)
+const announceMainShow = useStorage('announce-main-show', false)
+const announceCredits = useStorage('announce-credits', true)
+const announceCreditsGracePeriod = useStorage('announce-credits-grace-period', 60)
+const announceEnd = useStorage('announce-end', false)
 
-const soundNames = { a1: "zaal 1", a2: "zaal 2", a3: "zaal 3", a4: "zaal 4", a5: "zaal 5", a6: "zaal 6", a7: "zaal 7", credits: "aftiteling" }
+function formatSoundName(id) {
+    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling" }
+    let auditoriumMatch = id.match(/^(auditorium)([0-9]+)$/)
+    if (soundNames[id]) return soundNames[id]
+    else if (auditoriumMatch) return `zaal ${auditoriumMatch[2]}`
+    else return id
+}
 
-let soundQueue = reactive([])
 const spriteMap = {
-    a1: [0, 1055],
-    a2: [2000, 1055],
-    a3: [4000, 1055],
-    a4: [6000, 1055],
-    a5: [8000, 1055],
-    a6: [10000, 1055],
-    a7: [12000, 1055],
+    auditorium1: [0, 1055],
+    auditorium2: [2000, 1055],
+    auditorium3: [4000, 1055],
+    auditorium4: [6000, 1055],
+    auditorium5: [8000, 1055],
+    auditorium6: [10000, 1055],
+    auditorium7: [12000, 1055],
     credits: [14000, 1055]
 }
+
 const { play, isPlaying } = useSound(sfx, {
     sprite: spriteMap,
     preload: true,
@@ -39,6 +47,7 @@ const { play, isPlaying } = useSound(sfx, {
     onend: async () => { document.dispatchEvent(new Event('announcerSoundEnd')) },
 })
 
+let soundQueue = reactive([])
 watch(soundQueue, async (queue) => {
     if (queue[0] && !spriteMap[queue[0].id]) soundQueue.shift()
     if (queue[0] && !isPlaying.value) {
@@ -53,24 +62,49 @@ watch(soundQueue, async (queue) => {
 const announcementsToMake = computed(() => {
     let array = []
 
-    if (announceCredits.value) timetableFileStore.table.forEach((row) => {
-        if (row.creditsTime) {
-            array.push({
-                announceTime: new Date(row.creditsTime.getTime() - (announceCreditsGracePeriod.value * 1000)),
-                announcement: ['credits', `a${row.AUDITORIUM?.match(/\d+/)}`],
-                ...row
-            })
-        }
+    // Start
+    if (announceStart.value) timetableFileStore.table.forEach((row) => {
+        if (row.scheduledTime) array.push({
+            announceTime: row.scheduledTime,
+            announcement: ['start', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            ...row
+        })
     })
 
+    // Start 4DX
     if (announcePlfStart.value) timetableFileStore.table.filter(row => row.AUDITORIUM?.includes('4DX')).forEach((row) => {
-        if (row.scheduledTime) {
-            array.push({
-                announceTime: new Date(row.scheduledTime.getTime() - (announcePlfStartGracePeriod.value * 60000)),
-                announcement: ['usherin', `a${row.AUDITORIUM?.match(/\d+/)}`],
-                ...row
-            })
-        }
+        if (row.scheduledTime) array.push({
+            announceTime: new Date(row.scheduledTime.getTime() - (announcePlfStartGracePeriod.value * 60000)),
+            announcement: ['start', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            ...row
+        })
+    })
+
+    // Main show
+    if (announceMainShow.value) timetableFileStore.table.forEach((row) => {
+        if (row.scheduledTime) array.push({
+            announceTime: row.featureTime,
+            announcement: ['mainshow', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            ...row
+        })
+    })
+
+    // Credits
+    if (announceCredits.value) timetableFileStore.table.forEach((row) => {
+        if (row.creditsTime) array.push({
+            announceTime: new Date(row.creditsTime.getTime() - (announceCreditsGracePeriod.value * 1000)),
+            announcement: ['credits', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            ...row
+        })
+    })
+
+    // End show
+    if (announceEnd.value) timetableFileStore.table.forEach((row) => {
+        if (row.scheduledTime) array.push({
+            announceTime: row.endTime,
+            announcement: ['end', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            ...row
+        })
     })
 
     // scheduleAnnouncements(array)
@@ -84,7 +118,7 @@ scheduleAnnouncements(announcementsToMake.value)
 function scheduleAnnouncements(array) {
     while (scheduledAnnouncements.length > 0) scheduledAnnouncements.pop()
 
-    array.forEach((obj) => {
+    array.sort((a, b) => a.announceTime - b.announceTime).forEach((obj) => {
         // Skip iteration if the announcement is in the past.
         if (obj.announceTime < Date.now()) return
 
@@ -116,7 +150,7 @@ function formatTimeLeft(timeInMs) {
 
 <template>
     <div class="container dark">
-        <TimetableUploadSection />
+        <RosettaBridgeScheduleUploadSection />
         <section v-if="timetableFileStore.table.length > 0">
             <h2>Geplande omroepen</h2>
             <div class="flex" style="flex-wrap: wrap;">
@@ -135,13 +169,13 @@ function formatTimeLeft(timeInMs) {
                             <span class="icon-speaker" :class="{ loud: row.announceTime <= now }"
                                 style="justify-self: center; opacity: 0.5;"></span>
                             <div>
-                                {{ row.announceTime.toLocaleTimeString() }}
+                                {{ row.announceTime.toLocaleTimeString('nl-NL') }}
                                 ({{ formatTimeLeft(row.announceTime - now) }})
                             </div>
                             <div>
                                 '<span v-for="(id, i) in row.announcement" class="word"
                                     :class="{ announcing: row.announceTime <= now && soundQueue[0]?.id === id }">
-                                    {{ soundNames[id] || id }}{{ i < row.announcement.length - 1 ? '&nbsp;' : '' }}
+                                    {{ formatSoundName(id) }}{{ i < row.announcement.length - 1 ? '&nbsp;' : '' }}
                                         </span>'
                             </div>
                         </div>
@@ -150,45 +184,48 @@ function formatTimeLeft(timeInMs) {
                 <div id="parameters" style="flex: 229px 1 1;">
                     <Tabs themeColor="#ffc426">
                         <Tab value="Opties">
-                            <InputCheckbox v-model="announceCredits" identifier="announceCredits">
-                                Aftiteling omroepen
+                            <InputCheckbox v-model="announceStart" identifier="announceStart">
+                                'Start' omroepen
                             </InputCheckbox>
-                            <InputNumber v-model.number="announceCreditsGracePeriod"
-                                identifier="announceCreditsGracePeriod" step="15" min="0" max="240" unit="s">
-                                Voorlooptijd aftiteling
-                                <div class="small" v-if="announceCreditsGracePeriod > 0">
-                                    De aftiteling wordt {{ announceCreditsGracePeriod }} s van tevoren omgeroepen.
-                                </div>
-                            </InputNumber>
-                            <InputCheckbox v-model="announcePlfStart" identifier="announcePlfStart">
-                                Start 4DX omroepen
+                            <InputCheckbox v-model="announcePlfStart" identifier="announcePlfStart"
+                                v-if="timetableFileStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                <span>'Start' <b v-if="announceStart">extra</b> omroepen bij 4DX</span>
                             </InputCheckbox>
                             <InputNumber v-model.number="announcePlfStartGracePeriod"
-                                identifier="announcePlfStartGracePeriod" min="0" max="30" unit="min">
-                                Voorlooptijd start 4DX
+                                identifier="announcePlfStartGracePeriod" min="0" max="30" unit="min"
+                                v-if="announcePlfStart && timetableFileStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                Voorlooptijd 'start' bij 4DX
                                 <div class="small" v-if="announceCreditsGracePeriod > 0">
                                     De 4DX-inloop wordt {{ announcePlfStartGracePeriod }} min van tevoren omgeroepen.
                                 </div>
                             </InputNumber>
-                            <InputCheckbox>
-                                Start omroepen (dead)
+                            <InputCheckbox v-model="announceMainShow" identifier="announceMainShow">
+                                'Start hoofdfilm' omroepen
                             </InputCheckbox>
-                            <InputCheckbox>
-                                Start hoofdfilm omroepen (dead)
+                            <InputCheckbox v-model="announceCredits" identifier="announceCredits">
+                                'Aftiteling' omroepen
                             </InputCheckbox>
-                            <InputCheckbox>
-                                Einde voorstelling omroepen (dead)
+                            <InputNumber v-model.number="announceCreditsGracePeriod"
+                                identifier="announceCreditsGracePeriod" step="15" min="0" max="240" unit="s"
+                                v-if="announceCredits">
+                                Voorlooptijd 'aftiteling'
+                                <div class="small" v-if="announceCreditsGracePeriod > 0">
+                                    De aftiteling wordt {{ announceCreditsGracePeriod }} s van tevoren omgeroepen.
+                                </div>
+                            </InputNumber>
+                            <InputCheckbox v-model="announceEnd" identifier="announceEnd">
+                                'Einde voorstelling' omroepen
                             </InputCheckbox>
                         </Tab>
                         <Tab value="Handmatig">
                             <div class="flex" style="flex-wrap: wrap; gap: 8px;">
                                 <ButtonPrimary v-for="(val, id) of spriteMap" @click="soundQueue.push({ id })">
-                                    {{ soundNames[id] || id }}
+                                    {{ formatSoundName(id) }}
                                 </ButtonPrimary>
                             </div>
-                            <div class="flex" style="flex-direction: column; gap: 8px;">
+                            <div class="queue">
                                 <div v-for="element in soundQueue">
-                                    <span class="icon-speaker loud"></span> {{ soundNames[element.id] || element.id }}
+                                    <span class="icon-speaker loud"></span> {{ formatSoundName(element.id) }}
                                 </div>
                             </div>
                         </Tab>
@@ -279,5 +316,13 @@ h2 {
 
 #parameters .input {
     margin-bottom: 16px;
+}
+
+.queue>div {
+    width: 100%;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #ffffff14;
+    margin-top: 6px;
 }
 </style>

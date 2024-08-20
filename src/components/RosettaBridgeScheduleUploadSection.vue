@@ -18,7 +18,7 @@ const fileInput = ref(null)
 			</div>
 			<div v-else>
 				<div>Sleep een bestand hierheen</div>
-				<div class="small">CSV-bestand</div>
+				<div class="small">CSV-bestand uit RosettaBridge (met optie 'times only')</div>
 			</div>
 			<ButtonPrimary :data-active="dropZoneActive">Bladeren...</ButtonPrimary>
 		</DropZone>

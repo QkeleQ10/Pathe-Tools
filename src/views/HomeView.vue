@@ -14,7 +14,7 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue'
             </RouterLink>
             <br>
             <RouterLink to="/announcer" style="text-decoration: none;">
-                <ButtonPrimary>Omroepsysteem</ButtonPrimary>
+                <!-- <ButtonPrimary>Omroepsysteem</ButtonPrimary> -->
             </RouterLink>
         </section>
     </main>

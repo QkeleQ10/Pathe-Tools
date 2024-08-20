@@ -11,7 +11,7 @@ import { RouterLink, RouterView } from 'vue-router'
 
             <nav>
                 <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
-                <RouterLink to="/announcer">Omroepen</RouterLink>
+                <!-- <RouterLink to="/announcer">Omroepen</RouterLink> -->
             </nav>
         </div>
     </header>
@@ -58,11 +58,27 @@ nav {
 }
 
 nav a {
+    position: relative;
     padding: 20px;
     color: #4c3c0c;
     font: 700 16px Arial, Helvetica, sans-serif;
     text-decoration: none;
     text-shadow: 0 1px #ffda74;
+}
+
+nav a:hover,
+nav a.router-link-active {
+    color: #151515;
+}
+
+nav>a:not(:first-of-type):before {
+    border-left: 1px solid #f2b000;
+    content: "";
+    display: inline-block;
+    height: 40px;
+    left: 0;
+    position: absolute;
+    top: 9px;
 }
 
 main {
