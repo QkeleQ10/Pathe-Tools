@@ -12,12 +12,10 @@ const fileInput = ref(null)
 		<h2>Bestand uploaden</h2>
 		<DropZone id="drop-zone" @files-dropped="timetableFileStore.addFiles" #default="{ dropZoneActive }"
 			@click="fileInput.click()" style="cursor: pointer;">
-			<div v-if="dropZoneActive">
-				<div>Laat los om te uploaden</div>
-				<div class="small">CSV-bestand</div>
-			</div>
-			<div v-else>
-				<div>Sleep een bestand hierheen</div>
+			<div>
+				<div v-if="dropZoneActive">Laat los om te uploaden</div>
+				<div v-else-if="timetableFileStore.metadata.name">{{ timetableFileStore.metadata.name }}</div>
+				<div v-else>Sleep een bestand hierheen</div>
 				<div class="small">CSV-bestand uit RosettaBridge (met optie 'times only')</div>
 			</div>
 			<ButtonPrimary :data-active="dropZoneActive">Bladeren...</ButtonPrimary>

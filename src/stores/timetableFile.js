@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 
 export const useTimetableFileStore = defineStore('timetableFile', () => {
     const table = ref([])
+    const metadata = ref({})
 
     async function addFiles(fileList) {
         if (!(fileList?.[0]?.type === 'text/csv' || fileList?.[0]?.type === 'application/vnd.ms-excel')) return
@@ -30,9 +31,10 @@ export const useTimetableFileStore = defineStore('timetableFile', () => {
             return row
         })
         table.value = jsonObj
+        metadata.value = { name: fileList[0].name, type: fileList[0].type, lastModified: fileList[0].lastModified, size: fileList[0].size }
     }
 
-    return { table, addFiles }
+    return { table, addFiles, metadata }
 })
 
 function timeStringToDate(string) {

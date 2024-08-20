@@ -12,6 +12,7 @@ declare module 'vue' {
     Chip: typeof import('./src/components/Chip.vue')['default']
     ContextMenu: typeof import('./src/components/ContextMenu.vue')['default']
     DropZone: typeof import('./src/components/DropZone.vue')['default']
+    Icon: typeof import('./src/components/Icon.vue')['default']
     InputCheckbox: typeof import('./src/components/InputCheckbox.vue')['default']
     InputNumber: typeof import('./src/components/InputNumber.vue')['default']
     InputSlider: typeof import('./src/components/InputSlider.vue')['default']

@@ -99,3 +99,7 @@ div.container.dark p {
 .v-leave-to {
     opacity: 0;
 }
+
+.super-vue3-tabs>div:first-child {
+    margin-top: -6px;
+}

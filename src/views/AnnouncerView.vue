@@ -3,7 +3,8 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { useSound } from '@vueuse/sound'
 import { Tabs, Tab } from 'super-vue3-tabs'
-import sfx from '@/assets/sounds/voices/tts.mp3'
+
+import voiceTts from '@/assets/sounds/voices/tts.ogg'
 
 import { useTimetableFileStore } from '@/stores/timetableFile.js'
 const timetableFileStore = useTimetableFileStore()
@@ -13,6 +14,7 @@ setInterval(() => {
     now.value = new Date()
 }, 1000)
 
+const voice = useStorage('announcement-voice', 'tts')
 const announceStart = useStorage('announce-start', false)
 const announcePlfStart = useStorage('announce-plf-start', true)
 const announcePlfStartGracePeriod = useStorage('announce-plf-start-grace-period', 15)
@@ -30,17 +32,10 @@ function formatSoundName(id) {
 }
 
 const spriteMap = {
-    auditorium1: [0, 1055],
-    auditorium2: [2000, 1055],
-    auditorium3: [4000, 1055],
-    auditorium4: [6000, 1055],
-    auditorium5: [8000, 1055],
-    auditorium6: [10000, 1055],
-    auditorium7: [12000, 1055],
-    credits: [14000, 1055]
+    "auditorium1": [0, 1296.0090702947846], "auditorium2": [3000, 1344.0136054421766], "auditorium3": [6000, 1248.004535147392], "auditorium4": [9000, 1368.0045351473923], "auditorium5": [12000, 1488.0045351473932], "auditorium6": [15000, 1440.0000000000014], "auditorium7": [18000, 1488.0045351473932], "credits": [21000, 1296.009070294783], "end": [24000, 1728.0045351473916], "mainshow": [27000, 1728.0045351473916], "start": [30000, 1056.0090702947846]
 }
 
-const { play, isPlaying } = useSound(sfx, {
+const { play, isPlaying } = useSound(voiceTts, {
     sprite: spriteMap,
     preload: true,
     onplay: async () => { document.dispatchEvent(new Event('announcerSoundPlay')) },
@@ -59,80 +54,84 @@ watch(soundQueue, async (queue) => {
     }
 }, { deep: true })
 
-const announcementsToMake = computed(() => {
+const announcementsToMake = ref([])
+watch([timetableFileStore, announceStart, announcePlfStart, announcePlfStartGracePeriod, announceMainShow, announceCredits, announceCreditsGracePeriod, announceEnd], ([store]) => compileListOfAnnouncements(store))
+compileListOfAnnouncements(timetableFileStore)
+function compileListOfAnnouncements(store) {
     let array = []
 
     // Start
-    if (announceStart.value) timetableFileStore.table.forEach((row) => {
+    if (announceStart.value) store.table.forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: row.scheduledTime,
             announcement: ['start', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            status: 'unscheduled',
             ...row
         })
     })
 
     // Start 4DX
-    if (announcePlfStart.value) timetableFileStore.table.filter(row => row.AUDITORIUM?.includes('4DX')).forEach((row) => {
+    if (announcePlfStart.value) store.table.filter(row => row.AUDITORIUM?.includes('4DX')).forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: new Date(row.scheduledTime.getTime() - (announcePlfStartGracePeriod.value * 60000)),
             announcement: ['start', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            status: 'unscheduled',
             ...row
         })
     })
 
     // Main show
-    if (announceMainShow.value) timetableFileStore.table.forEach((row) => {
+    if (announceMainShow.value) store.table.forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: row.featureTime,
             announcement: ['mainshow', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            status: 'unscheduled',
             ...row
         })
     })
 
     // Credits
-    if (announceCredits.value) timetableFileStore.table.forEach((row) => {
+    if (announceCredits.value) store.table.forEach((row) => {
         if (row.creditsTime) array.push({
             announceTime: new Date(row.creditsTime.getTime() - (announceCreditsGracePeriod.value * 1000)),
             announcement: ['credits', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            status: 'unscheduled',
             ...row
         })
     })
 
     // End show
-    if (announceEnd.value) timetableFileStore.table.forEach((row) => {
+    if (announceEnd.value) store.table.forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: row.endTime,
             announcement: ['end', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            status: 'unscheduled',
             ...row
         })
     })
 
-    // scheduleAnnouncements(array)
-    return array || []
-})
+    announcementsToMake.value = [
+        ...announcementsToMake.value.filter((a) => a.status === 'scheduled'),
+        ...array.filter((a) => a.announceTime >= Date.now()).sort((a, b) => a.announceTime - b.announceTime)
+    ]
+}
 
-
-const scheduledAnnouncements = reactive([])
+setInterval(scheduleAnnouncements, 30000)
 watch(announcementsToMake, scheduleAnnouncements)
-scheduleAnnouncements(announcementsToMake.value)
-function scheduleAnnouncements(array) {
-    while (scheduledAnnouncements.length > 0) scheduledAnnouncements.pop()
-
-    array.sort((a, b) => a.announceTime - b.announceTime).forEach((obj) => {
-        // Skip iteration if the announcement is in the past.
-        if (obj.announceTime < Date.now()) return
-
-        scheduledAnnouncements.push(obj)
-        setTimeout(() => {
-            let i = scheduledAnnouncements.findIndex((obj2) => obj.announceTime === obj2.announceTime && obj.announcement.join() === obj2.announcement.join())
-            if (!i) return
-            obj.announcement.forEach(id => { soundQueue.push({ id }) })
+scheduleAnnouncements()
+function scheduleAnnouncements() {
+    announcementsToMake.value
+        .filter((obj) => obj.announceTime - Date.now() < 60000 && obj.status === 'unscheduled')
+        .forEach((obj) => {
+            obj.status = 'scheduled'
             setTimeout(() => {
-                i = scheduledAnnouncements.findIndex((obj2) => obj.announceTime === obj2.announceTime && obj.announcement.join() === obj2.announcement.join())
-                if (i) scheduledAnnouncements.splice(i, 1)
-            }, 10000)
-        }, obj.announceTime - Date.now())
-    })
+                if (obj.status === 'unscheduled') return
+                obj.announcement.forEach(id => { soundQueue.push({ id }) })
+                setTimeout(() => {
+                    obj.status = 'done'
+                }, 10000)
+            }, obj.announceTime - Date.now())
+        })
 }
 
 function formatTimeLeft(timeInMs) {
@@ -151,32 +150,35 @@ function formatTimeLeft(timeInMs) {
 <template>
     <div class="container dark">
         <RosettaBridgeScheduleUploadSection />
-        <section v-if="timetableFileStore.table.length > 0">
-            <h2>Geplande omroepen</h2>
+        <section>
             <div class="flex" style="flex-wrap: wrap;">
-                <div id="upcoming-announcements" class="flex" style="flex-direction: column; gap: 8px;">
-                    <div v-for="row in scheduledAnnouncements" v-show="now - row.announceTime < 10000" class="film"
-                        :class="{ 'announced': row.announceTime <= now }">
-                        <div class="room">
-                            {{ (row.AUDITORIUM === 'PULR 8') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
-                        </div>
-                        <div class="title">{{ row.PLAYLIST }}</div>
-                        <div class="time">
-                            {{ row.scheduledTime.toLocaleTimeString('nl-NL') }} –
-                            {{ row.endTime.toLocaleTimeString('nl-NL') }}</div>
-                        <div class="announcement" :class="row.announcement"
-                            style="display: grid; grid-template-columns: 64px 130px 1fr;">
-                            <span class="icon-speaker" :class="{ loud: row.announceTime <= now }"
-                                style="justify-self: center; opacity: 0.5;"></span>
-                            <div>
-                                {{ row.announceTime.toLocaleTimeString('nl-NL') }}
-                                ({{ formatTimeLeft(row.announceTime - now) }})
+                <div style="flex: 50% 1 1;" v-if="timetableFileStore.table.length > 0">
+                    <h2>Geplande omroepen</h2>
+                    <div id="upcoming-announcements" class="flex" style="flex-direction: column; gap: 8px;">
+                        <div v-for="row in announcementsToMake" v-show="now - row.announceTime < 10000" class="film"
+                            :class="{ 'announced': row.announceTime <= now }">
+                            <div class="room">
+                                {{ (row.AUDITORIUM === 'PULR 8') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </div>
-                            <div>
-                                '<span v-for="(id, i) in row.announcement" class="word"
-                                    :class="{ announcing: row.announceTime <= now && soundQueue[0]?.id === id }">
-                                    {{ formatSoundName(id) }}{{ i < row.announcement.length - 1 ? '&nbsp;' : '' }}
-                                        </span>'
+                            <div class="title">{{ row.PLAYLIST }}</div>
+                            <div class="time">
+                                {{ row.scheduledTime.toLocaleTimeString('nl-NL') }} –
+                                {{ row.endTime.toLocaleTimeString('nl-NL') }}</div>
+                            <div class="announcement" :class="row.announcement"
+                                style="display: grid; grid-template-columns: 64px 130px 1fr;">
+                                <Icon style="justify-self: center; opacity: 0.5"
+                                    :class="{ pulsate: row.status === 'scheduled' }">
+                                    {{ row.announceTime <= now ? 'graphic_eq' : 'schedule' }}</Icon>
+                                        <div>
+                                            {{ row.announceTime.toLocaleTimeString('nl-NL') }}
+                                            ({{ formatTimeLeft(row.announceTime - now) }})
+                                        </div>
+                                        <div>
+                                            '<span v-for="(id, i) in row.announcement" class="word"
+                                                :class="{ announcing: row.announceTime <= now && soundQueue[0]?.id === id }">
+                                                {{ formatSoundName(id) }}{{ i < row.announcement.length - 1 ? '&nbsp;'
+                                                    : '' }} </span>'
+                                        </div>
                             </div>
                         </div>
                     </div>
@@ -218,14 +220,15 @@ function formatTimeLeft(timeInMs) {
                             </InputCheckbox>
                         </Tab>
                         <Tab value="Handmatig">
-                            <div class="flex" style="flex-wrap: wrap; gap: 8px;">
+                            <div class="flex" style="flex-wrap: wrap; gap: 8px; margin-top: -4px;">
                                 <ButtonPrimary v-for="(val, id) of spriteMap" @click="soundQueue.push({ id })">
                                     {{ formatSoundName(id) }}
                                 </ButtonPrimary>
                             </div>
                             <div class="queue">
                                 <div v-for="element in soundQueue">
-                                    <span class="icon-speaker loud"></span> {{ formatSoundName(element.id) }}
+                                    <Icon :fill="true">graphic_eq</Icon>
+                                    {{ formatSoundName(element.id) }}
                                 </div>
                             </div>
                         </Tab>
@@ -247,7 +250,6 @@ h2 {
 
 #upcoming-announcements {
     position: relative;
-    flex: 50% 1 1;
 }
 
 .film {
@@ -303,26 +305,36 @@ h2 {
     color: #000;
 }
 
-.icon-speaker:after {
-    display: inline-block;
-    content: '🕩';
-    transform: scaleX(-1) scale(1.5);
-    padding-inline: 4px;
-}
-
-.icon-speaker.loud:after {
-    content: '🕪';
-}
-
 #parameters .input {
     margin-bottom: 16px;
 }
 
 .queue>div {
+    display: flex;
+    gap: 8px;
+    align-items: center;
     width: 100%;
     padding: 8px;
     border-radius: 5px;
     background-color: #ffffff14;
     margin-top: 6px;
+}
+
+.pulsate {
+    animation: pulsate 2000ms infinite;
+}
+
+@keyframes pulsate {
+    from {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.15;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 </style>

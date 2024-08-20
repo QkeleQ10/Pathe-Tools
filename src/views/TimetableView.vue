@@ -127,100 +127,102 @@ const { handlePrint } = useVueToPrint({
     <div class="container dark">
         <RosettaBridgeScheduleUploadSection />
         <section id="edit" ref="editSection" v-if="timetableFileStore.table.length > 0">
-            <h2>Tijdenlijstje bewerken</h2>
             <div class="flex" style="flex-wrap: wrap;">
-                <div id="print-component" ref="printComponent">
-                    <table spellcheck="false">
-                        <colgroup>
-                            <col span="1" style="width: 0;">
-                            <col span="1" style="width: 0;">
-                            <col span="1" style="width: 16%;">
-                            <col span="1" style="width: 0;" v-if="optionalColumnsSetting.mainTime">
-                            <col span="1" style="width: 28%;">
-                            <col span="1" style="width: 0;" v-if="optionalColumnsSetting.endTime">
-                            <col span="1" style="width: 0;" v-if="optionalColumnsSetting.nextStartTime">
-                            <col span="1" style="width: 50%;">
-                            <col span="1" style="width: 0;">
-                        </colgroup>
-                        <thead>
-                            <td nowrap contenteditable width="1px">Zaal</td>
-                            <td nowrap contenteditable>Inloop</td>
-                            <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime">
-                                {{ columns.mainTime.header }}
-                            </td>
-                            <td nowrap contenteditable></td>
-                            <td nowrap contenteditable>Aftiteling</td>
-                            <td nowrap contenteditable v-if="optionalColumnsSetting.endTime">
-                                {{ columns.endTime.header }}
-                            </td>
-                            <td nowrap contenteditable v-if="optionalColumnsSetting.nextStartTime">
-                                {{ columns.nextStartTime.header }}
-                            </td>
-                            <td nowrap contenteditable>Film</td>
-                            <td nowrap contenteditable></td>
-                        </thead>
-                        <tr v-for="(row, i) in transformedTable" v-show="i != 0"
-                            :class="{ targeting: showMenu && targetI === i, italic: row.AUDITORIUM?.includes('4DX'), bold: row.FEATURE_RATING === '16' || row.FEATURE_RATING === '18' }"
-                            @contextmenu.prevent="showContextMenu($event, row, i)">
-                            <td nowrap contenteditable>
-                                {{ (row.AUDITORIUM === 'PULR 8') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
-                            </td>
-                            <td nowrap contenteditable>
-                                {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
-                            </td>
-                            <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
-                                {{ row.FEATURE_TIME }}
-                            </td>
-                            <td nowrap contenteditable v-if="i !== transformedTable.length - 1" class="special-cell"
-                                :class="{ 'toilet-round': !!row.preferToiletRound }"
-                                @dblclick="timetableFileStore.table.at(i).preferToiletRound = !row.preferToiletRound">
-                                {{ row.isNearPlf ? '4DX' : ' ' }}
-                            </td>
-                            <td v-else></td>
-                            <td nowrap>
-                                <div class="double-usherout" v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
-                                </div>
-                                <div class="long-gap"
-                                    v-if="row.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
-                                </div>
-                                <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
-                                <span contenteditable
-                                    style="position: absolute; inset: 0; padding: 2px 6px; display: flex; align-items: center;">
-                                    {{ row.CREDITS_TIME }}
-                                    <span v-if="row.hasPostCredits"
-                                        style="opacity: .35; font-weight: normal; font-style: normal; margin-left: 4px">+</span></span>
-                            </td>
-                            <td nowrap contenteditable v-if="optionalColumnsSetting.endTime" class="translucent">
-                                {{ row.END_TIME }}
-                            </td>
-                            <td nowrap contenteditable v-if="optionalColumnsSetting.nextStartTime" class="translucent"
-                                style="font-weight: normal; font-style: normal;">
-                                {{ row.nextStartTime?.replace(/(:00)$/, '') || '-' }}
-                            </td>
-                            <td nowrap contenteditable v-if="splitExtra">
-                                <span>{{ row.title }}</span>
-                                <span style="float: right">{{ row.extra }}</span>
-                            </td>
-                            <td nowrap contenteditable v-else>
-                                {{ row.PLAYLIST }}
-                            </td>
-                            <td nowrap contenteditable style="text-align: end;"
-                                :class="{ translucent: row.FEATURE_RATING !== '16' && row.FEATURE_RATING !== '18' }">
-                                {{ row.FEATURE_RATING }}
-                            </td>
-                        </tr>
-                    </table>
-                    <div class="custom-content" contenteditable></div>
-                    <div class="footer">
-                        gegenereerd op
-                        {{ new Date().toLocaleDateString('nl-NL', {
-            weekday: 'short', day: 'numeric', month: 'short',
-            year: 'numeric'
-        }) }}
-                        om
-                        {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
-                        • Pathé Tools
-                        • Quinten Althues
+                <div>
+            <h2>Tijdenlijstje bewerken</h2>
+                    <div id="print-component" ref="printComponent">
+                        <table spellcheck="false">
+                            <colgroup>
+                                <col span="1" style="width: 0;">
+                                <col span="1" style="width: 0;">
+                                <col span="1" style="width: 16%;">
+                                <col span="1" style="width: 0;" v-if="optionalColumnsSetting.mainTime">
+                                <col span="1" style="width: 28%;">
+                                <col span="1" style="width: 0;" v-if="optionalColumnsSetting.endTime">
+                                <col span="1" style="width: 0;" v-if="optionalColumnsSetting.nextStartTime">
+                                <col span="1" style="width: 50%;">
+                                <col span="1" style="width: 0;">
+                            </colgroup>
+                            <thead>
+                                <td nowrap contenteditable width="1px">Zaal</td>
+                                <td nowrap contenteditable>Inloop</td>
+                                <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime">
+                                    {{ columns.mainTime.header }}
+                                </td>
+                                <td nowrap contenteditable></td>
+                                <td nowrap contenteditable>Aftiteling</td>
+                                <td nowrap contenteditable v-if="optionalColumnsSetting.endTime">
+                                    {{ columns.endTime.header }}
+                                </td>
+                                <td nowrap contenteditable v-if="optionalColumnsSetting.nextStartTime">
+                                    {{ columns.nextStartTime.header }}
+                                </td>
+                                <td nowrap contenteditable>Film</td>
+                                <td nowrap contenteditable></td>
+                            </thead>
+                            <tr v-for="(row, i) in transformedTable" v-show="i != 0"
+                                :class="{ targeting: showMenu && targetI === i, italic: row.AUDITORIUM?.includes('4DX'), bold: row.FEATURE_RATING === '16' || row.FEATURE_RATING === '18' }"
+                                @contextmenu.prevent="showContextMenu($event, row, i)">
+                                <td nowrap contenteditable>
+                                    {{ (row.AUDITORIUM === 'PULR 8') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                </td>
+                                <td nowrap contenteditable>
+                                    {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
+                                </td>
+                                <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
+                                    {{ row.FEATURE_TIME }}
+                                </td>
+                                <td nowrap contenteditable v-if="i !== transformedTable.length - 1" class="special-cell"
+                                    :class="{ 'toilet-round': !!row.preferToiletRound }"
+                                    @dblclick="timetableFileStore.table.at(i).preferToiletRound = !row.preferToiletRound">
+                                    {{ row.isNearPlf ? '4DX' : ' ' }}
+                                </td>
+                                <td v-else></td>
+                                <td nowrap>
+                                    <div class="double-usherout" v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
+                                    </div>
+                                    <div class="long-gap"
+                                        v-if="row.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
+                                    </div>
+                                    <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
+                                    <span contenteditable
+                                        style="position: absolute; inset: 0; padding: 2px 6px; display: flex; align-items: center;">
+                                        {{ row.CREDITS_TIME }}
+                                        <span v-if="row.hasPostCredits"
+                                            style="opacity: .35; font-weight: normal; font-style: normal; margin-left: 4px">+</span></span>
+                                </td>
+                                <td nowrap contenteditable v-if="optionalColumnsSetting.endTime" class="translucent">
+                                    {{ row.END_TIME }}
+                                </td>
+                                <td nowrap contenteditable v-if="optionalColumnsSetting.nextStartTime" class="translucent"
+                                    style="font-weight: normal; font-style: normal;">
+                                    {{ row.nextStartTime?.replace(/(:00)$/, '') || '-' }}
+                                </td>
+                                <td nowrap contenteditable v-if="splitExtra">
+                                    <span>{{ row.title }}</span>
+                                    <span style="float: right">{{ row.extra }}</span>
+                                </td>
+                                <td nowrap contenteditable v-else>
+                                    {{ row.PLAYLIST }}
+                                </td>
+                                <td nowrap contenteditable style="text-align: end;"
+                                    :class="{ translucent: row.FEATURE_RATING !== '16' && row.FEATURE_RATING !== '18' }">
+                                    {{ row.FEATURE_RATING }}
+                                </td>
+                            </tr>
+                        </table>
+                        <div class="custom-content" contenteditable></div>
+                        <div class="footer">
+                            gegenereerd op
+                            {{ new Date().toLocaleDateString('nl-NL', {
+                                weekday: 'short', day: 'numeric', month: 'short',
+                                year: 'numeric'
+                            }) }}
+                            om
+                            {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
+                            • Pathé Tools
+                            • Quinten Althues
+                        </div>
                     </div>
                 </div>
                 <div id="parameters" style="display: flex; flex-direction: column; flex: 229px 1 1;">

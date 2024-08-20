@@ -20,6 +20,12 @@ import { RouterLink, RouterView } from 'vue-router'
 
     <footer>
         <span>© 2024 Quinten Althues</span>
+        <a title="E-mail" href="mailto:quinten@althues.nl">
+            <Icon>mail</Icon>
+        </a>
+        <a title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
+            <Icon>code</Icon>
+        </a>
     </footer>
 </template>
 
@@ -91,9 +97,18 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 12px;
 
     background-color: #ffc426;
     z-index: 10;
+}
+
+footer a {
+    cursor: pointer;
+}
+
+footer .icon {
+    vertical-align: middle;
 }
 
 footer a,
