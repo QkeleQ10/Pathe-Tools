@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
-export const useTimetableFileStore = defineStore('timetableFile', () => {
+export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     const table = ref([])
     const metadata = ref({})
 
@@ -23,6 +23,9 @@ export const useTimetableFileStore = defineStore('timetableFile', () => {
         }
         jsonObj = jsonObj.map((row, i) => {
             if (i === 0) return row
+            row.extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(IMX)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
+            row.extras = row.extra?.split(' ')
+            row.title = row.PLAYLIST?.replace(row.extra, '')
             row.scheduledTime = timeStringToDate(row.SCHEDULED_TIME)
             row.showTime = timeStringToDate(row.SHOW_TIME)
             row.featureTime = timeStringToDate(row.FEATURE_TIME)
@@ -34,7 +37,7 @@ export const useTimetableFileStore = defineStore('timetableFile', () => {
         metadata.value = { name: fileList[0].name, type: fileList[0].type, lastModified: fileList[0].lastModified, size: fileList[0].size }
     }
 
-    return { table, addFiles, metadata }
+    return { table, metadata, addFiles }
 })
 
 function timeStringToDate(string) {

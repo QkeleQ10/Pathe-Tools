@@ -6,13 +6,15 @@ import { Tabs, Tab } from 'super-vue3-tabs'
 
 import voiceTts from '@/assets/sounds/voices/tts.ogg'
 
-import { useTimetableFileStore } from '@/stores/timetableFile.js'
-const timetableFileStore = useTimetableFileStore()
+import { useTmsScheduleStore } from '@/stores/tmsSchedule.js'
+const tmsScheduleStore = useTmsScheduleStore()
 
 const now = ref(() => new Date())
-setInterval(() => {
+setInterval(updateNowValue, 1000)
+updateNowValue()
+function updateNowValue() {
     now.value = new Date()
-}, 1000)
+}
 
 const voice = useStorage('announcement-voice', 'tts')
 const announceStart = useStorage('announce-start', false)
@@ -32,7 +34,7 @@ function formatSoundName(id) {
 }
 
 const spriteMap = {
-    "auditorium1": [0, 1296.0090702947846], "auditorium2": [3000, 1344.0136054421766], "auditorium3": [6000, 1248.004535147392], "auditorium4": [9000, 1368.0045351473923], "auditorium5": [12000, 1488.0045351473932], "auditorium6": [15000, 1440.0000000000014], "auditorium7": [18000, 1488.0045351473932], "credits": [21000, 1296.009070294783], "end": [24000, 1728.0045351473916], "mainshow": [27000, 1728.0045351473916], "start": [30000, 1056.0090702947846]
+    "auditorium1": [0, 1296.0090702947846], "auditorium2": [3000, 1344.0136054421766], "auditorium3": [6000, 1248.004535147392], "auditorium4": [9000, 1368.0045351473923], "auditorium5": [12000, 1488.0045351473932], "auditorium6": [15000, 1440.0000000000014], "auditorium7": [18000, 1488.0045351473932], "credits": [21000, 1296.009070294783], "end": [24000, 1728.0045351473916], "mainshow": [27000, 1728.0045351473916], "start": [30000, 1056.0090702947846], "chime": [33000, 1616.6893424036316]
 }
 
 const { play, isPlaying } = useSound(voiceTts, {
@@ -55,8 +57,8 @@ watch(soundQueue, async (queue) => {
 }, { deep: true })
 
 const announcementsToMake = ref([])
-watch([timetableFileStore, announceStart, announcePlfStart, announcePlfStartGracePeriod, announceMainShow, announceCredits, announceCreditsGracePeriod, announceEnd], ([store]) => compileListOfAnnouncements(store))
-compileListOfAnnouncements(timetableFileStore)
+watch([tmsScheduleStore, announceStart, announcePlfStart, announcePlfStartGracePeriod, announceMainShow, announceCredits, announceCreditsGracePeriod, announceEnd], ([store]) => compileListOfAnnouncements(store))
+compileListOfAnnouncements(tmsScheduleStore)
 function compileListOfAnnouncements(store) {
     let array = []
 
@@ -64,7 +66,7 @@ function compileListOfAnnouncements(store) {
     if (announceStart.value) store.table.forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: row.scheduledTime,
-            announcement: ['start', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            announcement: ['chime', 'start', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
             status: 'unscheduled',
             ...row
         })
@@ -74,7 +76,7 @@ function compileListOfAnnouncements(store) {
     if (announcePlfStart.value) store.table.filter(row => row.AUDITORIUM?.includes('4DX')).forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: new Date(row.scheduledTime.getTime() - (announcePlfStartGracePeriod.value * 60000)),
-            announcement: ['start', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            announcement: ['chime', 'start', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
             status: 'unscheduled',
             ...row
         })
@@ -84,7 +86,7 @@ function compileListOfAnnouncements(store) {
     if (announceMainShow.value) store.table.forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: row.featureTime,
-            announcement: ['mainshow', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            announcement: ['chime', 'mainshow', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
             status: 'unscheduled',
             ...row
         })
@@ -94,7 +96,7 @@ function compileListOfAnnouncements(store) {
     if (announceCredits.value) store.table.forEach((row) => {
         if (row.creditsTime) array.push({
             announceTime: new Date(row.creditsTime.getTime() - (announceCreditsGracePeriod.value * 1000)),
-            announcement: ['credits', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            announcement: ['chime', 'credits', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
             status: 'unscheduled',
             ...row
         })
@@ -104,7 +106,7 @@ function compileListOfAnnouncements(store) {
     if (announceEnd.value) store.table.forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: row.endTime,
-            announcement: ['end', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
+            announcement: ['chime', 'end', `auditorium${row.AUDITORIUM?.match(/\d+/)}`],
             status: 'unscheduled',
             ...row
         })
@@ -114,6 +116,8 @@ function compileListOfAnnouncements(store) {
         ...announcementsToMake.value.filter((a) => a.status === 'scheduled'),
         ...array.filter((a) => a.announceTime >= Date.now()).sort((a, b) => a.announceTime - b.announceTime)
     ]
+
+    updateNowValue()
 }
 
 setInterval(scheduleAnnouncements, 30000)
@@ -126,10 +130,8 @@ function scheduleAnnouncements() {
             obj.status = 'scheduled'
             setTimeout(() => {
                 if (obj.status === 'unscheduled') return
+                obj.status = 'announcing'
                 obj.announcement.forEach(id => { soundQueue.push({ id }) })
-                setTimeout(() => {
-                    obj.status = 'done'
-                }, 10000)
             }, obj.announceTime - Date.now())
         })
 }
@@ -149,22 +151,29 @@ function formatTimeLeft(timeInMs) {
 
 <template>
     <div class="container dark">
-        <RosettaBridgeScheduleUploadSection />
+        <TmsScheduleUploadSection />
         <section>
             <div class="flex" style="flex-wrap: wrap;">
-                <div style="flex: 50% 1 1;" v-if="timetableFileStore.table.length > 0">
+                <div style="flex: 50% 1 1;" v-if="tmsScheduleStore.table.length > 0">
                     <h2>Geplande omroepen</h2>
                     <div id="upcoming-announcements" class="flex" style="flex-direction: column; gap: 8px;">
                         <div v-for="row in announcementsToMake" v-show="now - row.announceTime < 10000" class="film"
-                            :class="{ 'announced': row.announceTime <= now }">
+                            :class="{ 'announcing': row.status === 'announcing' }">
                             <div class="room">
                                 {{ (row.AUDITORIUM === 'PULR 8') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </div>
-                            <div class="title">{{ row.PLAYLIST }}</div>
+                            <div class="title">{{ row.title }}</div>
                             <div class="time">
                                 {{ row.scheduledTime.toLocaleTimeString('nl-NL') }} –
                                 {{ row.endTime.toLocaleTimeString('nl-NL') }}</div>
+                            <div class="flex chips">
+                                <Chip v-for="extra in row.extras"
+                                    :class="{ 'translucent-white': !(extra === '4DX' && row.announcement.includes('start')) }">
+                                    {{ extra
+                                    }}</Chip>
+                            </div>
                             <div class="announcement" :class="row.announcement"
+                                @dblclick="row.announcement.forEach(id => { soundQueue.push({ id }) })"
                                 style="display: grid; grid-template-columns: 64px 130px 1fr;">
                                 <Icon style="justify-self: center; opacity: 0.5"
                                     :class="{ pulsate: row.status === 'scheduled' }">
@@ -174,7 +183,8 @@ function formatTimeLeft(timeInMs) {
                                             ({{ formatTimeLeft(row.announceTime - now) }})
                                         </div>
                                         <div>
-                                            '<span v-for="(id, i) in row.announcement" class="word"
+                                            '<span v-for="(id, i) in row.announcement" v-show="id !== 'chime'"
+                                                class="word"
                                                 :class="{ announcing: row.announceTime <= now && soundQueue[0]?.id === id }">
                                                 {{ formatSoundName(id) }}{{ i < row.announcement.length - 1 ? '&nbsp;'
                                                     : '' }} </span>'
@@ -190,12 +200,12 @@ function formatTimeLeft(timeInMs) {
                                 'Start' omroepen
                             </InputCheckbox>
                             <InputCheckbox v-model="announcePlfStart" identifier="announcePlfStart"
-                                v-if="timetableFileStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                v-if="tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
                                 <span>'Start' <b v-if="announceStart">extra</b> omroepen bij 4DX</span>
                             </InputCheckbox>
                             <InputNumber v-model.number="announcePlfStartGracePeriod"
                                 identifier="announcePlfStartGracePeriod" min="0" max="30" unit="min"
-                                v-if="announcePlfStart && timetableFileStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                v-if="announcePlfStart && tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
                                 Voorlooptijd 'start' bij 4DX
                                 <div class="small" v-if="announceCreditsGracePeriod > 0">
                                     De 4DX-inloop wordt {{ announcePlfStartGracePeriod }} min van tevoren omgeroepen.
@@ -266,7 +276,7 @@ h2 {
     overflow: hidden;
 }
 
-.film.announced {
+.film.announcing {
     background-color: #ffffff96;
     color: #000;
 }
@@ -291,6 +301,13 @@ h2 {
 .film .time {
     opacity: 0.5;
     margin-bottom: 6px;
+}
+
+.film .chips {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    gap: 4px;
 }
 
 .film .announcement {

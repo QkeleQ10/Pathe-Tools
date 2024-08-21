@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from 'vue'
-import { useTimetableFileStore } from '@/stores/timetableFile.js'
+import { useTmsXmlStore } from '@/stores/tmsXml.js'
 
-const timetableFileStore = useTimetableFileStore()
+const tmsXmlStore = useTmsXmlStore()
 
 const fileInput = ref(null)
 </script>
@@ -10,18 +10,18 @@ const fileInput = ref(null)
 <template>
 	<section id="upload">
 		<h2>Bestand uploaden</h2>
-		<DropZone id="drop-zone" @files-dropped="timetableFileStore.addFiles" #default="{ dropZoneActive }"
+		<DropZone id="drop-zone" @files-dropped="tmsXmlStore.addFiles" #default="{ dropZoneActive }"
 			@click="fileInput.click()" style="cursor: pointer;">
 			<div>
 				<div v-if="dropZoneActive">Laat los om te uploaden</div>
-				<div v-else-if="timetableFileStore.metadata.name">{{ timetableFileStore.metadata.name }}</div>
+				<div v-else-if="tmsXmlStore.metadata.name">{{ tmsXmlStore.metadata.name }}</div>
 				<div v-else>Sleep een bestand hierheen</div>
-				<div class="small">CSV-bestand uit RosettaBridge (met optie 'times only')</div>
+				<div class="small">XML-bestand uit RosettaBridge</div>
 			</div>
 			<ButtonPrimary :data-active="dropZoneActive">Bladeren...</ButtonPrimary>
 		</DropZone>
-		<input type="file" ref="fileInput" accept="text/csv" style="display: none"
-			@change="timetableFileStore.addFiles($event.target.files)" />
+		<input type="file" ref="fileInput" accept="text/xml,.xml" style="display: none"
+			@change="tmsXmlStore.addFiles($event.target.files)" />
 	</section>
 </template>
 

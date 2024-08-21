@@ -24,6 +24,14 @@ const router = createRouter({
             meta: {
                 title: 'Omroepen',
             }
+        },
+        {
+            path: '/intermission-finder',
+            name: 'intermission-finder',
+            component: () => import('../views/IntermissionFinderView.vue'),
+            meta: {
+                title: 'Filmpauze',
+            }
         }
     ],
     scrollBehavior(to, from, savedPosition) {

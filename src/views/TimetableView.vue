@@ -4,7 +4,7 @@ import { useStorage } from '@vueuse/core'
 import { useVueToPrint } from "vue-to-print"
 import { Tabs, Tab } from 'super-vue3-tabs'
 
-import { useTimetableFileStore } from '@/stores/timetableFile.js'
+import { useTmsScheduleStore } from '@/stores/tmsSchedule.js'
 
 const columns = {
     mainTime: {
@@ -65,18 +65,16 @@ const closeContextMenu = () => {
     nextTick(() => showMenu.value = false)
 }
 
-const timetableFileStore = useTimetableFileStore()
+const tmsScheduleStore = useTmsScheduleStore()
 
 const transformedTable = computed(() => {
-    let transformedTable = timetableFileStore.table.map((row, i) => {
+    let transformedTable = tmsScheduleStore.table.map((row, i) => {
         let obj = { ...row }
-        obj.extra = row.PLAYLIST?.match(/(\s((4DX)|(ATMOS)|(IMX)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0]?.slice(1)
-        obj.title = row.PLAYLIST?.replace(obj.extra, '')
-        obj.overlapWithPlf = timetableFileStore.table.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
+        obj.overlapWithPlf = tmsScheduleStore.table.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
         obj.hasPostCredits = postCreditsFilms.value.has(obj.title)
         obj.assumedEndTime = obj.hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME
-        obj.timeToNextUsherout = getTimeDifferenceInMs(obj.assumedEndTime, timetableFileStore.table.at(i + 1)?.CREDITS_TIME)
-        obj.nextStartTime = timetableFileStore.table.find((testRow, testI) => testI > i && testRow.AUDITORIUM === row.AUDITORIUM)?.SCHEDULED_TIME
+        obj.timeToNextUsherout = getTimeDifferenceInMs(obj.assumedEndTime, tmsScheduleStore.table.at(i + 1)?.CREDITS_TIME)
+        obj.nextStartTime = tmsScheduleStore.table.find((testRow, testI) => testI > i && testRow.AUDITORIUM === row.AUDITORIUM)?.SCHEDULED_TIME
         return obj
     })
 
@@ -125,8 +123,8 @@ const { handlePrint } = useVueToPrint({
 
 <template>
     <div class="container dark">
-        <RosettaBridgeScheduleUploadSection />
-        <section id="edit" ref="editSection" v-if="timetableFileStore.table.length > 0">
+        <TmsScheduleUploadSection />
+        <section id="edit" ref="editSection" v-if="tmsScheduleStore.table.length > 0">
             <div class="flex" style="flex-wrap: wrap;">
                 <div>
             <h2>Tijdenlijstje bewerken</h2>
@@ -174,7 +172,7 @@ const { handlePrint } = useVueToPrint({
                                 </td>
                                 <td nowrap contenteditable v-if="i !== transformedTable.length - 1" class="special-cell"
                                     :class="{ 'toilet-round': !!row.preferToiletRound }"
-                                    @dblclick="timetableFileStore.table.at(i).preferToiletRound = !row.preferToiletRound">
+                                    @dblclick="tmsScheduleStore.table.at(i).preferToiletRound = !row.preferToiletRound">
                                     {{ row.isNearPlf ? '4DX' : ' ' }}
                                 </td>
                                 <td v-else></td>
@@ -232,7 +230,7 @@ const { handlePrint } = useVueToPrint({
                                 Extra informatie scheiden van filmtitel
                             </InputCheckbox>
                             <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30"
-                                unit="min" v-if="timetableFileStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                unit="min" v-if="tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
                                 Tijd vóór inloop 4DX
                                 <div class="small" v-if="plfTimeBefore > 0">Uitlopen vanaf {{ plfTimeBefore }} minuten
                                     voor een
@@ -241,7 +239,7 @@ const { handlePrint } = useVueToPrint({
                                 <div class="small" v-else>Uitlopen vlak voor een 4DX-inloop worden niet gemarkeerd</div>
                             </InputNumber>
                             <InputNumber v-model.number="plfTimeAfter" identifier="plfTimeAfter" min="0" max="30"
-                                unit="min" v-if="timetableFileStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                unit="min" v-if="tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
                                 Tijd na inloop 4DX
                                 <div class="small" v-if="plfTimeAfter > 0">Uitlopen tot {{ plfTimeAfter }} minuten na
                                     een
@@ -304,7 +302,7 @@ const { handlePrint } = useVueToPrint({
     <Transition>
         <ContextMenu v-if="showMenu" class="dark" :x="menuX" :y="menuY" @click-outside="closeContextMenu">
             <button
-                @click="timetableFileStore.table.at(targetI).preferToiletRound = !targetRow.preferToiletRound; closeContextMenu()">
+                @click="tmsScheduleStore.table.at(targetI).preferToiletRound = !targetRow.preferToiletRound; closeContextMenu()">
                 <div class="check" :class="{ 'empty': !transformedTable.at(targetI).preferToiletRound }"></div>
                 Toiletronde na deze uitloop
             </button>
