@@ -16,6 +16,7 @@ declare module 'vue' {
     InputCheckbox: typeof import('./src/components/InputCheckbox.vue')['default']
     InputNumber: typeof import('./src/components/InputNumber.vue')['default']
     InputSlider: typeof import('./src/components/InputSlider.vue')['default']
+    InputText: typeof import('./src/components/InputText.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TmsScheduleUploadSection: typeof import('./src/components/TmsScheduleUploadSection.vue')['default']
