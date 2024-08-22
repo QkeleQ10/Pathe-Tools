@@ -203,11 +203,15 @@ function formatSoundName(id) {
                                 @dblclick="row.announcement.forEach(id => { soundQueue.push({ id }) })"
                                 style="display: grid; grid-template-columns: 64px 130px 1fr;">
 
-                                <Icon fill v-if="row.status === 'announcing'" class="pulsate">graphic_eq</Icon>
-                                <Icon fill v-else-if="row.announcementType === 'start'">play_arrow</Icon>
-                                <Icon fill v-else-if="row.announcementType === 'mainshow'">play_circle</Icon>
-                                <Icon fill v-else-if="row.announcementType === 'credits'">stop_circle</Icon>
-                                <Icon fill v-else-if="row.announcementType === 'end'">stop</Icon>
+                                <Icon fill v-if="row.status === 'announcing'">graphic_eq</Icon>
+                                <Icon fill v-else-if="row.announcementType === 'start'"
+                                    :class="{ pulsate: row.status === 'scheduled' }">play_arrow</Icon>
+                                <Icon fill v-else-if="row.announcementType === 'mainshow'"
+                                    :class="{ pulsate: row.status === 'scheduled' }">play_circle</Icon>
+                                <Icon fill v-else-if="row.announcementType === 'credits'"
+                                    :class="{ pulsate: row.status === 'scheduled' }">stop_circle</Icon>
+                                <Icon fill v-else-if="row.announcementType === 'end'"
+                                    :class="{ pulsate: row.status === 'scheduled' }">stop</Icon>
                                 <Icon fill v-else>schedule</Icon>
                                 <div>
                                     {{ row.announceTime.toLocaleTimeString('nl-NL') }}
