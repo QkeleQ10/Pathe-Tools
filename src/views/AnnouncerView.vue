@@ -77,6 +77,7 @@ function compileListOfAnnouncements(store) {
         if (row.scheduledTime) array.push({
             announceTime: row.scheduledTime,
             announcement: ['chime', 'start', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
+            announcementType: 'start',
             status: 'unscheduled',
             ...row
         })
@@ -88,6 +89,7 @@ function compileListOfAnnouncements(store) {
             announceTime: new Date(row.scheduledTime.getTime() - (announcePlfStartGracePeriod.value * 60000)),
             announcement: ['chime', 'start', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
             status: 'unscheduled',
+            announcementType: 'start4dx',
             ...row
         })
     })
@@ -98,6 +100,7 @@ function compileListOfAnnouncements(store) {
             announceTime: row.featureTime,
             announcement: ['chime', 'mainshow', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
             status: 'unscheduled',
+            announcementType: 'mainshow',
             ...row
         })
     })
@@ -108,6 +111,7 @@ function compileListOfAnnouncements(store) {
             announceTime: new Date(row.creditsTime.getTime() - (announceCreditsGracePeriod.value * 1000)),
             announcement: ['chime', 'credits', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
             status: 'unscheduled',
+            announcementType: 'credits',
             ...row
         })
     })
@@ -118,13 +122,17 @@ function compileListOfAnnouncements(store) {
             announceTime: row.endTime,
             announcement: ['chime', 'end', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
             status: 'unscheduled',
+            announcementType: 'end',
             ...row
         })
     })
 
+    announcementsToMake.value.filter((a) => a.status === 'scheduled').forEach((a) => {
+        if (!array.find((b) => a.announceTime === b.announceTime && a.announcement.join() === b.announcement.join())) array.push(a)
+    })
+
     announcementsToMake.value = [
-        ...announcementsToMake.value.filter((a) => a.status === 'scheduled'),
-        ...array.filter((a) => a.announceTime >= Date.now()).sort((a, b) => a.announceTime - b.announceTime)
+        ...array.filter((a) => Date.now() - a.announceTime < 10000).sort((a, b) => a.announceTime - b.announceTime)
     ]
 
     updateNowValue()
@@ -137,9 +145,10 @@ function scheduleAnnouncements() {
     announcementsToMake.value
         .filter((obj) => obj.announceTime - Date.now() < 60000 && obj.status === 'unscheduled')
         .forEach((obj) => {
+            if (obj.status === 'scheduled') return
             obj.status = 'scheduled'
             setTimeout(() => {
-                if (obj.status === 'unscheduled') return
+                if (obj.status !== 'scheduled') return
                 obj.status = 'announcing'
                 obj.announcement.forEach(id => { soundQueue.push({ id }) })
             }, obj.announceTime - Date.now())
@@ -186,27 +195,30 @@ function formatSoundName(id) {
                                 {{ row.endTime.toLocaleTimeString('nl-NL') }}</div>
                             <div class="flex chips">
                                 <Chip v-for="extra in row.extras"
-                                    :class="{ 'translucent-white': !(extra === '4DX' && row.announcement.includes('start')) }">
-                                    {{ extra
-                                    }}</Chip>
+                                    :class="{ 'translucent-white': !(row.announcementType === 'start4dx') }">
+                                    {{ extra }}
+                                </Chip>
                             </div>
                             <div class="announcement" :class="row.announcement"
                                 @dblclick="row.announcement.forEach(id => { soundQueue.push({ id }) })"
                                 style="display: grid; grid-template-columns: 64px 130px 1fr;">
-                                <Icon style="justify-self: center; opacity: 0.5"
-                                    :class="{ pulsate: row.status === 'scheduled' }">
-                                    {{ row.announceTime <= now ? 'graphic_eq' : 'schedule' }}</Icon>
-                                        <div>
-                                            {{ row.announceTime.toLocaleTimeString('nl-NL') }}
-                                            ({{ formatTimeLeft(row.announceTime - now) }})
-                                        </div>
-                                        <div>
-                                            '<span v-for="(id, i) in row.announcement" v-show="id !== 'chime'"
-                                                class="word"
-                                                :class="{ announcing: row.announceTime <= now && soundQueue[0]?.id === id }">
-                                                {{ formatSoundName(id) }}{{ i < row.announcement.length - 1 ? '&nbsp;'
-                                                    : '' }} </span>'
-                                        </div>
+
+                                <Icon fill v-if="row.status === 'announcing'" class="pulsate">graphic_eq</Icon>
+                                <Icon fill v-else-if="row.announcementType === 'start'">play_arrow</Icon>
+                                <Icon fill v-else-if="row.announcementType === 'mainshow'">play_circle</Icon>
+                                <Icon fill v-else-if="row.announcementType === 'credits'">stop_circle</Icon>
+                                <Icon fill v-else-if="row.announcementType === 'end'">stop</Icon>
+                                <Icon fill v-else>schedule</Icon>
+                                <div>
+                                    {{ row.announceTime.toLocaleTimeString('nl-NL') }}
+                                    ({{ formatTimeLeft(row.announceTime - now) }})
+                                </div>
+                                <div :style="{ opacity: row.status === 'announcing' ? 1 : 0.35 }">
+                                    '<span v-for="(id, i) in row.announcement" v-show="id !== 'chime'" class="word"
+                                        :class="{ announcing: row.announceTime <= now && soundQueue[0]?.id === id }">
+                                        {{ formatSoundName(id) }}{{ i < row.announcement.length - 1 ? '&nbsp;' : '' }}
+                                            </span>'
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -340,6 +352,11 @@ h2 {
 .film .announcement .word.announcing {
     background-color: #ffc426;
     color: #000;
+}
+
+.film .announcement .icon {
+    justify-self: center;
+    opacity: 0.5;
 }
 
 #parameters .input {
