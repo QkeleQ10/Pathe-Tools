@@ -6,7 +6,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     const metadata = ref({})
 
     async function addFiles(fileList) {
-        if (!(fileList?.[0]?.type === 'text/csv' || fileList?.[0]?.type === 'application/vnd.ms-excel')) return
+        if (!(fileList?.[0]?.type === 'text/csv' || fileList?.[0]?.type === 'application/vnd.ms-excel' || fileList?.[0]?.name?.endsWith('.csv'))) return
         const text = await fileList[0].text()
 
         const arr = text.split('\n')

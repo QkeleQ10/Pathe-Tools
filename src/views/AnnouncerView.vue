@@ -195,7 +195,7 @@ function formatSoundName(id) {
                                 {{ row.endTime.toLocaleTimeString('nl-NL') }}</div>
                             <div class="flex chips">
                                 <Chip v-for="extra in row.extras"
-                                    :class="{ 'translucent-white': !(row.announcementType === 'start4dx') }">
+                                    :class="{ 'translucent-white': !(row.announcementType === 'start4dx' && extra === '4DX') }">
                                     {{ extra }}
                                 </Chip>
                             </div>
