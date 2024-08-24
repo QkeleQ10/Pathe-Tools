@@ -20,7 +20,12 @@ body {
     background: #f5f5f5;
 }
 
-:is(h1, h2, h3, h4, h5, h6):not(:empty) {
+h1:not(:empty),
+h2:not(:empty),
+h3:not(:empty),
+h4:not(:empty),
+h5:not(:empty),
+h6:not(:empty) {
     color: #151515;
     font-family: "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
     font-weight: 400;
@@ -34,8 +39,9 @@ h2:not(:empty) {
 
 section {
     width: 100%;
-    max-width: 1180px;
-    margin-inline: auto;
+    max-width: 1220px;
+    margin-left: auto;
+    margin-right: auto;
     padding: 40px 20px 50px;
 }
 
@@ -43,16 +49,16 @@ section {
     padding-top: 0;
 }
 
-div.container.dark {
+.container.dark {
     color: #fff;
     background-color: #000;
     background-color: #171717;
     background-image: radial-gradient(ellipse at center, #464646 0%, #171717 100%);
 }
 
-div.container.dark h2,
-div.container.dark h3,
-div.container.dark p {
+.container.dark h2,
+.container.dark h3,
+.container.dark p {
     color: #fff;
 }
 
@@ -80,7 +86,7 @@ div.container.dark p {
 .check {
     width: 12px;
     height: 12px;
-    margin-inline-end: 8px;
+    margin-right: 8px;
     border-radius: 3px;
     background-color: currentColor;
     transform-origin: bottom left;

@@ -7,7 +7,7 @@ export const useTmsXmlStore = defineStore('tmsXml', () => {
     const metadata = ref({})
 
     async function addFiles(fileList) {
-        if (!(fileList?.[0]?.type === 'text/xml')) return
+        if (!(fileList?.[0]?.type === 'text/xml' || fileList?.[0]?.name?.endsWith('.xml'))) return
         const text = await fileList[0].text()
 
         obj.value = xml2js(text, { compact: true })?.CompositionPlaylist

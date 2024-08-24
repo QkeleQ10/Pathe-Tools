@@ -49,7 +49,8 @@ header {
 div.wrapper {
     width: 100%;
     max-width: 1180px;
-    padding-inline: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
 
     display: grid;
     grid-template-columns: 80px 1fr;

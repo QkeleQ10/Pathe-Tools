@@ -168,11 +168,15 @@ function formatTimeLeft(timeInMs) {
 }
 
 function formatSoundName(id) {
-    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling" }
+    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", chime: "geluidje" }
     let auditoriumMatch = id.match(/^(auditorium)([0-9]+)$/)
     if (soundNames[id]) return soundNames[id]
     else if (auditoriumMatch) return `zaal ${Number(auditoriumMatch[2])}`
     else return id
+}
+
+function sentenceCase(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1)
 }
 
 function parseAuditorium(auditorium) {
@@ -182,7 +186,7 @@ function parseAuditorium(auditorium) {
 </script>
 
 <template>
-    <div class="container dark">
+    <main class="container dark">
         <TmsScheduleUploadSection />
         <section>
             <div class="flex" style="flex-wrap: wrap;">
@@ -192,7 +196,7 @@ function parseAuditorium(auditorium) {
                         <div v-for="row in announcementsToMake" v-show="now - row.announceTime < 10000" class="film"
                             :class="{ 'announcing': row.status === 'announcing' }">
                             <div class="room">
-                                {{ (row.AUDITORIUM === 'PULR 8') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </div>
                             <div class="title">{{ row.title }}</div>
                             <div class="time">
@@ -279,7 +283,7 @@ function parseAuditorium(auditorium) {
                             <div class="queue">
                                 <div v-for="element in soundQueue">
                                     <Icon :fill="true">graphic_eq</Icon>
-                                    {{ formatSoundName(element.id) }}
+                                    {{ sentenceCase(formatSoundName(element.id, true)) }}
                                 </div>
                             </div>
                         </Tab>
@@ -287,7 +291,7 @@ function parseAuditorium(auditorium) {
                 </div>
             </div>
         </section>
-    </div>
+    </main>
 </template>
 
 <style scoped>
@@ -325,7 +329,8 @@ h2 {
 .film .room {
     grid-column: 1;
     grid-row: 1 / -1;
-    padding-inline: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -354,7 +359,8 @@ h2 {
 .film .announcement {
     grid-column: 1 / -1;
     grid-row: -1;
-    padding-block: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
     background-color: #ffffff14;
 }
 

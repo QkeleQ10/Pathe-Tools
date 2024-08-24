@@ -73,7 +73,7 @@ const transformedTable = computed(() => {
         obj.overlapWithPlf = tmsScheduleStore.table.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
         obj.hasPostCredits = postCreditsFilms.value.has(obj.title)
         obj.assumedEndTime = obj.hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME
-        obj.timeToNextUsherout = getTimeDifferenceInMs(obj.assumedEndTime, tmsScheduleStore.table.at(i + 1)?.CREDITS_TIME)
+        obj.timeToNextUsherout = getTimeDifferenceInMs(obj.assumedEndTime, tmsScheduleStore.table[i + 1]?.CREDITS_TIME)
         obj.nextStartTime = tmsScheduleStore.table.find((testRow, testI) => testI > i && testRow.AUDITORIUM === row.AUDITORIUM)?.SCHEDULED_TIME
         return obj
     })
@@ -88,7 +88,7 @@ const transformedTable = computed(() => {
                 break
             }
         }
-        transformedTable.at(index).isNearPlf = true
+        transformedTable[index].isNearPlf = true
     })
 
     return transformedTable || []
@@ -122,12 +122,12 @@ const { handlePrint } = useVueToPrint({
 </script>
 
 <template>
-    <div class="container dark">
+    <main class="container dark">
         <TmsScheduleUploadSection />
         <section id="edit" ref="editSection" v-if="tmsScheduleStore.table.length > 0">
             <div class="flex" style="flex-wrap: wrap;">
                 <div>
-            <h2>Tijdenlijstje bewerken</h2>
+                    <h2>Tijdenlijstje bewerken</h2>
                     <div id="print-component" ref="printComponent">
                         <table spellcheck="false">
                             <colgroup>
@@ -162,7 +162,7 @@ const { handlePrint } = useVueToPrint({
                                 :class="{ targeting: showMenu && targetI === i, italic: row.AUDITORIUM?.includes('4DX'), bold: row.FEATURE_RATING === '16' || row.FEATURE_RATING === '18' }"
                                 @contextmenu.prevent="showContextMenu($event, row, i)">
                                 <td nowrap contenteditable>
-                                    {{ (row.AUDITORIUM === 'PULR 8') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                    {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
                                 </td>
                                 <td nowrap contenteditable>
                                     {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
@@ -177,23 +177,23 @@ const { handlePrint } = useVueToPrint({
                                 </td>
                                 <td v-else></td>
                                 <td nowrap>
-                                    <div class="double-usherout" v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
+                                    <div class="double-usherout"
+                                        v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
                                     </div>
                                     <div class="long-gap"
                                         v-if="row.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
                                     </div>
                                     <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
-                                    <span contenteditable
-                                        style="position: absolute; inset: 0; padding: 2px 6px; display: flex; align-items: center;">
+                                    <span contenteditable class="credits-time">
                                         {{ row.CREDITS_TIME }}
-                                        <span v-if="row.hasPostCredits"
-                                            style="opacity: .35; font-weight: normal; font-style: normal; margin-left: 4px">+</span></span>
+                                        <span v-if="row.hasPostCredits" class="post-credits">+</span>
+                                    </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.endTime" class="translucent">
                                     {{ row.END_TIME }}
                                 </td>
-                                <td nowrap contenteditable v-if="optionalColumnsSetting.nextStartTime" class="translucent"
-                                    style="font-weight: normal; font-style: normal;">
+                                <td nowrap contenteditable v-if="optionalColumnsSetting.nextStartTime"
+                                    class="translucent" style="font-weight: normal; font-style: normal;">
                                     {{ row.nextStartTime?.replace(/(:00)$/, '') || '-' }}
                                 </td>
                                 <td nowrap contenteditable v-if="splitExtra">
@@ -213,9 +213,9 @@ const { handlePrint } = useVueToPrint({
                         <div class="footer">
                             gegenereerd op
                             {{ new Date().toLocaleDateString('nl-NL', {
-                                weekday: 'short', day: 'numeric', month: 'short',
-                                year: 'numeric'
-                            }) }}
+            weekday: 'short', day: 'numeric', month: 'short',
+            year: 'numeric'
+        }) }}
                             om
                             {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
                             • Pathé Tools
@@ -287,7 +287,7 @@ const { handlePrint } = useVueToPrint({
                         </Tab>
                     </Tabs>
                     <div class="buttons"
-                        style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-inline: 16px;">
+                        style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-left: 16px; padding-right: 16px;">
                         <!-- <ButtonText @click="determineToiletRounds" style="color: #fff;">
                             <Chip>Experimenteel</Chip>
                             Toiletrondes indelen
@@ -298,7 +298,7 @@ const { handlePrint } = useVueToPrint({
                 </div>
             </div>
         </section>
-    </div>
+    </main>
     <Transition>
         <ContextMenu v-if="showMenu" class="dark" :x="menuX" :y="menuY" @click-outside="closeContextMenu">
             <button
@@ -373,7 +373,10 @@ div.footer {
 @media print {
     #print-component {
         position: fixed;
-        inset: 1.4cm;
+        top: 1.4cm;
+        bottom: 1.4cm;
+        left: 1.4cm;
+        right: 1.4cm;
         width: auto;
         height: auto;
         box-sizing: border-box;
@@ -455,7 +458,7 @@ td {
 }
 
 td.special-cell {
-    translate: 0 50%;
+    transform: translateY(-50%);
     text-align: end;
     padding-right: 14px;
     font-weight: normal;
@@ -469,7 +472,7 @@ td.toilet-round:before {
     background-color: var(--row-color);
     opacity: 0.5;
     height: 12px;
-    aspect-ratio: 1;
+    width: 12px;
 }
 
 td .double-usherout {
@@ -477,7 +480,7 @@ td .double-usherout {
     top: 50%;
     left: -3px;
     height: 100%;
-    aspect-ratio: 1;
+    width: 22px;
     border-radius: 50%;
     outline: 2px solid var(--color);
     clip-path: inset(-3px calc(100% - 5px) -3px -3px);
@@ -500,6 +503,24 @@ td .plf-overlap {
     left: -10px;
     border-left: 2px dashed var(--color);
     opacity: .5;
+}
+
+td .credits-time {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding: 2px 6px;
+    display: flex;
+    align-items: center;
+}
+
+td .post-credits {
+    opacity: .35;
+    font-weight: normal;
+    font-style: normal;
+    margin-left: 4px;
 }
 
 #parameters .input {

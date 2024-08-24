@@ -56,7 +56,7 @@ function formatDuration(duration = 0, frameRate = 24) {
 </script>
 
 <template>
-    <div class="container dark">
+    <main class="container dark">
         <TmsXmlUploadSection />
         <section>
             <div class="flex" style="flex-wrap: wrap;">
@@ -110,7 +110,7 @@ function formatDuration(duration = 0, frameRate = 24) {
                 </div>
             </div>
         </section>
-    </div>
+    </main>
 </template>
 
 <style scoped>
@@ -140,7 +140,8 @@ h2 {
 .film .room {
     grid-column: 1;
     grid-row: 1 / -1;
-    padding-inline: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -169,7 +170,8 @@ h2 {
 .film .extra {
     grid-column: 1 / -1;
     grid-row: -1;
-    padding-block: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
     background-color: #ffffff14;
 }
 

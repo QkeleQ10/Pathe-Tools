@@ -18,7 +18,8 @@ label {
     display: flex;
     justify-content: space-between;
     gap: 16px;
-    margin-inline: 8px;
+    margin-left: 8px;
+    margin-right: 8px;
     padding-bottom: 8px;
     cursor: pointer;
     user-select: none;
@@ -48,7 +49,10 @@ input[type="checkbox"] {
 
 input[type="checkbox"]::before {
     position: absolute;
-    inset: -2px;
+    top: -2px;
+    bottom: -2px;
+    left: -2px;
+    right: -2px;
     content: '';
     transform: scale(0);
     border-radius: 3px;
@@ -70,7 +74,10 @@ input[type="checkbox"]:checked::before {
 input[type="checkbox"]::after {
     content: '';
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     transform: scale(0);
     border-radius: 3px;
     background-color: #000;

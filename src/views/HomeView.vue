@@ -5,9 +5,9 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue'
 </script>
 
 <template>
-    <main>
-        <div class="flex">
-            <section>
+    <main class="container dark">
+        <section class="flex">
+            <div style="flex: 50%">
                 <h2>Voor theaters</h2>
                 <br>
                 <div class="flex">
@@ -18,8 +18,8 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue'
                         <ButtonPrimary style="opacity: 0.05"> </ButtonPrimary>
                     </RouterLink>
                 </div>
-            </section>
-            <section>
+            </div>
+            <div style="flex: 50%">
                 <h2>Voor POC</h2>
                 <br>
                 <div class="flex">
@@ -27,7 +27,7 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue'
                         <ButtonPrimary style="opacity: 0.05"> </ButtonPrimary>
                     </RouterLink>
                 </div>
-            </section>
-        </div>
+            </div>
+        </section>
     </main>
 </template>

@@ -21,7 +21,8 @@ label {
     display: flex;
     justify-content: space-between;
     gap: 16px;
-    margin-inline: 8px;
+    margin-left: 8px;
+    margin-right: 8px;
     padding-bottom: 8px;
     cursor: pointer;
     user-select: none;
@@ -64,7 +65,7 @@ div.input span.unit {
     position: absolute;
     right: 18px;
     top: 50%;
-    translate: 0 -50%;
+    transform: translateY(-50%);
     color: #6d6e71;
     pointer-events: none;
 }

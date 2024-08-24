@@ -22,7 +22,8 @@ label {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    margin-inline: 8px;
+    margin-left: 8px;
+    margin-right: 8px;
     padding-bottom: 8px;
     user-select: none;
 }
@@ -43,7 +44,7 @@ label {
 
     left: calc(var(--normalised-position) * 100%);
     bottom: -28px;
-    translate: -50%;
+    transform: translateX(-50%);
     pointer-events: none;
     opacity: 0;
     text-wrap: nowrap;

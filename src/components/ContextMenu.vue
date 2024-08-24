@@ -44,7 +44,8 @@ onClickOutside(target, event => emit('click-outside', event))
     justify-content: start;
     height: 32px;
     width: 100%;
-    padding-inline: 12px;
+    padding-left: 12px;
+    padding-right: 12px;
     cursor: pointer;
     background-color: var(--background);
     color: var(--color);
