@@ -128,7 +128,9 @@ function compileListOfAnnouncements(store) {
     })
 
     announcementsToMake.value.filter((a) => a.status === 'scheduled').forEach((a) => {
-        if (!array.find((b) => a.announceTime === b.announceTime && a.announcement.join() === b.announcement.join())) array.push(a)
+        const newElement = array.findIndex((b) => a.announceTime === b.announceTime && a.announcement.join() === b.announcement.join())
+        if (newElement) array.splice(newElement, 1)
+        array.push(a)
     })
 
     announcementsToMake.value = [
@@ -196,7 +198,8 @@ function parseAuditorium(auditorium) {
                         <div v-for="row in announcementsToMake" v-show="now - row.announceTime < 10000" class="film"
                             :class="{ 'announcing': row.status === 'announcing' }">
                             <div class="room">
-                                {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' :
+                    row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </div>
                             <div class="title">{{ row.title }}</div>
                             <div class="time">
