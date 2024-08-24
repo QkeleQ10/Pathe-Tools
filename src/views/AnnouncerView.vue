@@ -76,7 +76,7 @@ function compileListOfAnnouncements(store) {
     if (announceStart.value) store.table.forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: row.scheduledTime,
-            announcement: ['chime', 'start', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
+            announcement: ['chime', 'start', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
             announcementType: 'start',
             status: 'unscheduled',
             ...row
@@ -87,7 +87,7 @@ function compileListOfAnnouncements(store) {
     if (announcePlfStart.value) store.table.filter(row => row.AUDITORIUM?.includes('4DX')).forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: new Date(row.scheduledTime.getTime() - (announcePlfStartGracePeriod.value * 60000)),
-            announcement: ['chime', 'start', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
+            announcement: ['chime', 'start', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
             status: 'unscheduled',
             announcementType: 'start4dx',
             ...row
@@ -98,7 +98,7 @@ function compileListOfAnnouncements(store) {
     if (announceMainShow.value) store.table.forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: row.featureTime,
-            announcement: ['chime', 'mainshow', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
+            announcement: ['chime', 'mainshow', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
             status: 'unscheduled',
             announcementType: 'mainshow',
             ...row
@@ -109,7 +109,7 @@ function compileListOfAnnouncements(store) {
     if (announceCredits.value) store.table.forEach((row) => {
         if (row.creditsTime) array.push({
             announceTime: new Date(row.creditsTime.getTime() - (announceCreditsGracePeriod.value * 1000)),
-            announcement: ['chime', 'credits', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
+            announcement: ['chime', 'credits', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
             status: 'unscheduled',
             announcementType: 'credits',
             ...row
@@ -120,7 +120,7 @@ function compileListOfAnnouncements(store) {
     if (announceEnd.value) store.table.forEach((row) => {
         if (row.scheduledTime) array.push({
             announceTime: row.endTime,
-            announcement: ['chime', 'end', `auditorium${String(row.AUDITORIUM?.match(/\d+/)).padStart(2, '0')}`],
+            announcement: ['chime', 'end', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
             status: 'unscheduled',
             announcementType: 'end',
             ...row
@@ -173,6 +173,11 @@ function formatSoundName(id) {
     if (soundNames[id]) return soundNames[id]
     else if (auditoriumMatch) return `zaal ${Number(auditoriumMatch[2])}`
     else return id
+}
+
+function parseAuditorium(auditorium) {
+    if (auditorium?.toLowerCase().includes('rooftop')) return '08'
+    else return String(auditorium?.match(/\d+/)).padStart(2, '0')
 }
 </script>
 
