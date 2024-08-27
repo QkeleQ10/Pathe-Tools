@@ -24,7 +24,7 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue'
                 <br>
                 <div class="flex">
                     <RouterLink to="/intermission-finder" style="text-decoration: none;">
-                        <ButtonPrimary style="opacity: 0.05"> </ButtonPrimary>
+                        <ButtonPrimary>Pauzemoment bepalen</ButtonPrimary>
                     </RouterLink>
                 </div>
             </div>

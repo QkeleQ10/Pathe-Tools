@@ -20,6 +20,10 @@ body {
     background: #f5f5f5;
 }
 
+main {
+    min-height: calc(100vh - 70px);
+}
+
 h1:not(:empty),
 h2:not(:empty),
 h3:not(:empty),
@@ -58,6 +62,7 @@ section {
 
 .container.dark h2,
 .container.dark h3,
+.container.dark h4,
 .container.dark p {
     color: #fff;
 }
@@ -76,6 +81,15 @@ section {
 
 .translucent {
     opacity: .5;
+}
+
+.colour {
+    color: #ffc426;
+}
+
+.link {
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .flex {

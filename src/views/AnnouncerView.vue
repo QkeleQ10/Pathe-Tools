@@ -199,7 +199,7 @@ function parseAuditorium(auditorium) {
                             :class="{ 'announcing': row.status === 'announcing' }">
                             <div class="room">
                                 {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' :
-                    row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                    row.AUDITORIUM.replace(/^\w+\s/, '') }}
                             </div>
                             <div class="title">{{ row.title }}</div>
                             <div class="time">
@@ -284,7 +284,7 @@ function parseAuditorium(auditorium) {
                                 </ButtonPrimary>
                             </div>
                             <div class="queue">
-                                <div v-for="element in soundQueue">
+                                <div v-for="(element, i) in soundQueue" @click="soundQueue.splice(i, 1)">
                                     <Icon :fill="true">graphic_eq</Icon>
                                     {{ sentenceCase(formatSoundName(element.id, true)) }}
                                 </div>

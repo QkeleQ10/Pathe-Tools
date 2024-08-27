@@ -6,14 +6,18 @@ import { Tabs, Tab } from 'super-vue3-tabs'
 import { useTmsXmlStore } from '@/stores/tmsXml.js'
 const tmsXmlStore = useTmsXmlStore()
 
+const intermissionPercentageDev = useStorage('intermission-percentage-dev', 5)
+
 const filmMeta = computed(() => ((tmsXmlStore.obj?.ReelList?.Reel?.[0] || tmsXmlStore.obj?.ReelList?.Reel)?.AssetList?.['meta:CompositionMetadataAsset'] || (tmsXmlStore.obj?.ReelList?.Reel?.[0] || tmsXmlStore.obj?.ReelList?.Reel)?.AssetList?.['cpl-meta:CompositionMetadataAsset']))
 const filmTitle = computed(() => (filmMeta.value?.['meta:FullContentTitleText'] || filmMeta.value?.['cpl-meta:FullContentTitleText'])?._text || tmsXmlStore.obj?.AnnotationText?._text.split('_')[0])
 const filmSubtitleLanguages = computed(() => (filmMeta.value?.['meta:MainSubtitleLanguageList'] || filmMeta.value?.['cpl-meta:MainSubtitleLanguageList'])?._text)
 
 const reels = computed(() => {
     const reelsOrigin = tmsXmlStore.obj?.ReelList?.Reel
+    let reels = []
+
     if (reelsOrigin?.length > 0) {
-        const reels = reelsOrigin?.map((reel, i) => {
+        reels.push(...reelsOrigin?.map((reel, i) => {
             const obj = {}
             const reelInfo = reel?.AssetList?.MainPicture
             obj.title = reelInfo?.AnnotationText?._text || `Reel ${i}`
@@ -22,11 +26,11 @@ const reels = computed(() => {
             obj.intrinsicFrames = Number(reelInfo?.IntrinsicDuration?._text)
             obj.duration = obj.frames / obj.frameRate * 1000
             obj.intrinsicDuration = obj.intrinsicFrames / obj.frameRate * 1000
+            obj.entryPoint = Number(reelInfo?.EntryPoint?._text)
             obj.subtitleLanguage = reel?.AssetList?.MainSubtitle?.Language?._text
             obj.id = reelInfo?.Id?._text
             return obj
-        })
-        return reels
+        }))
     } else {
         const reel = reelsOrigin
         const reelInfo = reel?.AssetList?.MainPicture
@@ -37,12 +41,23 @@ const reels = computed(() => {
         obj.intrinsicFrames = Number(reelInfo?.IntrinsicDuration?._text)
         obj.duration = obj.frames / obj.frameRate * 1000
         obj.intrinsicDuration = obj.intrinsicFrames / obj.frameRate * 1000
+        obj.entryPoint = Number(reelInfo?.EntryPoint?._text)
         obj.subtitleLanguage = reel?.AssetList?.MainSubtitle?.Language?._text
         obj.id = reelInfo?.Id?._text
-        const reels = [obj]
-        return reels
+        reels.push(obj)
     }
+
+    reels.forEach((obj, i1) => {
+        obj.properDuration = obj.duration / reels.reduce((acc, reel) => acc + reel.duration, 0)
+        obj.properStart = reels.slice(0, i1).reduce((acc, reel) => acc + reel.properDuration, 0)
+    })
+
+    return reels
 })
+
+const mostCentralGap = computed(() => [...reels.value].sort((a, b) => Math.abs(a.properStart - 0.5) - Math.abs(b.properStart - 0.5))[0].properStart)
+const reelAfterGapIndex = computed(() => reels.value.findIndex(reel => reel.properStart === mostCentralGap.value))
+const filmDuration = computed(() => reels.value.reduce((acc, reel) => acc + reel.duration, 0))
 
 function formatDuration(duration = 0, frameRate = 24) {
     frameRate = Number(frameRate)
@@ -68,9 +83,11 @@ function formatDuration(duration = 0, frameRate = 24) {
                         </div>
                         <div class="title">{{ filmTitle }}</div>
                         <div class="time" v-if="!reels.some(reel => reel.frameRate !== reels[0].frameRate)">
-                            {{ formatDuration(reels?.reduce((acc, reel) => acc + reel.duration, 0)), reels[0].frameRate
-                            }}
-                            ({{ reels[0].frameRate }} fps)</div>
+                            {{ formatDuration(filmDuration, reels[0].frameRate) }}
+                            <span :class="{ bold: reels[0].frameRate !== 24, colour: reels[0].frameRate !== 24 }">
+                                ({{ reels[0].frameRate }} fps)
+                            </span>
+                        </div>
                         <div class="time" v-else>Framerate verschilt per reel</div>
                         <div class="flex chips">
                             <Chip class="translucent-white" v-if="reels.some(reel => reel.subtitleLanguage)">
@@ -78,33 +95,70 @@ function formatDuration(duration = 0, frameRate = 24) {
                             </Chip>
                         </div>
                         <div class="extra">
+                            <h4>Reels</h4>
+                            <div class="flex proportional-reels">
+                                <div v-for="reel in reels" class="reel" :style="{ '--propFrac': reel.properDuration }"
+                                    :title="reel.properStart"
+                                    :class="{ 'after-intermission': mostCentralGap === reel.properStart && Math.abs(mostCentralGap - 0.5) < (intermissionPercentageDev / 100) }">
+                                </div>
+                            </div>
                             <table class="reels">
                                 <thead>
                                     <td>Reel</td>
-                                    <td>Framerate</td>
-                                    <td>Frames</td>
-                                    <td>IFrames</td>
-                                    <td>Verschil</td>
                                     <td>Duur (hh:mm:ss:ff)</td>
-                                    <td>IDuur (hh:mm:ss:ff)</td>
+                                    <td>Startijd (hh:mm:ss:ff)</td>
                                 </thead>
-                                <tr v-for="reel in reels">
-                                    <td>{{ reel.title }}</td>
-                                    <td>{{ reel.frameRate }} fps</td>
-                                    <td>{{ reel.frames }} frames</td>
-                                    <td>{{ reel.intrinsicFrames }} frames</td>
-                                    <td>{{ reel.intrinsicFrames - reel.frames }} frames</td>
-                                    <td>{{ formatDuration(reel.duration, reel.frameRate) }}</td>
-                                    <td>{{ formatDuration(reel.intrinsicDuration, reel.frameRate) }}</td>
+                                <tr v-for="(reel, i) in reels">
+                                    <td>{{ i + 1 }}</td>
+                                    <td>{{ formatDuration(reel.duration, reel.frameRate) }}
+                                        <span v-if="reel.frameRate !== reels[0].frameRate" class="bold colour">
+                                            ({{ reel.frameRate }} fps)
+                                        </span>
+                                    </td>
+                                    <td>{{ formatDuration(reel.properStart * filmDuration, reel.frameRate) }}
+                                        ({{ (reel.properStart * 100).toLocaleString('nl-NL',
+                                            { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%)
+                                    </td>
                                 </tr>
                             </table>
+                            <div class="extra-extra">
+                                <h4>Pauzesuggestie</h4>
+                                <span v-if="Math.abs(mostCentralGap - 0.5) < (intermissionPercentageDev / 100)">
+                                    Een pauze zou kunnen worden ingepland tussen de {{ reelAfterGapIndex }}<sup>e</sup>
+                                    en de
+                                    {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel
+                                    (na {{ formatDuration(mostCentralGap * filmDuration, reels[0].frameRate) }} of {{
+                                        (mostCentralGap * 100).toLocaleString('nl-NL',
+                                            { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%).
+                                </span>
+                                <span v-else>
+                                    Er is geen reel die tussen {{ 50 -
+                                        intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de film
+                                    eindigt.
+                                    <a v-if="(Math.abs(mostCentralGap - 0.5) - (intermissionPercentageDev / 100)) < 0.05" class="link"
+                                        @click="intermissionPercentageDev = Math.ceil(Math.abs(mostCentralGap - 0.5) * 100)">
+                                        Maximale afwijking bijstellen tot {{ Math.ceil(Math.abs(mostCentralGap - 0.5) *
+                                            100) }}%?</a>
+                                    <br>
+                                    Een pauze zou kunnen worden ingepland tijdens de
+                                    {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel (bijvoorbeeld na
+                                    {{ formatDuration(0.5 * filmDuration, reels[0].frameRate) }} of 50%).
+                                    <br>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div id="parameters" style="flex: 229px 1 1;">
                     <Tabs themeColor="#ffc426">
-                        <Tab value="Opties">
-
+                        <Tab value="Opties pauzesuggestie">
+                            <InputNumber v-model.number="intermissionPercentageDev"
+                                identifier="intermissionPercentageDev" unit="%">
+                                Maximale afwijking van middenpunt
+                                <div class="small">De filmpauze kan worden geplaatst tussen {{ 50 -
+                                    intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de film.
+                                </div>
+                            </InputNumber>
                         </Tab>
                     </Tabs>
                 </div>
@@ -170,9 +224,68 @@ h2 {
 .film .extra {
     grid-column: 1 / -1;
     grid-row: -1;
-    padding-top: 6px;
-    padding-bottom: 6px;
+    padding: 12px;
     background-color: #ffffff14;
+}
+
+.film .extra-extra {
+    margin: -12px;
+    margin-top: 0;
+    padding: 12px;
+    background-color: #ffffff14;
+}
+
+table {
+    border: 1px solid #ffffff3d;
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    font-size: 12.5px;
+}
+
+thead {
+    background-color: #ffffff96;
+    color: #000;
+    font-weight: bold;
+}
+
+tr,
+thead {
+    height: 21.5px;
+    min-height: 21.5px;
+    max-height: 21.5px;
+}
+
+tr:nth-child(even) {
+    background-color: #ffffff14;
+}
+
+td {
+    position: relative;
+    padding: 2px 6px;
+}
+
+.proportional-reels {
+    width: 100%;
+    gap: 4px;
+}
+
+.proportional-reels .reel {
+    position: relative;
+    height: 20px;
+    background-color: #ffffff3d;
+    flex: 1 1 calc(var(--propFrac) * 100%);
+}
+
+.proportional-reels .reel.after-intermission:before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: -6px;
+    bottom: -6px;
+    width: 2px;
+    background-color: #ffc426;
 }
 
 #parameters .input {

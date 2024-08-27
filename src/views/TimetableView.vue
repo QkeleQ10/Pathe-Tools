@@ -162,7 +162,8 @@ const { handlePrint } = useVueToPrint({
                                 :class="{ targeting: showMenu && targetI === i, italic: row.AUDITORIUM?.includes('4DX'), bold: row.FEATURE_RATING === '16' || row.FEATURE_RATING === '18' }"
                                 @contextmenu.prevent="showContextMenu($event, row, i)">
                                 <td nowrap contenteditable>
-                                    {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' : row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                    {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' :
+                                        row.AUDITORIUM.replace(/^\w+\s/, '') }}
                                 </td>
                                 <td nowrap contenteditable>
                                     {{ row.SCHEDULED_TIME.replace(/(:00)$/, '') }}
@@ -186,7 +187,7 @@ const { handlePrint } = useVueToPrint({
                                     <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
                                     <span contenteditable class="credits-time">
                                         {{ row.CREDITS_TIME }}
-                                        <span v-if="row.hasPostCredits" class="post-credits">+</span>
+                                        <span v-if="row.hasPostCredits" class="post-credits">+{{ Math.round(getTimeDifferenceInMs(row.CREDITS_TIME, row.END_TIME)/60000) }}</span>
                                     </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.endTime" class="translucent">
@@ -213,9 +214,9 @@ const { handlePrint } = useVueToPrint({
                         <div class="footer">
                             gegenereerd op
                             {{ new Date().toLocaleDateString('nl-NL', {
-            weekday: 'short', day: 'numeric', month: 'short',
-            year: 'numeric'
-        }) }}
+                                weekday: 'short', day: 'numeric', month: 'short',
+                            year: 'numeric'
+                            }) }}
                             om
                             {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
                             • Pathé Tools
@@ -458,16 +459,18 @@ td {
 }
 
 td.special-cell {
-    transform: translateY(-50%);
+    transform: translateY(50%);
     text-align: end;
     padding-right: 14px;
     font-weight: normal;
 }
 
 td.toilet-round:before {
+    content: '';
     position: absolute;
     right: 42px;
-    content: '';
+    top: 50%;
+    transform: translateY(-50%);
     border: 1px solid var(--color);
     background-color: var(--row-color);
     opacity: 0.5;

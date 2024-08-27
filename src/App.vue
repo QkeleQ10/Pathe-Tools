@@ -12,7 +12,7 @@ import { RouterLink, RouterView } from 'vue-router'
             <nav>
                 <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
                 <!-- <RouterLink to="/announcer">Omroepen</RouterLink> -->
-                <!-- <RouterLink to="/intermission-finder">Filmpauze</RouterLink> -->
+                <RouterLink to="/intermission-finder">Filmpauze</RouterLink>
             </nav>
         </div>
     </header>
@@ -87,10 +87,6 @@ nav>a:not(:first-of-type):before {
     left: 0;
     position: absolute;
     top: 9px;
-}
-
-main {
-    min-height: calc(100vh - 70px);
 }
 
 footer {
