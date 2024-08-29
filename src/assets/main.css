@@ -43,7 +43,7 @@ h2:not(:empty) {
 
 section {
     width: 100%;
-    max-width: 1220px;
+    max-width: 1180px;
     margin-left: auto;
     margin-right: auto;
     padding: 40px 20px 50px;

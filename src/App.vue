@@ -11,7 +11,7 @@ import { RouterLink, RouterView } from 'vue-router'
 
             <nav>
                 <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
-                <!-- <RouterLink to="/announcer">Omroepen</RouterLink> -->
+                <RouterLink to="/announcer">Omroepen</RouterLink>
                 <RouterLink to="/intermission-finder">Filmpauze</RouterLink>
             </nav>
         </div>

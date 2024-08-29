@@ -15,7 +15,7 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue'
                         <ButtonPrimary>Tijdenlijstje maken</ButtonPrimary>
                     </RouterLink>
                     <RouterLink to="/announcer" style="text-decoration: none;">
-                        <ButtonPrimary style="opacity: 0.05"> </ButtonPrimary>
+                        <ButtonPrimary>Serviceomroepen</ButtonPrimary>
                     </RouterLink>
                 </div>
             </div>

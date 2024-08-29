@@ -187,7 +187,9 @@ const { handlePrint } = useVueToPrint({
                                     <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
                                     <span contenteditable class="credits-time">
                                         {{ row.CREDITS_TIME }}
-                                        <span v-if="row.hasPostCredits" class="post-credits">+{{ Math.round(getTimeDifferenceInMs(row.CREDITS_TIME, row.END_TIME)/60000) }}</span>
+                                        <span v-if="row.hasPostCredits" class="post-credits">+{{
+                                            Math.round(getTimeDifferenceInMs(row.CREDITS_TIME, row.END_TIME) / 60000)
+                                        }}</span>
                                     </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.endTime" class="translucent">
@@ -215,7 +217,7 @@ const { handlePrint } = useVueToPrint({
                             gegenereerd op
                             {{ new Date().toLocaleDateString('nl-NL', {
                                 weekday: 'short', day: 'numeric', month: 'short',
-                            year: 'numeric'
+                                year: 'numeric'
                             }) }}
                             om
                             {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
@@ -372,6 +374,18 @@ div.footer {
 }
 
 @media print {
+
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    html,
+    body {
+        width: 210mm;
+        height: 297mm;
+    }
+
     #print-component {
         position: fixed;
         top: 1.4cm;

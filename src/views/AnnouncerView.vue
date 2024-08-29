@@ -42,15 +42,15 @@ const voices = reactive({
 ({ play: voices.rosetta.play, isPlaying: voices.rosetta.isPlaying } = useSound(voiceRosetta, {
     sprite: voices.rosetta.sprite,
     preload: true,
-    onplay: async () => { document.dispatchEvent(new Event('announcerSoundPlay')) },
-    onend: async () => { document.dispatchEvent(new Event('announcerSoundEnd')) },
+    onplay: async () => { document.dispatchEvent(new CustomEvent('announcerSoundPlay')) },
+    onend: async () => { document.dispatchEvent(new CustomEvent('announcerSoundEnd')) },
 }));
 
 ({ play: voices.gerwim.play, isPlaying: voices.gerwim.isPlaying } = useSound(voiceGerwim, {
     sprite: voices.gerwim.sprite,
     preload: true,
-    onplay: async () => { document.dispatchEvent(new Event('announcerSoundPlay')) },
-    onend: async () => { document.dispatchEvent(new Event('announcerSoundEnd')) },
+    onplay: async () => { document.dispatchEvent(new CustomEvent('announcerSoundPlay')) },
+    onend: async () => { document.dispatchEvent(new CustomEvent('announcerSoundEnd')) },
 }))
 
 let soundQueue = reactive([])
@@ -58,11 +58,13 @@ watch(soundQueue, async (queue) => {
     if (queue[0] && !voices.rosetta.sprite[queue[0].id]) soundQueue.shift()
     if (queue[0] && !Object.values(voices).some(voice => voice.isPlaying)) {
         const soundParams = soundQueue[0]
-        if (voices[voice.value]?.sprite[soundParams.id]) voices[voice.value].play(soundParams)
-        else voices.rosetta.play(soundParams)
-        document.addEventListener('announcerSoundEnd', () => {
-            soundQueue.shift()
-        }, { once: true })
+
+        if (voices[voice.value]?.sprite[soundParams.id])
+            voices[voice.value].play(soundParams)
+        else
+            voices.rosetta.play(soundParams)
+
+        document.addEventListener('announcerSoundEnd', () => { soundQueue.shift() }, { once: true })
     }
 }, { deep: true })
 
@@ -216,7 +218,8 @@ function parseAuditorium(auditorium) {
                                 style="display: grid; grid-template-columns: 64px 130px 1fr;">
 
                                 <Icon fill v-if="row.status === 'announcing'">graphic_eq</Icon>
-                                <Icon fill v-else-if="row.announcementType === 'start'"
+                                <Icon fill
+                                    v-else-if="row.announcementType === 'start' || row.announcementType === 'start4dx'"
                                     :class="{ pulsate: row.status === 'scheduled' }">play_arrow</Icon>
                                 <Icon fill v-else-if="row.announcementType === 'mainshow'"
                                     :class="{ pulsate: row.status === 'scheduled' }">play_circle</Icon>
@@ -295,9 +298,24 @@ function parseAuditorium(auditorium) {
             </div>
         </section>
     </main>
+    <div class="clock">{{ now.toLocaleTimeString('nl-NL') }}</div>
 </template>
 
 <style scoped>
+.clock {
+    position: fixed;
+    top: 0;
+    right: max(calc(50vw - 590px), 0px);
+    height: 70px;
+    width: 90px;
+    padding-right: 20px;
+    display: flex;
+    align-items: center;
+    z-index: 11;
+    color: #00000055;
+    font: 700 16px Arial, Helvetica, sans-serif;
+}
+
 div.container {
     min-height: calc(100vh - 70px);
 }
