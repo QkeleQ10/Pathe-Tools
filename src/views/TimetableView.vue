@@ -71,7 +71,7 @@ const transformedTable = computed(() => {
     let transformedTable = tmsScheduleStore.table.map((row, i) => {
         let obj = { ...row }
         obj.overlapWithPlf = tmsScheduleStore.table.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).some(testRow => (getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) >= plfTimeBefore.value * -60000 && getTimeDifferenceInMs(testRow.SCHEDULED_TIME, row.CREDITS_TIME) <= plfTimeAfter.value * 60000))
-        obj.hasPostCredits = postCreditsFilms.value.has(obj.title)
+        obj.hasPostCredits = postCreditsFilms.value.has(obj.title?.trim())
         obj.assumedEndTime = obj.hasPostCredits && calculatePostCredits.value ? row.END_TIME : row.CREDITS_TIME
         obj.timeToNextUsherout = getTimeDifferenceInMs(obj.assumedEndTime, tmsScheduleStore.table[i + 1]?.CREDITS_TIME)
         obj.nextStartTime = tmsScheduleStore.table.find((testRow, testI) => testI > i && testRow.AUDITORIUM === row.AUDITORIUM)?.SCHEDULED_TIME
@@ -189,7 +189,7 @@ const { handlePrint } = useVueToPrint({
                                         {{ row.CREDITS_TIME }}
                                         <span v-if="row.hasPostCredits" class="post-credits">+{{
                                             Math.round(getTimeDifferenceInMs(row.CREDITS_TIME, row.END_TIME) / 60000)
-                                        }}</span>
+                                            }}</span>
                                     </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.endTime" class="translucent">
@@ -310,8 +310,8 @@ const { handlePrint } = useVueToPrint({
                 Toiletronde na deze uitloop
             </button>
             <button
-                @click="postCreditsFilms.has(targetRow.title) ? postCreditsFilms.delete(targetRow.title) : postCreditsFilms.add(targetRow.title); closeContextMenu()">
-                <div class="check" :class="{ 'empty': !postCreditsFilms.has(targetRow.title) }"></div>
+                @click="postCreditsFilms.has(targetRow.title?.trim()) ? postCreditsFilms.delete(targetRow.title?.trim()) : postCreditsFilms.add(targetRow.title?.trim()); closeContextMenu()">
+                <div class="check" :class="{ 'empty': !postCreditsFilms.has(targetRow.title?.trim()) }"></div>
                 Post-credits-scène bij {{ targetRow.title }}
             </button>
         </ContextMenu>
