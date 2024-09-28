@@ -8,9 +8,38 @@ const tmsXmlStore = useTmsXmlStore()
 
 const intermissionPercentageDev = useStorage('intermission-percentage-dev', 5)
 
-const filmMeta = computed(() => ((tmsXmlStore.obj?.ReelList?.Reel?.[0] || tmsXmlStore.obj?.ReelList?.Reel)?.AssetList?.['meta:CompositionMetadataAsset'] || (tmsXmlStore.obj?.ReelList?.Reel?.[0] || tmsXmlStore.obj?.ReelList?.Reel)?.AssetList?.['cpl-meta:CompositionMetadataAsset']))
-const filmTitle = computed(() => (filmMeta.value?.['meta:FullContentTitleText'] || filmMeta.value?.['cpl-meta:FullContentTitleText'])?._text || tmsXmlStore.obj?.AnnotationText?._text.split('_')[0])
-const filmSubtitleLanguages = computed(() => (filmMeta.value?.['meta:MainSubtitleLanguageList'] || filmMeta.value?.['cpl-meta:MainSubtitleLanguageList'])?._text)
+const filmMeta = computed(() => {
+    return findObjectValue(
+        (tmsXmlStore.obj?.ReelList?.Reel?.[0] || tmsXmlStore.obj?.ReelList?.Reel)?.AssetList,
+        ([key]) => key.includes('CompositionMetadataAsset'))
+})
+const filmTitle = computed(() => {
+    return findObjectValue(
+        filmMeta.value,
+        ([key]) => key.includes('TitleText')
+    )?._text || tmsXmlStore.obj?.AnnotationText?._text.split('_')[0]
+})
+const filmIs3d = computed(() => {
+    return !!findObjectValue(
+        (tmsXmlStore.obj?.ReelList?.Reel?.[0] || tmsXmlStore.obj?.ReelList?.Reel)?.AssetList,
+        ([key]) => key.includes('StereoscopicPicture'))
+})
+const filmSpokenLanguage = computed(() => {
+    return findObjectValue(
+        findObjectValue(
+            findObjectValue(
+                filmMeta.value,
+                ([key]) => key.includes('SubDescriptors')),
+            ([key]) => key.includes('SubDescriptor')),
+        ([key]) => key.includes('SpokenLanguage')
+    )?._text
+})
+const filmSubtitleLanguage = computed(() => {
+    return findObjectValue(
+        filmMeta.value,
+        ([key]) => key.includes('MainSubtitleLanguageList')
+    )?._text
+})
 
 const reels = computed(() => {
     const reelsOrigin = tmsXmlStore.obj?.ReelList?.Reel
@@ -19,30 +48,36 @@ const reels = computed(() => {
     if (reelsOrigin?.length > 0) {
         reels.push(...reelsOrigin?.map((reel, i) => {
             const obj = {}
-            const reelInfo = reel?.AssetList?.MainPicture
+            const assetList = reel?.AssetList
+            const reelInfo = findObjectValue(
+                assetList,
+                ([key]) => key.includes('Main') && key.endsWith('Picture')
+            )
             obj.title = reelInfo?.AnnotationText?._text || `Reel ${i}`
-            obj.frameRate = Number(reelInfo?.FrameRate?._text?.split(' ')[0])
+            obj.frameRate = Number(reelInfo?.EditRate?._text?.split(' ')[0]) || Number(reelInfo?.FrameRate?._text?.split(' ')[0])
             obj.frames = Number((reelInfo?.Duration || reelInfo?.IntrinsicDuration)?._text)
             obj.intrinsicFrames = Number(reelInfo?.IntrinsicDuration?._text)
             obj.duration = obj.frames / obj.frameRate * 1000
             obj.intrinsicDuration = obj.intrinsicFrames / obj.frameRate * 1000
             obj.entryPoint = Number(reelInfo?.EntryPoint?._text)
-            obj.subtitleLanguage = reel?.AssetList?.MainSubtitle?.Language?._text
             obj.id = reelInfo?.Id?._text
             return obj
         }))
     } else {
-        const reel = reelsOrigin
-        const reelInfo = reel?.AssetList?.MainPicture
         const obj = {}
+        const reel = reelsOrigin
+        const assetList = reel?.AssetList
+        const reelInfo = findObjectValue(
+            assetList,
+            ([key]) => key.includes('Main') && key.endsWith('Picture')
+        )
         obj.title = reel?.AnnotationText?._text || `Reel 0`
-        obj.frameRate = Number(reelInfo?.FrameRate?._text?.split(' ')[0])
+        obj.frameRate = Number(reelInfo?.EditRate?._text?.split(' ')[0]) || Number(reelInfo?.FrameRate?._text?.split(' ')[0])
         obj.frames = Number((reelInfo?.Duration || reelInfo?.IntrinsicDuration)?._text)
         obj.intrinsicFrames = Number(reelInfo?.IntrinsicDuration?._text)
         obj.duration = obj.frames / obj.frameRate * 1000
         obj.intrinsicDuration = obj.intrinsicFrames / obj.frameRate * 1000
         obj.entryPoint = Number(reelInfo?.EntryPoint?._text)
-        obj.subtitleLanguage = reel?.AssetList?.MainSubtitle?.Language?._text
         obj.id = reelInfo?.Id?._text
         reels.push(obj)
     }
@@ -59,6 +94,11 @@ const mostCentralGap = computed(() => [...reels.value].sort((a, b) => Math.abs(a
 const reelAfterGapIndex = computed(() => reels.value.findIndex(reel => reel.properStart === mostCentralGap.value))
 const filmDuration = computed(() => reels.value.reduce((acc, reel) => acc + reel.duration, 0))
 
+function findObjectValue(obj, predicate) {
+    if (typeof obj !== 'object') return
+    return Object.entries(obj)?.find(predicate)?.[1]
+}
+
 function formatDuration(duration = 0, frameRate = 24) {
     frameRate = Number(frameRate)
     let frames = duration * frameRate / 1000
@@ -67,6 +107,17 @@ function formatDuration(duration = 0, frameRate = 24) {
     const seconds = Math.floor(frames / frameRate) % 60
     const extraFrames = Math.floor(frames % frameRate)
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(extraFrames).padStart(2, '0')}`
+}
+
+function formatReelInformation(reel, i) {
+    return `
+${i + 1}e reel\n
+Titel: ${reel.title || 'Geen'}
+ID: ${reel.id}\n
+Framerate: ${reel.frameRate} fps
+Duur: ${formatDuration(reel.duration, reel.frameRate)} (${reel.frames} frames)\n
+Intrinsieke duur: ${formatDuration(reel.intrinsicDuration, reel.frameRate)} (${reel.intrinsicFrames} frames)
+Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint} frames)`
 }
 </script>
 
@@ -90,15 +141,22 @@ function formatDuration(duration = 0, frameRate = 24) {
                         </div>
                         <div class="time" v-else>Framerate verschilt per reel</div>
                         <div class="flex chips">
-                            <Chip class="translucent-white" v-if="reels.some(reel => reel.subtitleLanguage)">
-                                <Icon fill>subtitles</Icon> {{ filmSubtitleLanguages }}
+                            <Chip v-if="filmIs3d">
+                                <Icon fill>eyeglasses</Icon>3D
+                            </Chip>
+                            <Chip class="translucent-white" v-if="filmSpokenLanguage">
+                                <Icon fill>volume_up</Icon> {{ filmSpokenLanguage }}
+                            </Chip>
+                            <Chip class="translucent-white" v-if="filmSubtitleLanguage">
+                                <Icon fill>subtitles</Icon> {{ filmSubtitleLanguage }}
                             </Chip>
                         </div>
                         <div class="extra">
                             <h4>Reels</h4>
                             <div class="flex proportional-reels">
-                                <div v-for="reel in reels" class="reel" :style="{ '--propFrac': reel.properDuration }"
-                                    :title="reel.properStart"
+                                <div v-for="(reel, i) in reels" class="reel"
+                                    :style="{ '--propFrac': reel.properDuration }"
+                                    :title="formatReelInformation(reel, i)"
                                     :class="{ 'after-intermission': mostCentralGap === reel.properStart && Math.abs(mostCentralGap - 0.5) < (intermissionPercentageDev / 100) }">
                                 </div>
                             </div>
@@ -106,9 +164,9 @@ function formatDuration(duration = 0, frameRate = 24) {
                                 <thead>
                                     <td>Reel</td>
                                     <td>Duur (hh:mm:ss:ff)</td>
-                                    <td>Startijd (hh:mm:ss:ff)</td>
+                                    <td>Starttijd (hh:mm:ss:ff)</td>
                                 </thead>
-                                <tr v-for="(reel, i) in reels">
+                                <tr v-for="(reel, i) in reels" :title="formatReelInformation(reel, i)">
                                     <td>{{ i + 1 }}</td>
                                     <td>{{ formatDuration(reel.duration, reel.frameRate) }}
                                         <span v-if="reel.frameRate !== reels[0].frameRate" class="bold colour">
@@ -135,7 +193,8 @@ function formatDuration(duration = 0, frameRate = 24) {
                                     Er is geen reel die tussen {{ 50 -
                                         intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de film
                                     eindigt.
-                                    <a v-if="(Math.abs(mostCentralGap - 0.5) - (intermissionPercentageDev / 100)) < 0.05" class="link"
+                                    <a v-if="(Math.abs(mostCentralGap - 0.5) - (intermissionPercentageDev / 100)) < 0.05"
+                                        class="link"
                                         @click="intermissionPercentageDev = Math.ceil(Math.abs(mostCentralGap - 0.5) * 100)">
                                         Maximale afwijking bijstellen tot {{ Math.ceil(Math.abs(mostCentralGap - 0.5) *
                                             100) }}%?</a>

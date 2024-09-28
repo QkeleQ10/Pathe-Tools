@@ -15,6 +15,5 @@ export const useTmsXmlStore = defineStore('tmsXml', () => {
         metadata.value = { name: fileList[0].name, type: fileList[0].type, lastModified: fileList[0].lastModified, size: fileList[0].size }
     }
 
-
     return { obj, metadata, addFiles }
 })
