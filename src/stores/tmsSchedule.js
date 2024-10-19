@@ -12,12 +12,12 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         const arr = text.split('\n')
 
         let jsonObj = []
-        const headers = arr[0].split(',')
+        const headers = arr[0].splitCsv()
         for (var i = 0; i < arr.length; i++) {
-            const data = arr[i].split(',')
+            const data = arr[i].splitCsv()
             let obj = {}
             for (let j = 0; j < data.length; j++) {
-                obj[headers[j].trim()] = data[j].trim()
+                obj[headers[j]?.trim()] = data[j]?.trim()
             }
             jsonObj.push(obj)
         }
@@ -39,6 +39,17 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     return { table, metadata, addFiles }
 })
+
+String.prototype.splitCsv = function () {
+    let tokens = [], token = '', insideQuotes = false
+    for (let c of this) {
+        if (c === '"') insideQuotes = !insideQuotes
+        else if (c === ',' && !insideQuotes) tokens.push(token.trim()), token = ''
+        else token += c
+    }
+    tokens.push(token.trim())
+    return tokens
+}
 
 function timeStringToDate(string) {
     let now = new Date()

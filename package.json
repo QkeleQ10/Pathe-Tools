@@ -8,11 +8,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vueuse/core": "^11.0.3",
+    "@vueuse/core": "^11.1.0",
     "@vueuse/sound": "^2.0.1",
-    "pinia": "^2.2.2",
+    "pinia": "^2.2.4",
     "super-vue3-tabs": "^1.2.5",
-    "vue": "^3.4.38",
+    "vue": "^3.5.12",
     "vue-router": "^4.4.3",
     "vue-to-print": "^1.2.0",
     "xml-js": "^1.6.11"
@@ -22,7 +22,7 @@
     "@types/web-bluetooth": "^0.0.20",
     "@vitejs/plugin-vue": "^5.0.5",
     "unplugin-vue-components": "^0.27.3",
-    "vite": "^5.3.1",
+    "vite": "^5.4.9",
     "vite-plugin-vue-devtools": "^7.3.1"
   }
 }
