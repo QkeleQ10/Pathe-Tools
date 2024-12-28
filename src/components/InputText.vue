@@ -8,7 +8,7 @@ const model = defineModel()
         <div class="title">
             <slot></slot>
         </div>
-        <input type="text" inputmode="numeric" pattern="[0-9]+" name="" :id="identifier" v-model.number="model">
+        <input type="text" inputmode="numeric" pattern="[0-9]+" name="" :id="identifier" v-model="model">
     </label>
 </template>
 
@@ -19,9 +19,6 @@ label {
     justify-content: space-between;
     align-items: baseline;
     gap: 16px;
-    margin-left: 8px;
-    margin-right: 8px;
-    padding-bottom: 8px;
     cursor: pointer;
     user-select: none;
 }

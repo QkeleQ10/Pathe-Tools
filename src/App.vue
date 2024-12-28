@@ -5,7 +5,7 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
     <header>
         <div class="wrapper">
-            <RouterLink to="/">
+            <RouterLink to="/" class="logo-wrapper">
                 <img alt="Pathé logo" class="logo" src="@/assets/logo-01.png" height="46" />
             </RouterLink>
 
@@ -57,8 +57,10 @@ div.wrapper {
     align-items: center;
 }
 
-img.logo {
-    justify-self: center;
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 nav {

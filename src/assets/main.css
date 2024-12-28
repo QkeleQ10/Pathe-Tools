@@ -111,6 +111,41 @@ section {
     opacity: 0;
 }
 
+.side-panel .tab-content>div {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.side-panel fieldset {
+    border: 1px solid #4a4b4d;
+    border-radius: 5px;
+    margin-inline: 0;
+    padding: 8px 12px 12px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.side-panel fieldset+fieldset {
+    margin-top: -8px;
+}
+
+.side-panel fieldset>legend {
+    font-weight: bold;
+    margin-inline-start: -2px;
+}
+
+.side-panel .tab-content>div>.input {
+    margin-inline: 12px;
+}
+
+*[disabled]:not([disabled=false]) {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .v-leave-active {
     transition: opacity 200ms ease;
 }
@@ -118,8 +153,4 @@ section {
 .v-enter-from,
 .v-leave-to {
     opacity: 0;
-}
-
-.super-vue3-tabs>div:first-child {
-    margin-top: -6px;
 }

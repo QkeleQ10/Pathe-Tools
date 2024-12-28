@@ -9,7 +9,8 @@ const model = defineModel()
             <slot></slot>
         </div>
         <div class="input" :class="{ 'has-unit': !!unit }">
-            <input type="number" inputmode="numeric" pattern="[0-9]+" name="" :id="identifier" v-model.number="model">
+            <input type="number" inputmode="numeric" pattern="[0-9]+" name="" :id="identifier"
+                :disabled="$attrs.disabled" v-model.number="model">
             <span class="unit" v-if="unit">{{ unit }}</span>
         </div>
     </label>
@@ -21,9 +22,6 @@ label {
     display: flex;
     justify-content: space-between;
     gap: 16px;
-    margin-left: 8px;
-    margin-right: 8px;
-    padding-bottom: 8px;
     cursor: pointer;
     user-select: none;
 }

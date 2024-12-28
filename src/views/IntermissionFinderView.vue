@@ -1,9 +1,9 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
-import { Tabs, Tab } from 'super-vue3-tabs'
 
 import { useTmsXmlStore } from '@/stores/tmsXml.js'
+import SidePanel from '@/components/SidePanel.vue';
 const tmsXmlStore = useTmsXmlStore()
 
 const intermissionPercentageDev = useStorage('intermission-percentage-dev', 5)
@@ -208,19 +208,19 @@ Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint
                         </div>
                     </div>
                 </div>
-                <div id="parameters" style="flex: 229px 1 1;">
-                    <Tabs themeColor="#ffc426">
+                <SidePanel style="flex: 229px 1 1;">
+                    <Tabs>
                         <Tab value="Opties pauzesuggestie">
                             <InputNumber v-model.number="intermissionPercentageDev"
                                 identifier="intermissionPercentageDev" unit="%">
                                 Maximale afwijking van middenpunt
-                                <div class="small">De filmpauze kan worden geplaatst tussen {{ 50 -
+                                <small>De filmpauze kan worden geplaatst tussen {{ 50 -
                                     intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de film.
-                                </div>
+                                </small>
                             </InputNumber>
                         </Tab>
                     </Tabs>
-                </div>
+                </SidePanel>
             </div>
         </section>
     </main>
@@ -345,9 +345,5 @@ td {
     bottom: -6px;
     width: 2px;
     background-color: #ffc426;
-}
-
-#parameters .input {
-    margin-bottom: 16px;
 }
 </style>

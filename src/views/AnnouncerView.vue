@@ -2,13 +2,14 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { useSound } from '@vueuse/sound'
-import { Tabs, Tab } from 'super-vue3-tabs'
 
 import voiceRosetta from '@/assets/sounds/voices/rosetta.ogg'
 import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg'
 
 import { useTmsScheduleStore } from '@/stores/tmsSchedule.js'
 const tmsScheduleStore = useTmsScheduleStore()
+
+const warningShown = ref(true)
 
 const now = ref(() => new Date())
 setInterval(updateNowValue, 1000)
@@ -17,14 +18,36 @@ function updateNowValue() {
     now.value = new Date()
 }
 
-const voice = useStorage('announcement-voice', 'rosetta')
-const announceStart = useStorage('announce-start', false)
-const announcePlfStart = useStorage('announce-plf-start', true)
-const announcePlfStartGracePeriod = useStorage('announce-plf-start-grace-period', 15)
-const announceMainShow = useStorage('announce-main-show', false)
-const announceCredits = useStorage('announce-credits', true)
-const announceCreditsGracePeriod = useStorage('announce-credits-grace-period', 60)
-const announceEnd = useStorage('announce-end', false)
+const options = useStorage('announcer-options', {
+    plfStart: {
+        enabled: true,
+        minutesBeforeStartTime: 15,
+        announcement: ['chime', 'start', 'auditorium#']
+    },
+    start: {
+        enabled: false,
+        announcement: ['chime', 'start', 'auditorium#']
+    },
+    mainShow: {
+        enabled: false,
+        announcement: ['chime', 'mainshow', 'auditorium#']
+    },
+    credits: {
+        enabled: true,
+        secondsBeforeCreditsTime: 60,
+        announcement: ['chime', 'credits', 'auditorium#']
+    },
+    end: {
+        enabled: false,
+        announcement: ['chime', 'end', 'auditorium#']
+    },
+    voice: 'Rosetta'
+})
+
+const voiceFiles = {
+    rosetta: voiceRosetta,
+    gerwim: voiceGerwim
+};
 
 const voices = reactive({
     rosetta: {
@@ -39,19 +62,14 @@ const voices = reactive({
     }
 });
 
-({ play: voices.rosetta.play, isPlaying: voices.rosetta.isPlaying } = useSound(voiceRosetta, {
-    sprite: voices.rosetta.sprite,
-    preload: true,
-    onplay: async () => { document.dispatchEvent(new CustomEvent('announcerSoundPlay')) },
-    onend: async () => { document.dispatchEvent(new CustomEvent('announcerSoundEnd')) },
-}));
-
-({ play: voices.gerwim.play, isPlaying: voices.gerwim.isPlaying } = useSound(voiceGerwim, {
-    sprite: voices.gerwim.sprite,
-    preload: true,
-    onplay: async () => { document.dispatchEvent(new CustomEvent('announcerSoundPlay')) },
-    onend: async () => { document.dispatchEvent(new CustomEvent('announcerSoundEnd')) },
-}))
+Object.keys(voices).forEach(voice => {
+    ({ play: voices[voice].play, isPlaying: voices[voice].isPlaying } = useSound(voiceFiles[voice], {
+        sprite: voices[voice].sprite,
+        preload: true,
+        onplay: async () => { document.dispatchEvent(new CustomEvent('announcerSoundPlay')) },
+        onend: async () => { document.dispatchEvent(new CustomEvent('announcerSoundEnd')) },
+    }));
+});
 
 let soundQueue = reactive([])
 watch(soundQueue, async (queue) => {
@@ -59,8 +77,8 @@ watch(soundQueue, async (queue) => {
     if (queue[0] && !Object.values(voices).some(voice => voice.isPlaying)) {
         const soundParams = soundQueue[0]
 
-        if (voices[voice.value]?.sprite[soundParams.id])
-            voices[voice.value].play(soundParams)
+        if (voices[options.value.voice?.toLowerCase()]?.sprite[soundParams.id])
+            voices[options.value.voice?.toLowerCase()].play(soundParams)
         else
             voices.rosetta.play(soundParams)
 
@@ -69,65 +87,45 @@ watch(soundQueue, async (queue) => {
 }, { deep: true })
 
 const announcementsToMake = ref([])
-watch([tmsScheduleStore, announceStart, announcePlfStart, announcePlfStartGracePeriod, announceMainShow, announceCredits, announceCreditsGracePeriod, announceEnd], ([store]) => compileListOfAnnouncements(store))
+watch([tmsScheduleStore, options], ([store]) => compileListOfAnnouncements(store), { deep: true })
 compileListOfAnnouncements(tmsScheduleStore)
 function compileListOfAnnouncements(store) {
     let array = []
-
-    // Start
-    if (announceStart.value) store.table.forEach((row) => {
-        if (row.scheduledTime) array.push({
-            announceTime: row.scheduledTime,
-            announcement: ['chime', 'start', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
-            announcementType: 'start',
-            status: 'unscheduled',
-            ...row
-        })
-    })
-
-    // Start 4DX
-    if (announcePlfStart.value) store.table.filter(row => row.AUDITORIUM?.includes('4DX')).forEach((row) => {
-        if (row.scheduledTime) array.push({
-            announceTime: new Date(row.scheduledTime.getTime() - (announcePlfStartGracePeriod.value * 60000)),
-            announcement: ['chime', 'start', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
-            status: 'unscheduled',
-            announcementType: 'start4dx',
-            ...row
-        })
-    })
-
-    // Main show
-    if (announceMainShow.value) store.table.forEach((row) => {
-        if (row.scheduledTime) array.push({
-            announceTime: row.featureTime,
-            announcement: ['chime', 'mainshow', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
-            status: 'unscheduled',
-            announcementType: 'mainshow',
-            ...row
-        })
-    })
-
-    // Credits
-    if (announceCredits.value) store.table.forEach((row) => {
-        if (row.creditsTime) array.push({
-            announceTime: new Date(row.creditsTime.getTime() - (announceCreditsGracePeriod.value * 1000)),
-            announcement: ['chime', 'credits', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
-            status: 'unscheduled',
-            announcementType: 'credits',
-            ...row
-        })
-    })
-
-    // End show
-    if (announceEnd.value) store.table.forEach((row) => {
-        if (row.scheduledTime) array.push({
-            announceTime: row.endTime,
-            announcement: ['chime', 'end', `auditorium${parseAuditorium(row.AUDITORIUM)}`],
-            status: 'unscheduled',
-            announcementType: 'end',
-            ...row
-        })
-    })
+    const announcementTypes = ['start', 'plfStart', 'mainShow', 'credits', 'end'];
+    store.table.forEach(row => {
+        if (!row.scheduledTime) return;
+        announcementTypes.forEach(type => {
+            if (!options.value[type].enabled) return;
+            let announceTime;
+            switch (type) {
+                case 'start':
+                    announceTime = row.scheduledTime;
+                    break;
+                case 'plfStart':
+                    if (!row.AUDITORIUM?.includes('4DX')) return;
+                    announceTime = new Date(row.scheduledTime.getTime() - (options.value.plfStart.minutesBeforeStartTime * 60000));
+                    break;
+                case 'mainShow':
+                    announceTime = row.featureTime;
+                    break;
+                case 'credits':
+                    announceTime = new Date(row.creditsTime.getTime() - (options.value.credits.secondsBeforeCreditsTime * 1000));
+                    break;
+                case 'end':
+                    announceTime = row.endTime;
+                    break;
+            }
+            if (announceTime) {
+                array.push({
+                    announceTime,
+                    announcement: options.value[type].announcement.map(e => e.replace('#', parseAuditorium(row.AUDITORIUM))),
+                    status: 'unscheduled',
+                    announcementType: type,
+                    ...row
+                });
+            }
+        });
+    });
 
     announcementsToMake.value.filter((a) => a.status === 'scheduled').forEach((a) => {
         const newElement = array.findIndex((b) => a.announceTime === b.announceTime && a.announcement.join() === b.announcement.join())
@@ -155,7 +153,7 @@ function scheduleAnnouncements() {
                 if (obj.status !== 'scheduled') return
                 obj.status = 'announcing'
                 obj.announcement.forEach(id => { soundQueue.push({ id }) })
-            }, obj.announceTime - Date.now())
+            }, Math.max(obj.announceTime - Date.now() - 5000, 0))
         })
 }
 
@@ -192,16 +190,17 @@ function parseAuditorium(auditorium) {
 <template>
     <main class="container dark">
         <TmsScheduleUploadSection />
-        <section>
-            <div class="flex" style="flex-wrap: wrap;">
-                <div style="flex: 50% 1 1;" v-if="tmsScheduleStore.table.length > 0">
+        <section v-if="tmsScheduleStore.table.length > 0">
+            <div class="flex" style="flex-wrap: wrap-reverse;">
+                <div style="flex: 50% 1 1;">
                     <h2>Geplande omroepen</h2>
-                    <div id="upcoming-announcements" class="flex" style="flex-direction: column; gap: 8px;">
+                    <div v-if="announcementsToMake.length > 0" id="upcoming-announcements" class="flex"
+                        style="flex-direction: column; gap: 8px;">
                         <div v-for="row in announcementsToMake" v-show="now - row.announceTime < 10000" class="film"
                             :class="{ 'announcing': row.status === 'announcing' }">
                             <div class="room">
                                 {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' :
-                                    row.AUDITORIUM.replace(/^\w+\s/, '') }}
+                                    row.AUDITORIUM.replace(/^\w+\s/, '').split(' ')[0] }}
                             </div>
                             <div class="title">{{ row.title }}</div>
                             <div class="time">
@@ -241,43 +240,95 @@ function parseAuditorium(auditorium) {
                             </div>
                         </div>
                     </div>
+                    <p v-else>Er zijn geen omroepen gepland.</p>
                 </div>
-                <div id="parameters" style="flex: 229px 1 1;">
-                    <Tabs themeColor="#ffc426">
+                <SidePanel style="flex-basis: 229px;">
+                    <Tabs>
                         <Tab value="Opties">
-                            <InputCheckbox v-model="announceStart" identifier="announceStart">
-                                'Start' omroepen
-                            </InputCheckbox>
-                            <InputCheckbox v-model="announcePlfStart" identifier="announcePlfStart"
-                                v-if="tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
-                                <span>'Start' <b v-if="announceStart">extra</b> omroepen bij 4DX</span>
-                            </InputCheckbox>
-                            <InputNumber v-model.number="announcePlfStartGracePeriod"
-                                identifier="announcePlfStartGracePeriod" min="0" max="30" unit="min"
-                                v-if="announcePlfStart && tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
-                                Voorlooptijd 'start' bij 4DX
-                                <div class="small" v-if="announceCreditsGracePeriod > 0">
-                                    De 4DX-inloop wordt {{ announcePlfStartGracePeriod }} min van tevoren omgeroepen.
-                                </div>
-                            </InputNumber>
-                            <InputCheckbox v-model="announceMainShow" identifier="announceMainShow">
-                                'Start hoofdfilm' omroepen
-                            </InputCheckbox>
-                            <InputCheckbox v-model="announceCredits" identifier="announceCredits">
-                                'Aftiteling' omroepen
-                            </InputCheckbox>
-                            <InputNumber v-model.number="announceCreditsGracePeriod"
-                                identifier="announceCreditsGracePeriod" step="15" min="0" max="240" unit="s"
-                                v-if="announceCredits">
-                                Voorlooptijd 'aftiteling'
-                                <div class="small" v-if="announceCreditsGracePeriod > 0">
-                                    De aftiteling wordt {{ announceCreditsGracePeriod }} s van tevoren omgeroepen.
-                                </div>
-                            </InputNumber>
-                            <InputCheckbox v-model="announceEnd" identifier="announceEnd">
-                                'Einde voorstelling' omroepen
-                            </InputCheckbox>
-                            <InputText v-model="voice" identifier="voice">Naam stem</InputText>
+                            <InputText v-model="options.voice" identifier="voice">Naam stem</InputText>
+                            <div v-if="warningShown" @click="warningShown = false" class="parameters-warning">
+                                <Icon fill style="--size: 48px;">warning</Icon>
+                                <p>
+                                    Het is afgeraden de rest van de opties aan te passen.<br>
+                                    <br>
+                                    De standaardinstellingen zijn samengesteld op basis van wat het beste lijkt te
+                                    werken volgens de medewerkers.<br>
+                                    <br>
+                                    Als je deze instellingen aanpast, dan hebben medewerkers mogelijk geen zekerheid
+                                    meer over wanneer een omroep afgespeeld wordt.
+                                </p>
+                            </div>
+                            <fieldset :disabled="!tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                <legend>4DX-inloop</legend>
+                                <InputCheckbox v-model="options.plfStart.enabled" identifier="announcePlfStart"
+                                    :disabled="!tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                    <span>Omroepen</span>
+                                </InputCheckbox>
+                                <InputAnnouncement v-model="options.plfStart.announcement"
+                                    identifier="announcePlfStartAnnouncement"
+                                    :disabled="!options.plfStart.enabled || !tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                    Inhoud
+                                </InputAnnouncement>
+                                <InputNumber v-model.number="options.plfStart.minutesBeforeStartTime"
+                                    identifier="announcePlfStartGracePeriod" min="0" max="30" unit="min"
+                                    :disabled="!options.plfStart.enabled || !tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                    Voorlooptijd
+                                    <small>
+                                        De omroep wordt {{ options.plfStart.minutesBeforeStartTime }} min voor de
+                                        aanvangstijd afgespeeld.
+                                    </small>
+                                </InputNumber>
+                            </fieldset>
+                            <fieldset>
+                                <legend>Start</legend>
+                                <InputCheckbox v-model="options.start.enabled" identifier="announceStart">
+                                    Omroepen
+                                </InputCheckbox>
+                                <InputAnnouncement v-model="options.start.announcement"
+                                    identifier="announceStartAnnouncement" :disabled="!options.start.enabled">
+                                    Inhoud
+                                </InputAnnouncement>
+                            </fieldset>
+                            <fieldset>
+                                <legend>Start hoofdfilm</legend>
+                                <InputCheckbox v-model="options.mainShow.enabled" identifier="announceMainShow">
+                                    Omroepen
+                                </InputCheckbox>
+                                <InputAnnouncement v-model="options.mainShow.announcement"
+                                    identifier="announceMainShowAnnouncement" :disabled="!options.mainShow.enabled">
+                                    Inhoud
+                                </InputAnnouncement>
+                            </fieldset>
+                            <fieldset>
+                                <legend>Aftiteling</legend>
+                                <InputCheckbox v-model="options.credits.enabled" identifier="announceCredits">
+                                    Omroepen
+                                </InputCheckbox>
+                                <InputAnnouncement v-model="options.credits.announcement"
+                                    identifier="announceCreditsAnnouncement" :disabled="!options.credits.enabled">
+                                    Inhoud
+                                </InputAnnouncement>
+                                <InputNumber v-model.number="options.credits.secondsBeforeCreditsTime"
+                                    identifier="announceCreditsGracePeriod" step="15" min="0" max="240" unit="s"
+                                    :disabled="!options.credits.enabled">
+                                    Voorlooptijd
+                                    <small>
+                                        De omroep wordt {{ options.credits.secondsBeforeCreditsTime }} s voor de
+                                        aftiteling
+                                        afgespeeld.
+                                    </small>
+                                </InputNumber>
+                            </fieldset>
+                            <fieldset>
+                                <legend>Einde voorstelling</legend>
+                                <InputCheckbox v-model="options.end.enabled" identifier="announceEnd">
+                                    Omroepen
+                                </InputCheckbox>
+                                <InputAnnouncement v-model="options.end.announcement"
+                                    identifier="announceEndAnnouncement" :disabled="!options.end.enabled">
+                                    Inhoud
+                                </InputAnnouncement>
+                            </fieldset>
                         </Tab>
                         <Tab value="Handmatig">
                             <div class="flex" style="flex-wrap: wrap; gap: 8px; margin-top: -4px;">
@@ -294,8 +345,12 @@ function parseAuditorium(auditorium) {
                             </div>
                         </Tab>
                     </Tabs>
-                </div>
+                </SidePanel>
             </div>
+        </section>
+        <section v-else>
+            <h2>Geplande omroepen</h2>
+            <p>Upload eerst een bestand.</p>
         </section>
     </main>
     <div class="clock">{{ now.toLocaleTimeString('nl-NL') }}</div>
@@ -340,63 +395,59 @@ h2 {
     color: #fff;
     font-size: 14px;
     overflow: hidden;
-}
 
-.film.announcing {
-    background-color: #ffffff96;
-    color: #000;
-}
+    &.announcing {
+        background-color: #ffffff96;
+        color: #000;
 
-.film .room {
-    grid-column: 1;
-    grid-row: 1 / -1;
-    padding-left: 8px;
-    padding-right: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    font-weight: 600;
-    overflow: hidden;
-}
+        .room {
+            grid-column: 1;
+            grid-row: 1 / -1;
+            padding-left: 8px;
+            padding-right: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow: hidden;
+            font: 18px/34px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+        }
 
-.film .title {
-    font-weight: 600;
-    margin-top: 6px;
-}
+        .title {
+            font-weight: 600;
+            margin-top: 6px;
+        }
 
-.film .time {
-    opacity: 0.5;
-    margin-bottom: 6px;
-}
+        .time {
+            opacity: 0.5;
+            margin-bottom: 6px;
+        }
 
-.film .chips {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    gap: 4px;
-}
+        .chips {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            gap: 4px;
+        }
 
-.film .announcement {
-    grid-column: 1 / -1;
-    grid-row: -1;
-    padding-top: 6px;
-    padding-bottom: 6px;
-    background-color: #ffffff14;
-}
+        .announcement {
+            grid-column: 1 / -1;
+            grid-row: -1;
+            padding-top: 6px;
+            padding-bottom: 6px;
+            background-color: #ffffff14;
 
-.film .announcement .word.announcing {
-    background-color: #ffc426;
-    color: #000;
-}
+            .word.announcing {
+                background-color: #ffc426;
+                color: #000;
+            }
 
-.film .announcement .icon {
-    justify-self: center;
-    opacity: 0.5;
-}
-
-#parameters .input {
-    margin-bottom: 16px;
+            .icon {
+                justify-self: center;
+                opacity: 0.5;
+            }
+        }
+    }
 }
 
 .queue>div {
@@ -408,6 +459,25 @@ h2 {
     border-radius: 5px;
     background-color: #ffffff14;
     margin-top: 6px;
+}
+
+.parameters-warning {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    padding: 16px;
+    padding-top: 22px;
+    border-radius: 5px;
+    background-color: #22222288;
+    backdrop-filter: blur(5px);
+    z-index: 10;
 }
 
 .pulsate {

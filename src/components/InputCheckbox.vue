@@ -18,9 +18,6 @@ label {
     display: flex;
     justify-content: space-between;
     gap: 16px;
-    margin-left: 8px;
-    margin-right: 8px;
-    padding-bottom: 8px;
     cursor: pointer;
     user-select: none;
 }

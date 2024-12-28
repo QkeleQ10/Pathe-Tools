@@ -22,9 +22,6 @@ label {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    margin-left: 8px;
-    margin-right: 8px;
-    padding-bottom: 8px;
     user-select: none;
 }
 
