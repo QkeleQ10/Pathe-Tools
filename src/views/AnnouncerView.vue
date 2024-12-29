@@ -399,53 +399,53 @@ h2 {
     &.announcing {
         background-color: #ffffff96;
         color: #000;
+    }
 
-        .room {
-            grid-column: 1;
-            grid-row: 1 / -1;
-            padding-left: 8px;
-            padding-right: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            overflow: hidden;
-            font: 18px/34px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    .room {
+        grid-column: 1;
+        grid-row: 1 / -1;
+        padding-left: 8px;
+        padding-right: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        overflow: hidden;
+        font: 18px/34px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    }
+
+    .title {
+        font-weight: 600;
+        margin-top: 6px;
+    }
+
+    .time {
+        opacity: 0.5;
+        margin-bottom: 6px;
+    }
+
+    .chips {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        gap: 4px;
+    }
+
+    .announcement {
+        grid-column: 1 / -1;
+        grid-row: -1;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        background-color: #ffffff14;
+
+        .word.announcing {
+            background-color: #ffc426;
+            color: #000;
         }
 
-        .title {
-            font-weight: 600;
-            margin-top: 6px;
-        }
-
-        .time {
+        .icon {
+            justify-self: center;
             opacity: 0.5;
-            margin-bottom: 6px;
-        }
-
-        .chips {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            gap: 4px;
-        }
-
-        .announcement {
-            grid-column: 1 / -1;
-            grid-row: -1;
-            padding-top: 6px;
-            padding-bottom: 6px;
-            background-color: #ffffff14;
-
-            .word.announcing {
-                background-color: #ffc426;
-                color: #000;
-            }
-
-            .icon {
-                justify-self: center;
-                opacity: 0.5;
-            }
         }
     }
 }
