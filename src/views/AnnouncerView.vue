@@ -190,7 +190,7 @@ function parseAuditorium(auditorium) {
 <template>
     <main class="container dark">
         <TmsScheduleUploadSection />
-        <section v-if="tmsScheduleStore.table.length > 0">
+        <section>
             <div class="flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex: 50% 1 1;">
                     <h2>Geplande omroepen</h2>
@@ -240,11 +240,12 @@ function parseAuditorium(auditorium) {
                             </div>
                         </div>
                     </div>
-                    <p v-else>Er zijn geen omroepen gepland.</p>
+                    <p v-else-if="tmsScheduleStore.table.length > 0">Er zijn geen omroepen gepland.</p>
+                    <p v-else>Upload eerst een bestand.</p>
                 </div>
                 <SidePanel style="flex-basis: 229px;">
                     <Tabs>
-                        <Tab value="Opties">
+                        <Tab value="Opties" v-if="tmsScheduleStore.table.length > 0">
                             <InputText v-model="options.voice" identifier="voice">Naam stem</InputText>
                             <div v-if="warningShown" @click="warningShown = false" class="parameters-warning">
                                 <Icon fill style="--size: 48px;">warning</Icon>
@@ -347,10 +348,6 @@ function parseAuditorium(auditorium) {
                     </Tabs>
                 </SidePanel>
             </div>
-        </section>
-        <section v-else>
-            <h2>Geplande omroepen</h2>
-            <p>Upload eerst een bestand.</p>
         </section>
     </main>
     <div class="clock">{{ now.toLocaleTimeString('nl-NL') }}</div>
