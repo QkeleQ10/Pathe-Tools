@@ -154,3 +154,23 @@ section {
 .v-leave-to {
     opacity: 0;
 }
+
+.list-move,
+.list-enter-active,
+.list-leave-active {
+    transition: all 200ms ease;
+}
+
+.list-enter-from {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.list-leave-to {
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+.list-leave-active {
+    position: absolute;
+}
