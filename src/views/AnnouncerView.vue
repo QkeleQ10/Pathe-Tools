@@ -2,12 +2,9 @@
 import { ref, reactive, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 
-
-// Move to separate file
 import { useSound } from '@vueuse/sound'
 import voiceRosetta from '@/assets/sounds/voices/rosetta.ogg'
 import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg'
-
 
 import { useTmsScheduleStore } from '@/stores/tmsSchedule.js'
 const tmsScheduleStore = useTmsScheduleStore()
@@ -47,17 +44,15 @@ const options = useStorage('announcer-options', {
     voice: 'Rosetta'
 })
 
-// Move to separate file
 const voiceFiles = {
     rosetta: voiceRosetta,
     gerwim: voiceGerwim
 };
 
-// Move to separate file
 const voices = reactive({
     rosetta: {
         sprite: {
-            "auditorium01": [0, 1201.6326530612246], "auditorium02": [3000, 1332.2448979591836], "auditorium03": [6000, 1332.2448979591836], "auditorium04": [9000, 1384.489795918368], "auditorium05": [12000, 1436.7346938775504], "auditorium06": [15000, 1436.7346938775504], "auditorium07": [18000, 1515.102040816327], "auditorium08": [21000, 1515.102040816327], "auditorium09": [24000, 1488.9795918367347], "auditorium10": [27000, 1306.1224489795932], "auditorium11": [30000, 1462.8571428571427], "auditorium12": [33000, 1515.1020408163233], "auditorium13": [36000, 1488.9795918367383], "auditorium14": [39000, 1488.9795918367383], "auditorium15": [42000, 1567.3469387755076], "auditorium16": [45000, 1488.9795918367383], "auditorium17": [48000, 1515.1020408163233], "auditorium18": [51000, 1462.8571428571463], "auditorium19": [54000, 1724.0816326530605], "auditorium20": [57000, 1593.4693877551], "chime": [60000, 3084.51247165533], "credits": [65000, 1501.6099773242645], "end": [68000, 1563.7868480725672], "mainshow": [71000, 1793.3333333333367], "start": [74000, 989.9092970521508]
+            "auditorium01": [0, 1201.6326530612246], "auditorium02": [3000, 1332.2448979591836], "auditorium03": [6000, 1332.2448979591836], "auditorium04": [9000, 1384.489795918368], "auditorium05": [12000, 1436.7346938775504], "auditorium06": [15000, 1436.7346938775504], "auditorium07": [18000, 1515.102040816327], "auditorium08": [21000, 1515.102040816327], "auditorium09": [24000, 1488.9795918367347], "auditorium10": [27000, 1306.1224489795932], "auditorium11": [30000, 1462.8571428571427], "auditorium12": [33000, 1515.1020408163233], "auditorium13": [36000, 1488.9795918367383], "auditorium14": [39000, 1488.9795918367383], "auditorium15": [42000, 1567.3469387755076], "auditorium16": [45000, 1488.9795918367383], "auditorium17": [48000, 1515.1020408163233], "auditorium18": [51000, 1462.8571428571463], "auditorium19": [54000, 1724.0816326530605], "auditorium20": [57000, 1593.4693877551], "chime": [60000, 3084.51247165533], "credits": [65000, 1501.6099773242645], "end": [68000, 1563.7868480725672], "mainshow": [71000, 1793.3333333333367], "preshow": [74000, 1814.036281179142], "start": [77000, 989.9092970521508]
         }
     },
     gerwim: {
@@ -67,7 +62,6 @@ const voices = reactive({
     }
 });
 
-// Move to separate file
 Object.keys(voices).forEach(voice => {
     ({ play: voices[voice].play, isPlaying: voices[voice].isPlaying } = useSound(voiceFiles[voice], {
         sprite: voices[voice].sprite,
@@ -77,7 +71,6 @@ Object.keys(voices).forEach(voice => {
     }));
 });
 
-// Move to separate file
 let soundQueue = reactive([])
 watch(soundQueue, async (queue) => {
     if (queue[0] && !voices.rosetta.sprite[queue[0].id]) soundQueue.shift()
@@ -180,7 +173,7 @@ function formatTimeLeft(timeInMs) {
 }
 
 function formatSoundName(id) {
-    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", chime: "geluidje" }
+    const soundNames = { start: "start", preshow: "start voorprogramma", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", chime: "geluidje" }
     let auditoriumMatch = id.match(/^(auditorium)([0-9]+)$/)
     if (soundNames[id]) return soundNames[id]
     else if (auditoriumMatch) return `zaal ${Number(auditoriumMatch[2])}`
@@ -226,8 +219,7 @@ function parseAuditorium(auditorium) {
                                     @dblclick="row.announcement.forEach(id => { soundQueue.push({ id, key: new Date().getTime() + id }) })"
                                     style="display: grid; grid-template-columns: 64px 130px 1fr;">
 
-                                    <Icon v-if="row.status === 'announcing'">graphic_eq</Icon>
-                                    <Icon v-else-if="row.announcementType === 'plfStart'"
+                                    <Icon v-if="row.announcementType === 'plfStart'"
                                         :class="{ pulsate: row.status === 'scheduled' }">line_start_diamond</Icon>
                                     <Icon v-else-if="row.announcementType === 'start'"
                                         :class="{ pulsate: row.status === 'scheduled' }">line_start_square</Icon>
