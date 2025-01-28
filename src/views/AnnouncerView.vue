@@ -1,17 +1,15 @@
-<script setup>
-import { ref, reactive, watch } from 'vue'
-import { useStorage } from '@vueuse/core'
-
-import { useSound } from '@vueuse/sound'
-import voiceRosetta from '@/assets/sounds/voices/rosetta.ogg'
-import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg'
+<script setup lang="ts">
+import { ref, reactive, watch } from 'vue';
+import { useStorage } from '@vueuse/core';
+import { useSound } from '@vueuse/sound';
+import { voices, getSoundInfo } from '@/voices.js';
 
 import { useTmsScheduleStore } from '@/stores/tmsSchedule.js'
 const tmsScheduleStore = useTmsScheduleStore()
 
 const warningShown = ref(true)
 
-const now = ref(() => new Date())
+const now = ref(new Date())
 setInterval(updateNowValue, 1000)
 updateNowValue()
 function updateNowValue() {
@@ -41,50 +39,59 @@ const options = useStorage('announcer-options', {
         enabled: false,
         announcement: ['chime', 'end', 'auditorium#']
     },
-    voice: 'Rosetta'
-})
+    selectedVoices: ['default']
+}, localStorage, { mergeDefaults: true })
 
-const voiceFiles = {
-    rosetta: voiceRosetta,
-    gerwim: voiceGerwim
-};
-
-const voices = reactive({
-    rosetta: {
-        sprite: {
-            "auditorium01": [0, 1201.6326530612246], "auditorium02": [3000, 1332.2448979591836], "auditorium03": [6000, 1332.2448979591836], "auditorium04": [9000, 1384.489795918368], "auditorium05": [12000, 1436.7346938775504], "auditorium06": [15000, 1436.7346938775504], "auditorium07": [18000, 1515.102040816327], "auditorium08": [21000, 1515.102040816327], "auditorium09": [24000, 1488.9795918367347], "auditorium10": [27000, 1306.1224489795932], "auditorium11": [30000, 1462.8571428571427], "auditorium12": [33000, 1515.1020408163233], "auditorium13": [36000, 1488.9795918367383], "auditorium14": [39000, 1488.9795918367383], "auditorium15": [42000, 1567.3469387755076], "auditorium16": [45000, 1488.9795918367383], "auditorium17": [48000, 1515.1020408163233], "auditorium18": [51000, 1462.8571428571463], "auditorium19": [54000, 1724.0816326530605], "auditorium20": [57000, 1593.4693877551], "chime": [60000, 3084.51247165533], "credits": [65000, 1501.6099773242645], "end": [68000, 1563.7868480725672], "mainshow": [71000, 1793.3333333333367], "preshow": [74000, 1814.036281179142], "start": [77000, 989.9092970521508]
-        }
-    },
-    gerwim: {
-        sprite: {
-            "auditorium01": [0, 824.9659863945578], "auditorium02": [2000, 870.9070294784577], "auditorium03": [4000, 790.2040816326528], "auditorium04": [6000, 886.8253968253965], "auditorium05": [8000, 838.5260770975051], "auditorium06": [10000, 866.757369614513], "auditorium07": [12000, 987.7777777777776], "auditorium08": [14000, 665.6689342403635], "credits": [16000, 936.5532879818588], "start": [18000, 638.9342403628114]
-        }
-    }
-});
-
-Object.keys(voices).forEach(voice => {
-    ({ play: voices[voice].play, isPlaying: voices[voice].isPlaying } = useSound(voiceFiles[voice], {
-        sprite: voices[voice].sprite,
+const howls = reactive({});
+Object.entries(voices).forEach(([voice, { file, sprite }]) => {
+    howls[voice] = useSound(file, {
+        sprite,
         preload: true,
-        onplay: async () => { document.dispatchEvent(new CustomEvent('announcerSoundPlay')) },
-        onend: async () => { document.dispatchEvent(new CustomEvent('announcerSoundEnd')) },
-    }));
+        onplay: () => document.dispatchEvent(new CustomEvent('announcerSoundPlay')),
+        onend: () => document.dispatchEvent(new CustomEvent('announcerSoundEnd')),
+    });
 });
 
 let soundQueue = reactive([])
-watch(soundQueue, async (queue) => {
-    if (queue[0] && !voices.rosetta.sprite[queue[0].id]) soundQueue.shift()
-    if (queue[0] && !Object.values(voices).some(voice => voice.isPlaying)) {
-        const soundParams = soundQueue[0]
+watch(soundQueue, async () => {
+    if (Object.values(howls).some((howl: any) => howl.isPlaying)) return;
 
-        if (voices[options.value.voice?.toLowerCase()]?.sprite[soundParams.id])
-            voices[options.value.voice?.toLowerCase()].play(soundParams)
-        else
-            voices.rosetta.play(soundParams)
+    let selectedVoice = options.value.selectedVoices[Math.floor(Math.random() * options.value.selectedVoices.length)];
 
-        document.addEventListener('announcerSoundEnd', () => { soundQueue.shift() }, { once: true })
+    while (soundQueue.length > 0) {
+        const firstSound = soundQueue[0];
+
+        selectedVoice = playSound(selectedVoice, firstSound);
+
+        await new Promise(resolve => document.addEventListener('announcerSoundEnd', resolve, { once: true }))
+        soundQueue.shift()
     }
 }, { deep: true })
+
+function playSound(preferredVoice, sound) {
+    if (voices[preferredVoice]?.sprite[sound.id]) {
+        howls[preferredVoice].play(sound)
+        return preferredVoice;
+    }
+
+    for (const voice of options.value.selectedVoices) {
+        if (voices[voice]?.sprite[sound.id]) {
+            howls[voice].play(sound)
+            return voice;
+        }
+    }
+
+    for (const voice in voices) {
+        console.log(voice)
+        if (voices[voice]?.sprite[sound.id]) {
+            howls[voice].play(sound);
+            return voice;
+        }
+    }
+
+    soundQueue.shift();
+    return null;
+}
 
 const announcementsToMake = ref([])
 watch([tmsScheduleStore, options], ([store]) => compileListOfAnnouncements(store), { deep: true })
@@ -172,14 +179,6 @@ function formatTimeLeft(timeInMs) {
     }
 }
 
-function formatSoundName(id) {
-    const soundNames = { start: "start", preshow: "start voorprogramma", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", chime: "geluidje" }
-    let auditoriumMatch = id.match(/^(auditorium)([0-9]+)$/)
-    if (soundNames[id]) return soundNames[id]
-    else if (auditoriumMatch) return `zaal ${Number(auditoriumMatch[2])}`
-    else return id
-}
-
 function sentenceCase(string) {
     return string.charAt(0).toUpperCase() + string.slice(1)
 }
@@ -199,8 +198,8 @@ function parseAuditorium(auditorium) {
                     <h2>Geplande omroepen</h2>
                     <div id="upcoming-announcements">
                         <TransitionGroup name="list">
-                            <div v-for="row in announcementsToMake" v-show="now - row.announceTime < 10000" class="film"
-                                :key="row.key" :class="{ 'announcing': row.status === 'announcing' }">
+                            <div v-for="row in announcementsToMake" v-show="now.getTime() - row.announceTime < 10000"
+                                class="film" :key="row.key" :class="{ 'announcing': row.status === 'announcing' }">
                                 <div class="room">
                                     {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' :
                                         row.AUDITORIUM.replace(/^\w+\s/, '').split(' ')[0] }}
@@ -232,17 +231,17 @@ function parseAuditorium(auditorium) {
                                     <Icon v-else>schedule</Icon>
                                     <div>
                                         {{ row.announceTime.toLocaleTimeString('nl-NL') }}
-                                        ({{ formatTimeLeft(row.announceTime - now) }})
+                                        ({{ formatTimeLeft(row.announceTime - now.getTime()) }})
                                     </div>
                                     <div :style="{ opacity: row.status === 'announcing' ? 1 : 0.35 }">
                                         '<span v-for="(id, i) in row.announcement" v-show="id !== 'chime'" class="word"
                                             :class="{ announcing: row.announceTime <= now && soundQueue[0]?.id === id }">
-                                            {{ formatSoundName(id) }}{{ i < row.announcement.length - 1 ? '&nbsp;' : ''
-                                                }} </span>'
+                                            {{ getSoundInfo(id).name }}{{ i < row.announcement.length - 1 ? '&nbsp;'
+                                                : '' }} </span>'
                                     </div>
                                 </div>
                             </div>
-                            <p v-if="announcementsToMake.filter(row => now - row.announceTime < 10000).length < 1"
+                            <p v-if="announcementsToMake.filter(row => now.getTime() - row.announceTime < 10000).length < 1"
                                 key="0">Er zijn geen omroepen gepland.</p>
                             <p v-if="tmsScheduleStore.table.length < 1">Upload eerst een bestand.</p>
                         </TransitionGroup>
@@ -251,26 +250,27 @@ function parseAuditorium(auditorium) {
 
                 <SidePanel style="flex-basis: 229px;">
                     <Tabs>
-                        <Tab value="Stem">
+                        <Tab value="Opties">
                             <fieldset>
-                                <legend>Stem</legend>
-                                <InputText v-model="options.voice" identifier="voice">Naam stem</InputText>
+                                <legend>Stemmen</legend>
+                                <VoicesSelector v-model="options.selectedVoices" />
                             </fieldset>
 
-                            <fieldset>
+                            <fieldset style="position: relative;">
                                 <legend>Handmatig afspelen</legend>
-                                <div class="manual-sounds-list">
-                                    <ButtonText
-                                        v-for="id of Object.keys(voices.rosetta.sprite).filter(id => !id.startsWith('auditorium'))"
+                                <div class="manual-sounds-list" v-for="ids in [
+                                    voices.default.sounds.filter(id => !id.startsWith('auditorium')),
+                                    voices.default.sounds.filter(id => id.startsWith('auditorium')),
+                                    ...options.selectedVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
+                                ]" v-show="ids?.length > 0">
+                                    <ButtonText v-for="id of ids"
                                         @click="soundQueue.push({ id, key: new Date().getTime() + id })">
-                                        {{ formatSoundName(id) }}
-                                    </ButtonText>
-                                </div>
-                                <div class="manual-sounds-list">
-                                    <ButtonText
-                                        v-for="id of Object.keys(voices.rosetta.sprite).filter(id => id.startsWith('auditorium'))"
-                                        @click="soundQueue.push({ id, key: new Date().getTime() + id })">
-                                        {{ formatSoundName(id) }}
+                                        <Icon v-if="id === 'chime'" :fill="true"
+                                            style="--size: 14px; vertical-align: middle;">
+                                            music_note</Icon>
+                                        <span v-else>
+                                            {{ getSoundInfo(id).name }}
+                                        </span>
                                     </ButtonText>
                                 </div>
                             </fieldset>
@@ -282,7 +282,7 @@ function parseAuditorium(auditorium) {
                                         <div v-for="(element, i) in soundQueue" @click="soundQueue.splice(i, 1)"
                                             :key="element.key" :class="{ 'announcing': i === 0 }">
                                             <Icon :fill="true">graphic_eq</Icon>
-                                            {{ sentenceCase(formatSoundName(element.id, true)) }}
+                                            {{ sentenceCase(getSoundInfo(element.id).name) }}
                                         </div>
                                         <p v-if="soundQueue.length < 1" key="0">Er wordt momenteel geen omroep
                                             afgespeeld.</p>
@@ -290,7 +290,7 @@ function parseAuditorium(auditorium) {
                                 </div>
                             </fieldset>
                         </Tab>
-                        <Tab value="Omroep" v-if="tmsScheduleStore.table.length > 0">
+                        <Tab value="Geavanceerd">
                             <div v-if="warningShown" @click="warningShown = false" class="parameters-warning">
                                 <Icon fill style="--size: 48px;">warning</Icon>
                                 <p>
@@ -303,20 +303,18 @@ function parseAuditorium(auditorium) {
                                     meer over wanneer een omroep afgespeeld wordt.
                                 </p>
                             </div>
-                            <fieldset :disabled="!tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                            <fieldset>
                                 <legend>4DX-inloop</legend>
-                                <InputCheckbox v-model="options.plfStart.enabled" identifier="announcePlfStart"
-                                    :disabled="!tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                <InputCheckbox v-model="options.plfStart.enabled" identifier="announcePlfStart">
                                     <span>Omroepen</span>
                                 </InputCheckbox>
                                 <InputAnnouncement v-model="options.plfStart.announcement"
-                                    identifier="announcePlfStartAnnouncement"
-                                    :disabled="!options.plfStart.enabled || !tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                    identifier="announcePlfStartAnnouncement" :disabled="!options.plfStart.enabled">
                                     Inhoud
                                 </InputAnnouncement>
                                 <InputNumber v-model.number="options.plfStart.minutesBeforeStartTime"
                                     identifier="announcePlfStartGracePeriod" min="0" max="30" unit="min"
-                                    :disabled="!options.plfStart.enabled || !tmsScheduleStore.table.some(row => row.AUDITORIUM?.includes('4DX'))">
+                                    :disabled="!options.plfStart.enabled">
                                     Voorlooptijd
                                     <small>
                                         De omroep wordt {{ options.plfStart.minutesBeforeStartTime }} min voor de
@@ -532,7 +530,7 @@ h2 {
     }
 
     &+& {
-        margin-top: -14px;
+        margin-top: -10px;
     }
 }
 

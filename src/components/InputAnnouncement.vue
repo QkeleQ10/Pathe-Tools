@@ -1,21 +1,13 @@
 <script setup>
 import { ref } from 'vue';
 import { useFocus } from '@vueuse/core';
+import { getSoundInfo } from '@/voices.js'
 
 const props = defineProps(['identifier'])
 const model = defineModel()
 
 const inputElement = ref(null)
 const { focused } = useFocus(inputElement)
-
-function getSoundInfo(id) {
-    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", chime: "geluidje" }
-    let auditoriumMatch = id.match(/^(auditorium)([0-9]+|(#))$/)
-    if (soundNames[id]) return { name: soundNames[id], valid: true }
-    else if (auditoriumMatch && auditoriumMatch[2] === '#') return { name: 'zaal #', valid: true }
-    else if (auditoriumMatch) return { name: `zaal ${Number(auditoriumMatch[2])}`, valid: true }
-    else return { name: id, valid: false }
-}
 </script>
 
 <template>
@@ -27,9 +19,15 @@ function getSoundInfo(id) {
             <input ref="inputElement" type="text" inputmode="numeric" pattern="[0-9]+" name="" :id="identifier"
                 :value="model.join(' ')" @input="$emit('update:modelValue', $event.target.value.split(' '))">
             <div v-show="!focused" class="words">
-                <div v-for="word in model" class="word" :class="{ valid: getSoundInfo(word).valid }">
-                    <Icon v-if="word === 'chime'" :fill="true" style="--size: 14px;">music_note</Icon>
-                    <span v-else>{{ getSoundInfo(word).name }}</span>
+                <div v-for="soundInfo in model.map(getSoundInfo)" class="word"
+                    :class="{ valid: soundInfo.valid, chance: soundInfo.probability < 1 }">
+                    <span v-for="(split, i) in soundInfo.id.split('|')">
+                        <Icon v-if="split === 'chime'" :fill="true" style="--size: 14px; vertical-align: middle;">
+                            music_note</Icon>
+                        <span v-else>
+                            {{ soundInfo.name.split('|')[i] }}
+                        </span>
+                    </span>
                 </div>
             </div>
         </div>
@@ -97,7 +95,7 @@ input:focus-visible {
 .words>.word {
     flex-shrink: 0;
     display: flex;
-    align-items: center;
+    align-items: stretch;
     height: 22px;
     padding-inline: 6px;
     border-radius: 4px;
@@ -108,14 +106,33 @@ input:focus-visible {
         color: #000;
     }
 
+    &.chance {
+        opacity: 0.5;
+    }
+
     &:not(.valid) {
         background-color: #f0f0f0;
         color: #6d6e71;
     }
 
-    &:has(.icon) {
+    &:has(span:only-child>.icon) {
         padding: 0;
         background-color: transparent;
+    }
+
+    &>span {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+    }
+
+    &>span:not(:only-child):not(:last-child) {
+        padding-right: 4px;
+    }
+
+    &>span+span {
+        border-left: 2px solid #fff;
+        padding-left: 4px;
     }
 }
 </style>
