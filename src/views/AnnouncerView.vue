@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue';
 import { useStorage } from '@vueuse/core';
-import { useSound } from '@vueuse/sound';
-import { voices, getSoundInfo } from '@/voices.js';
+import { HowlStatic, useSound } from '@vueuse/sound';
+import { voices, getSoundInfo } from '@/voices.ts';
 
-import { useTmsScheduleStore } from '@/stores/tmsSchedule.js'
+import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 const tmsScheduleStore = useTmsScheduleStore()
 
 const warningShown = ref(true)
@@ -39,6 +39,10 @@ const options = useStorage('announcer-options', {
         enabled: false,
         announcement: ['chime', 'end', 'auditorium#']
     },
+    finalMainShowStart: {
+        enabled: false,
+        announcement: ['chime', 'finalshow']
+    },
     selectedVoices: ['default']
 }, localStorage, { mergeDefaults: true })
 
@@ -52,23 +56,26 @@ Object.entries(voices).forEach(([voice, { file, sprite }]) => {
     });
 });
 
-let soundQueue = reactive([])
+let soundQueue = reactive<{ id: string; key?: string }[]>([]);
 watch(soundQueue, async () => {
     if (Object.values(howls).some((howl: any) => howl.isPlaying)) return;
 
-    let selectedVoice = options.value.selectedVoices[Math.floor(Math.random() * options.value.selectedVoices.length)];
+    let currentVoice = options.value.selectedVoices[Math.floor(Math.random() * options.value.selectedVoices.length)]; // Randomize voice
 
     while (soundQueue.length > 0) {
-        const firstSound = soundQueue[0];
+        if (soundQueue[0].id === 'chime') {
+            currentVoice = options.value.selectedVoices[Math.floor(Math.random() * options.value.selectedVoices.length)]; // Randomize voice when a chime is played
+        }
 
-        selectedVoice = playSound(selectedVoice, firstSound);
+        let usedVoice = playSound(currentVoice, soundQueue[0]);
+        if (options.value.selectedVoices.includes(usedVoice)) currentVoice = usedVoice;
 
         await new Promise(resolve => document.addEventListener('announcerSoundEnd', resolve, { once: true }))
         soundQueue.shift()
     }
 }, { deep: true })
 
-function playSound(preferredVoice, sound) {
+function playSound(preferredVoice: string, sound: { id: string }) {
     if (voices[preferredVoice]?.sprite[sound.id]) {
         howls[preferredVoice].play(sound)
         return preferredVoice;
@@ -98,8 +105,8 @@ watch([tmsScheduleStore, options], ([store]) => compileListOfAnnouncements(store
 compileListOfAnnouncements(tmsScheduleStore)
 function compileListOfAnnouncements(store) {
     let array = []
-    const announcementTypes = ['start', 'plfStart', 'mainShow', 'credits', 'end'];
-    store.table.forEach(row => {
+    const announcementTypes = ['start', 'plfStart', 'mainShow', 'credits', 'end', 'finalMainShowStart'];
+    store.table.forEach((row: any, i: number) => {
         if (!row.scheduledTime) return;
         announcementTypes.forEach(type => {
             if (!options.value[type].enabled) return;
@@ -122,6 +129,10 @@ function compileListOfAnnouncements(store) {
                     break;
                 case 'end':
                     announceTime = row.endTime;
+                    break;
+                case 'finalMainShowStart':
+                    if (i !== store.table.length - 1) return;
+                    announceTime = row.featureTime;
                     break;
             }
             if (announceTime) {
@@ -162,12 +173,12 @@ function scheduleAnnouncements() {
             setTimeout(() => {
                 if (obj.status !== 'scheduled') return
                 obj.status = 'announcing'
-                obj.announcement.forEach(id => { soundQueue.push({ id, key: new Date().getTime() + id }) })
+                obj.announcement.forEach((id: string) => { soundQueue.push({ id, key: new Date().getTime() + id }) })
             }, Math.max(obj.announceTime - Date.now() - 5000, 0))
         })
 }
 
-function formatTimeLeft(timeInMs) {
+function formatTimeLeft(timeInMs: number) {
     if (timeInMs < 60000) {
         return Math.floor(timeInMs / 1000) + ' s'
     } else if (timeInMs < 600000) {
@@ -179,12 +190,12 @@ function formatTimeLeft(timeInMs) {
     }
 }
 
-function sentenceCase(string) {
+function sentenceCase(string: string) {
     return string.charAt(0).toUpperCase() + string.slice(1)
 }
 
-function parseAuditorium(auditorium) {
-    if (auditorium?.toLowerCase().includes('rooftop')) return '08'
+function parseAuditorium(auditorium: string) {
+    if (auditorium?.toLowerCase().includes('rooftop')) return '10'
     else return String(auditorium?.match(/\d+/)).padStart(2, '0')
 }
 </script>
@@ -264,7 +275,8 @@ function parseAuditorium(auditorium) {
                                     ...options.selectedVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
                                 ]" v-show="ids?.length > 0">
                                     <ButtonText v-for="id of ids"
-                                        @click="soundQueue.push({ id, key: new Date().getTime() + id })">
+                                        @click="soundQueue.push({ id, key: new Date().getTime() + id })"
+                                        :class="{ translucent: id !== 'chime' && !options.selectedVoices.some(e => voices[e].sounds.includes(id)) }">
                                         <Icon v-if="id === 'chime'" :fill="true"
                                             style="--size: 14px; vertical-align: middle;">
                                             music_note</Icon>
@@ -369,6 +381,18 @@ function parseAuditorium(auditorium) {
                                 </InputCheckbox>
                                 <InputAnnouncement v-model="options.end.announcement"
                                     identifier="announceEndAnnouncement" :disabled="!options.end.enabled">
+                                    Inhoud
+                                </InputAnnouncement>
+                            </fieldset>
+                            <fieldset>
+                                <legend>Start laatste hoofdfilm</legend>
+                                <InputCheckbox v-model="options.finalMainShowStart.enabled"
+                                    identifier="announceFinalShow">
+                                    Omroepen
+                                </InputCheckbox>
+                                <InputAnnouncement v-model="options.finalMainShowStart.announcement"
+                                    identifier="announceFinalShowAnnouncement"
+                                    :disabled="!options.finalMainShowStart.enabled">
                                     Inhoud
                                 </InputAnnouncement>
                             </fieldset>

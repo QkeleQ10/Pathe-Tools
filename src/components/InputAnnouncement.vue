@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useFocus } from '@vueuse/core';
-import { getSoundInfo } from '@/voices.js'
+import { getSoundInfo } from '@/voices.ts'
 
 const props = defineProps(['identifier'])
 const model = defineModel()
@@ -20,7 +20,7 @@ const { focused } = useFocus(inputElement)
                 :value="model.join(' ')" @input="$emit('update:modelValue', $event.target.value.split(' '))">
             <div v-show="!focused" class="words">
                 <div v-for="soundInfo in model.map(getSoundInfo)" class="word"
-                    :class="{ valid: soundInfo.valid, chance: soundInfo.probability < 1 }">
+                    :class="{ valid: soundInfo.valid, translucent: soundInfo.probability < 1 }">
                     <span v-for="(split, i) in soundInfo.id.split('|')">
                         <Icon v-if="split === 'chime'" :fill="true" style="--size: 14px; vertical-align: middle;">
                             music_note</Icon>
@@ -104,10 +104,6 @@ input:focus-visible {
     &.valid {
         background-color: #ffc426;
         color: #000;
-    }
-
-    &.chance {
-        opacity: 0.5;
     }
 
     &:not(.valid) {

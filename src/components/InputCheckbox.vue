@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 const props = defineProps(['identifier'])
 const model = defineModel()
 </script>

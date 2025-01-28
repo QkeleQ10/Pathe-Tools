@@ -1,9 +1,3 @@
-<template>
-    <div v-if="isActive">
-        <slot></slot>
-    </div>
-</template>
-
 <script setup>
 import { inject, onMounted, watch } from 'vue';
 import { ref } from 'vue';
@@ -35,3 +29,9 @@ div {
     position: relative;
 }
 </style>
+
+<template>
+    <div v-if="isActive">
+        <slot></slot>
+    </div>
+</template>

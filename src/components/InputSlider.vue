@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 const props = defineProps(['min', 'max', 'step', 'unit', 'identifier'])
 const model = defineModel()
 </script>
@@ -9,7 +9,7 @@ const model = defineModel()
             <slot></slot>
         </div>
         <div class="indicator"
-            :style="{ '--normalised-position': (model - Number(min)) / (Number(max) - Number(min)) }">
+            :style="{ '--normalised-position': (Number(model) - Number(min)) / (Number(max) - Number(min)) }">
             {{ model + (unit ? ` ${unit}` : '') }}
         </div>
         <input type="range" name="" :id="identifier" v-model="model" :min="min" :max="max" :step="step">

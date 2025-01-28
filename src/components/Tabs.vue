@@ -1,18 +1,4 @@
-<template>
-    <div>
-        <div class="tabs">
-            <button v-for="tab in tabs" :key="tab.value" :class="{ active: tab.value === activeTab }"
-                @click="selectTab(tab.value)">
-                {{ tab.label }}
-            </button>
-        </div>
-        <div class="tab-content">
-            <slot :activeTab="activeTab"></slot>
-        </div>
-    </div>
-</template>
-
-<script setup>
+<script setup lang="ts">
 import { ref, provide, onMounted } from 'vue';
 
 const tabs = ref([]);
@@ -32,6 +18,20 @@ onMounted(() => {
     }
 });
 </script>
+
+<template>
+    <div>
+        <div class="tabs">
+            <button v-for="tab in tabs" :key="tab.value" :class="{ active: tab.value === activeTab }"
+                @click="selectTab(tab.value)">
+                {{ tab.label }}
+            </button>
+        </div>
+        <div class="tab-content">
+            <slot :activeTab="activeTab"></slot>
+        </div>
+    </div>
+</template>
 
 <style scoped>
 .tabs {

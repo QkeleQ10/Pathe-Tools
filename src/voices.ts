@@ -5,9 +5,9 @@ import voiceJaron from '@/assets/sounds/voices/jaron.ogg';
 export class Voice {
     name: string;
     language: string;
-    file: string;
+    file: any;
     sprite: { [key: string]: [number, number] };
-    constructor(voice) {
+    constructor(voice: { name: string; language: string; file: any; sprite: { [key: string]: [number, number] }; }) {
         this.name = voice.name;
         this.language = voice.language;
         this.file = voice.file;
@@ -51,7 +51,7 @@ export const voices = {
 };
 
 export function getSoundInfo(string) {
-    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", chime: "geluidje" };
+    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime: "geluidje" };
 
     string = string.toLowerCase().trim();
     let id = string.replace(/\?+/g, '');

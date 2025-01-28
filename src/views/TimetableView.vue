@@ -1,9 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { useVueToPrint } from "vue-to-print"
 
-import { useTmsScheduleStore } from '@/stores/tmsSchedule.js'
+import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 
 const columns = {
     mainTime: {
@@ -24,10 +24,6 @@ const columns = {
 }
 const optionalColumns = Object.fromEntries(Object.entries(columns).filter(([key, value]) => value.optional))
 
-const customContent = useStorage('custom-content', {
-    text1: '',
-    text2: ''
-})
 const splitExtra = ref(true)
 const optionalColumnsSetting = useStorage('optional-columns', {
     mainTime: false,
@@ -50,12 +46,12 @@ const editSection = ref(null)
 const showMenu = ref(false)
 const menuX = ref(0)
 const menuY = ref(0)
-const targetRow = ref({})
+const targetRow = ref<any>({})
 const targetI = ref(0)
 
-const showContextMenu = (event, row, i) => {
-    event.preventDefault()
-    document.activeElement.blur()
+function showContextMenu(event: MouseEvent, row: object, i: number) {
+    event.preventDefault();
+    (document.activeElement as HTMLElement).blur()
     showMenu.value = true
     targetRow.value = row
     targetI.value = i
@@ -63,7 +59,7 @@ const showContextMenu = (event, row, i) => {
     menuY.value = event.clientY
 }
 
-const closeContextMenu = () => {
+function closeContextMenu() {
     nextTick(() => showMenu.value = false)
 }
 
@@ -84,7 +80,7 @@ const transformedTable = computed(() => {
     })
 
     transformedTable.filter(testRow => testRow.AUDITORIUM?.includes('4DX')).slice(1).forEach(plfRow => {
-        let index
+        let index: number
         for (let i = 0; i < transformedTable.length; i++) {
             const row = transformedTable[i]
             let difference = getTimeDifferenceInMs(plfRow.SCHEDULED_TIME, row.CREDITS_TIME)
@@ -99,24 +95,23 @@ const transformedTable = computed(() => {
     return transformedTable || []
 })
 
-function parseTime(timeStr) {
-    const [hours, minutes, seconds] = timeStr.split(':').map(Number)
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds)
+function parseTime(timeStr: string): Date {
+    const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds || 0);
 }
 
-function getTimeDifferenceInMs(time1, time2) {
+function getTimeDifferenceInMs(time1: string, time2: string): number {
+    if (!time1 || !time2) return undefined;
 
-    if (!time1 || !time2) return
+    const date1 = parseTime(time1);
+    const date2 = parseTime(time2);
 
-    const date1 = parseTime(time1)
-    const date2 = parseTime(time2)
+    const difference1 = date2.getTime() - date1.getTime();
 
-    const difference1 = date2 - date1
+    date2.setDate(date2.getDate() + 1);
 
-    date2.setDate(date2.getDate() + 1)
-
-    const difference2 = date2 - date1
+    const difference2 = date2.getTime() - date1.getTime();
 
     return Math.abs(difference1) < Math.abs(difference2) ? difference1 : difference2;
 }
@@ -241,25 +236,6 @@ const { handlePrint } = useVueToPrint({
                         </div>
                         <div class="page">
                             <div class="custom-content" contenteditable>
-                                <!-- <table spellcheck="false">
-                                    <tbody>
-                                        <tr>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                        </tr>
-                                        <tr>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                        </tr>
-                                        <tr>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                        </tr>
-                                    </tbody>
-                                </table> -->
                             </div>
                         </div>
                     </div>

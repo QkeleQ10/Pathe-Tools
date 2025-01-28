@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
@@ -12,9 +12,9 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         const arr = text.split('\n')
 
         let jsonObj = []
-        const headers = arr[0].splitCsv()
+        const headers = splitCsv(arr[0])
         for (var i = 0; i < arr.length; i++) {
-            const data = arr[i].splitCsv()
+            const data = splitCsv(arr[i])
             let obj = {}
             for (let j = 0; j < data.length; j++) {
                 obj[headers[j]?.trim()] = data[j]?.trim()
@@ -40,9 +40,9 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     return { table, metadata, addFiles }
 })
 
-String.prototype.splitCsv = function () {
+function splitCsv(str: string): string[] {
     let tokens = [], token = '', insideQuotes = false
-    for (let c of this) {
+    for (let c of str) {
         if (c === '"') insideQuotes = !insideQuotes
         else if (c === ',' && !insideQuotes) tokens.push(token.trim()), token = ''
         else token += c

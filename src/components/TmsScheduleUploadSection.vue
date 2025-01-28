@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { useTmsScheduleStore } from '@/stores/tmsSchedule.js'
+import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 
 const tmsScheduleStore = useTmsScheduleStore()
 
