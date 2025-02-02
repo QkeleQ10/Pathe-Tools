@@ -1,5 +1,5 @@
-<script setup>
-import { RouterLink, RouterView } from 'vue-router'
+<script setup lang="ts">
+import { RouterLink, RouterView } from 'vue-router';
 </script>
 
 <template>
@@ -81,7 +81,7 @@ nav a.router-link-active {
     color: #151515;
 }
 
-nav>a:not(:first-of-type):before {
+nav > a:not(:first-of-type):before {
     border-left: 1px solid #f2b000;
     content: "";
     display: inline-block;

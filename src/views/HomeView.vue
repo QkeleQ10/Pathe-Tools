@@ -1,13 +1,13 @@
-<script setup>
-import { RouterLink } from 'vue-router'
+<script setup lang="ts">
+import { RouterLink } from 'vue-router';
 
-import ButtonPrimary from '@/components/ButtonPrimary.vue'
+import ButtonPrimary from '@/components/ButtonPrimary.vue';
 </script>
 
 <template>
     <main class="container dark">
         <section class="flex">
-            <div style="flex: 50%">
+            <div style="flex: 50%;">
                 <h2>Voor theaters</h2>
                 <br>
                 <div class="flex">
@@ -19,7 +19,7 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue'
                     </RouterLink>
                 </div>
             </div>
-            <div style="flex: 50%">
+            <div style="flex: 50%;">
                 <h2>Voor POC</h2>
                 <br>
                 <div class="flex">

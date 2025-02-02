@@ -2,7 +2,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 
-import { useTmsXmlStore } from '@/stores/tmsXml.js'
+import { useTmsXmlStore } from '@/stores/tmsXml'
 import SidePanel from '@/components/SidePanel.vue';
 const tmsXmlStore = useTmsXmlStore()
 

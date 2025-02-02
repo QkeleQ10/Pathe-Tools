@@ -1,11 +1,11 @@
-<script setup>
-defineProps({
-    fill: Boolean
-})
+<script setup lang="ts">
+const props = defineProps<{
+    fill?: boolean;
+}>();
 </script>
 
 <template>
-    <span aria-hidden="true" class="icon material-symbols-outlined" :class="fill ? 'fill' : ''">
+    <span aria-hidden="true" class="icon material-symbols-outlined" :class="props.fill ? 'fill' : ''">
         <slot></slot>
     </span>
 </template>

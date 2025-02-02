@@ -18,7 +18,6 @@ declare module 'vue' {
     InputNumber: typeof import('./src/components/InputNumber.vue')['default']
     InputSlider: typeof import('./src/components/InputSlider.vue')['default']
     InputText: typeof import('./src/components/InputText.vue')['default']
-    InputVoiceSelector: typeof import('./src/components/InputVoiceSelector.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SidePanel: typeof import('./src/components/SidePanel.vue')['default']

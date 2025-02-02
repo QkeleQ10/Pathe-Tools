@@ -1,6 +1,13 @@
 <script setup lang="ts">
-const props = defineProps(['min', 'max', 'step', 'unit', 'identifier'])
-const model = defineModel()
+const props = defineProps<{
+    min: number;
+    max: number;
+    step: number;
+    unit?: string;
+    identifier: string;
+}>();
+
+const model = defineModel<number>();
 </script>
 
 <template>
@@ -12,7 +19,7 @@ const model = defineModel()
             :style="{ '--normalised-position': (Number(model) - Number(min)) / (Number(max) - Number(min)) }">
             {{ model + (unit ? ` ${unit}` : '') }}
         </div>
-        <input type="range" name="" :id="identifier" v-model="model" :min="min" :max="max" :step="step">
+        <input type="range" :id="identifier" v-model="model" :min="min" :max="max" :step="step" />
     </label>
 </template>
 
@@ -38,7 +45,6 @@ label {
     padding: 6px;
     background-color: #fff;
     color: #000;
-
     left: calc(var(--normalised-position) * 100%);
     bottom: -28px;
     transform: translateX(-50%);
@@ -51,21 +57,21 @@ label:hover .indicator {
     opacity: 1;
 }
 
-input[type="range"] {
+input[type='range'] {
     appearance: none;
     background: transparent;
     cursor: pointer;
     width: 100%;
 }
 
-input[type="range"]::-webkit-slider-runnable-track {
+input[type='range']::-webkit-slider-runnable-track {
     background-color: #ffc426;
     background-image: linear-gradient(to bottom, #f7da66, #ffc426);
     height: 6px;
     border-radius: 3px;
 }
 
-input[type="range"]::-webkit-slider-thumb {
+input[type='range']::-webkit-slider-thumb {
     appearance: none;
     margin-top: -5px;
     background-color: #ffc426;

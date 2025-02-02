@@ -168,7 +168,6 @@ section {
 
 .list-leave-to {
     opacity: 0;
-    transform: translateX(20px);
 }
 
 .list-leave-active {

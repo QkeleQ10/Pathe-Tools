@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const props = defineProps<{ unit?: string, identifier: string, disabled?: boolean }>()
-const model = defineModel()
+const props = defineProps<{ unit?: string; identifier: string; disabled?: boolean }>();
+const model = defineModel<number>();
 </script>
 
 <template>
@@ -9,7 +9,7 @@ const model = defineModel()
             <slot></slot>
         </div>
         <div class="input" :class="{ 'has-unit': !!unit }">
-            <input type="number" inputmode="numeric" pattern="[0-9]+" name="" :id="identifier"
+            <input type="number" inputmode="numeric" pattern="[0-9]+" :id="identifier"
                 :disabled="disabled" v-model.number="model">
             <span class="unit" v-if="unit">{{ unit }}</span>
         </div>

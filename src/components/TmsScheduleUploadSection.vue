@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 
@@ -14,14 +14,14 @@ const fileInput = ref(null)
 			@click="fileInput.click()" style="cursor: pointer;">
 			<div>
 				<div v-if="dropZoneActive">Laat los om te uploaden</div>
-				<div v-else-if="tmsScheduleStore.metadata.name">{{ tmsScheduleStore.metadata.name }}</div>
+				<div v-else-if="'name' in tmsScheduleStore.metadata">{{ tmsScheduleStore.metadata.name }}</div>
 				<div v-else>Sleep een bestand hierheen</div>
 				<div class="small">CSV-bestand uit RosettaBridge (met optie 'times only')</div>
 			</div>
 			<ButtonPrimary :data-active="dropZoneActive">Bladeren...</ButtonPrimary>
 		</DropZone>
 		<input type="file" ref="fileInput" accept="text/csv,.csv" style="display: none"
-			@change="tmsScheduleStore.addFiles($event.target.files)" />
+			@change="tmsScheduleStore.addFiles(($event.target as HTMLInputElement).files)" />
 	</section>
 </template>
 

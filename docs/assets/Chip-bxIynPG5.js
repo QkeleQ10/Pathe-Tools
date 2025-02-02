@@ -1,1 +1,0 @@
-import{x as n,o,c as t,a as c}from"./index-DGGmfViN.js";const r={};function s(e,_){return o(),t("div",null,[c(e.$slots,"default",{},void 0,!0)])}const d=n(r,[["render",s],["__scopeId","data-v-4b0e63f2"]]);export{d as _};

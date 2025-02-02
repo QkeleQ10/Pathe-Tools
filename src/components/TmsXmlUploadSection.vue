@@ -1,6 +1,6 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
-import { useTmsXmlStore } from '@/stores/tmsXml.js'
+import { useTmsXmlStore } from '@/stores/tmsXml'
 
 const tmsXmlStore = useTmsXmlStore()
 
@@ -14,14 +14,14 @@ const fileInput = ref(null)
 			@click="fileInput.click()" style="cursor: pointer;">
 			<div>
 				<div v-if="dropZoneActive">Laat los om te uploaden</div>
-				<div v-else-if="tmsXmlStore.metadata.name">{{ tmsXmlStore.metadata.name }}</div>
+				<div v-else-if="'name' in tmsXmlStore.metadata">{{ tmsXmlStore.metadata.name }}</div>
 				<div v-else>Sleep een bestand hierheen</div>
 				<div class="small">XML-bestand uit RosettaBridge</div>
 			</div>
 			<ButtonPrimary :data-active="dropZoneActive">Bladeren...</ButtonPrimary>
 		</DropZone>
 		<input type="file" ref="fileInput" accept="text/xml,.xml" style="display: none"
-			@change="tmsXmlStore.addFiles($event.target.files)" />
+			@change="tmsXmlStore.addFiles(($event.target as HTMLInputElement).files)" />
 	</section>
 </template>
 
