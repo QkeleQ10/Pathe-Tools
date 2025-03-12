@@ -17,6 +17,9 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue';
                     <RouterLink to="/announcer" style="text-decoration: none;">
                         <ButtonPrimary>Serviceomroepen</ButtonPrimary>
                     </RouterLink>
+                    <RouterLink to="/memo" style="text-decoration: none;">
+                        <ButtonPrimary>Weekmemo</ButtonPrimary>
+                    </RouterLink>
                 </div>
             </div>
             <div style="flex: 50%;">

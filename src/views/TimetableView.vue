@@ -65,7 +65,7 @@ function closeContextMenu() {
 }
 
 const transformedTable = computed(() => {
-    let arr = table.map((show: Show, i: number) => {
+    let arr = table.slice().map((show: Show, i: number) => {
         let timetableShow = show as TimetableShow
         timetableShow.overlapWithPlf = table.filter(testRow => testRow.auditorium?.includes('4DX')).some(testRow =>
             timetableShow.creditsTime.getTime() - testRow.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&
@@ -77,17 +77,17 @@ const transformedTable = computed(() => {
         return timetableShow
     })
 
-    arr.filter(testRow => testRow.auditorium?.includes('4DX')).slice(1).forEach(plfRow => {
-        let index: number
+    arr.filter(testRow => testRow.auditorium?.includes('4DX')).forEach(plfRow => {
+        let index: number = 0;
         for (let i = 0; i < arr.length; i++) {
             const row = arr[i]
             let difference = row.creditsTime.getTime() - plfRow.scheduledTime.getTime()
             if (difference > 0) {
-                index = i - 1
+                index = i
                 break
             }
         }
-        arr[index].isNearPlf = true
+        arr[Math.max(index, 0)].isNearPlf = true
     })
 
     return arr || []
@@ -138,7 +138,7 @@ const { handlePrint } = useVueToPrint({
                                     <td nowrap contenteditable></td>
                                 </tr>
                             </thead>
-                            <tr v-for="(row, i) in transformedTable" v-show="i != 0"
+                            <tr v-for="(row, i) in transformedTable"
                                 :class="{ targeting: showMenu && targetI === i, italic: row.auditorium?.includes('4DX'), bold: row.featureRating === '16' || row.featureRating === '18' }"
                                 @contextmenu.prevent="showContextMenu($event, row, i)">
                                 <td nowrap contenteditable>
@@ -151,12 +151,11 @@ const { handlePrint } = useVueToPrint({
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
                                     {{ format(row.mainShowTime, 'HH:mm:ss') }}
                                 </td>
-                                <td nowrap contenteditable v-if="i !== transformedTable.length - 1" class="special-cell"
+                                <td nowrap contenteditable class="special-cell"
                                     :class="{ 'intermission-checkbox': !!row.intermissionAfter }"
                                     @dblclick="transformedTable.at(i).intermissionAfter = !row.intermissionAfter">
-                                    {{ row.isNearPlf ? '4DX' : ' ' }}
+                                    {{ transformedTable[i]?.isNearPlf ? '4DX' : ' ' }}
                                 </td>
-                                <td v-else></td>
                                 <td nowrap>
                                     <div class="double-usherout"
                                         v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
@@ -283,7 +282,7 @@ const { handlePrint } = useVueToPrint({
             <button
                 @click="transformedTable.at(targetI).intermissionAfter = !targetRow.intermissionAfter; closeContextMenu()">
                 <div class="check" :class="{ 'empty': !transformedTable.at(targetI).intermissionAfter }"></div>
-                Selectievakje onder deze rij
+                Selectievakje boven deze rij
             </button>
             <button
                 @click="postCreditsFilms.has(targetRow.title?.trim()) ? postCreditsFilms.delete(targetRow.title?.trim()) : postCreditsFilms.add(targetRow.title?.trim()); closeContextMenu()">
@@ -444,12 +443,16 @@ table.timetable {
         }
     }
 
+    tr:first-of-type>td.special-cell {
+        transform: translateY(-20%);
+    }
+
     td {
         position: relative;
         padding: 2px 6px;
 
         &.special-cell {
-            transform: translateY(50%);
+            transform: translateY(-50%);
             text-align: end;
             padding-right: 14px;
             font-weight: normal;

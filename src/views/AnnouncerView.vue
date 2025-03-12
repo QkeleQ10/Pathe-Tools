@@ -417,24 +417,9 @@ function parseAuditorium(auditorium: string) {
             </div>
         </section>
     </main>
-    <div class="clock">{{ format(now, 'HH:mm:ss') }}</div>
 </template>
 
 <style scoped>
-.clock {
-    position: fixed;
-    top: 0;
-    right: max(calc(50vw - 590px), 0px);
-    height: 70px;
-    width: 90px;
-    padding-right: 20px;
-    display: flex;
-    align-items: center;
-    z-index: 11;
-    color: #00000055;
-    font: 700 16px Arial, Helvetica, sans-serif;
-}
-
 div.container {
     min-height: calc(100vh - 70px);
 }

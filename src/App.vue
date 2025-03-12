@@ -1,5 +1,17 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
+import { format } from 'date-fns';
+
+const now = ref(new Date())
+setInterval(updateNowValue, 1000)
+updateNowValue()
+function updateNowValue() {
+    now.value = new Date();
+
+    // Reload the page at 05:00:00
+    if (now.value.getHours() === 5 && now.value.getMinutes() === 0 && now.value.getSeconds() === 0) location.reload();
+}
 </script>
 
 <template>
@@ -12,8 +24,11 @@ import { RouterLink, RouterView } from 'vue-router';
             <nav>
                 <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
                 <RouterLink to="/announcer">Omroepen</RouterLink>
+                <RouterLink to="/memo">Memo</RouterLink>
                 <RouterLink to="/intermission-finder">Filmpauze</RouterLink>
             </nav>
+
+            <div class="clock">{{ format(now, 'HH:mm:ss') }}</div>
         </div>
     </header>
 
@@ -53,7 +68,7 @@ div.wrapper {
     padding-right: 20px;
 
     display: grid;
-    grid-template-columns: 80px 1fr;
+    grid-template-columns: 80px 1fr auto;
     align-items: center;
 }
 
@@ -81,7 +96,7 @@ nav a.router-link-active {
     color: #151515;
 }
 
-nav > a:not(:first-of-type):before {
+nav>a:not(:first-of-type):before {
     border-left: 1px solid #f2b000;
     content: "";
     display: inline-block;
@@ -115,5 +130,10 @@ footer a,
 footer span {
     color: #151515;
     text-decoration: none;
+}
+
+.clock {
+    color: #00000055;
+    font: 700 16px Arial, Helvetica, sans-serif;
 }
 </style>

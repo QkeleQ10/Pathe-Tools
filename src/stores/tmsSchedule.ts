@@ -18,7 +18,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             const rows = text.split('\n');
             const headers = splitCsv(rows[0]);
 
-            const parsedData = rows
+            const parsedTable = rows
                 .slice(1)
                 .map(row => {
                     const data = splitCsv(row);
@@ -34,7 +34,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     feature: obj.FEATURE,
                     featureRating: obj.FEATURE_RATING,
                     auditorium: obj.AUDITORIUM,
-                    auditoriumNumber: parseInt(obj.AUDITORIUM.replace('auditorium', '')),
+                    auditoriumNumber: parseInt(obj.AUDITORIUM?.replace(/^\w+\s/, '')?.split(' ')[0]) || 0,
                     scheduledTime: timeStringToDate(obj.SCHEDULED_TIME),
                     showTime: timeStringToDate(obj.SHOW_TIME),
                     mainShowTime: timeStringToDate(obj.FEATURE_TIME),
@@ -43,7 +43,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     duration: obj.DURATION
                 }));
 
-            table.value.push(...parsedData);
+            table.value.push(...parsedTable);
 
             metadata.value = {
                 name: file.name,
@@ -59,13 +59,23 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     async function loadFromJson(json: object) {
         return new Promise<void>((resolve, reject) => {
-            if (!json || !('timetable' in json) || !('metadata' in json)) return reject();
+            if (!json || !Object.values(json)?.[0] || !('timetable' in json) || !('metadata' in json)) return reject();
 
             while (table.value.length) table.value.pop();
             metadata.value = {};
 
             const data = json as { timetable: Show[], metadata: FileMetadata };
-            table.value.push(...data.timetable);
+
+            const parsedTable = data.timetable.map(obj => ({
+                ...obj,
+                scheduledTime: new Date(obj.scheduledTime),
+                showTime: new Date(obj.showTime),
+                mainShowTime: new Date(obj.mainShowTime),
+                creditsTime: new Date(obj.creditsTime),
+                endTime: new Date(obj.endTime)
+            }));
+
+            table.value.push(...parsedTable);
             metadata.value = data.metadata;
 
             resolve();

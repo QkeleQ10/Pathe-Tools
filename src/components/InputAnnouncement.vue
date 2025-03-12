@@ -4,7 +4,7 @@ import { useFocus } from '@vueuse/core';
 import { getSoundInfo } from '@/voices.ts';
 
 const props = defineProps<{ identifier: string }>();
-const model = defineModel<string[]>();
+const model = defineModel<string[]>({ default: [] });
 
 const inputElement = ref<HTMLInputElement>(null);
 const { focused } = useFocus(inputElement);

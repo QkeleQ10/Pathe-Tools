@@ -27,6 +27,14 @@ const routes: RouteRecordRaw[] = [
         }
     },
     {
+        path: '/memo',
+        name: 'memo',
+        component: () => import('../views/MemoView.vue'),
+        meta: {
+            title: 'Memo',
+        }
+    },
+    {
         path: '/intermission-finder',
         name: 'intermission-finder',
         component: () => import('../views/IntermissionFinderView.vue'),

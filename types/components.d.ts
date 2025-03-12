@@ -11,7 +11,7 @@ declare module 'vue' {
     ButtonText: typeof import('./src/components/ButtonText.vue')['default']
     Chip: typeof import('./src/components/Chip.vue')['default']
     ContextMenu: typeof import('./src/components/ContextMenu.vue')['default']
-    DropZone: typeof import('./src/components/DropZone.vue')['default']
+    FileUploadArea: typeof import('./src/components/FileUploadArea.vue')['default']
     Icon: typeof import('./src/components/Icon.vue')['default']
     InputAnnouncement: typeof import('./src/components/InputAnnouncement.vue')['default']
     InputCheckbox: typeof import('./src/components/InputCheckbox.vue')['default']

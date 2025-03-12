@@ -4,12 +4,13 @@
     </button>
 </template>
 
-<style scoped>
+<style>
 button.primary {
     display: flex;
     align-items: baseline;
     gap: 8px;
     justify-content: center;
+    align-items: center;
     box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .12);
     border: none;
     border-radius: 6px;
@@ -29,11 +30,12 @@ button.primary {
     user-select: none;
 }
 
-button[data-active=true] {
+button.primary[data-active=true] {
     opacity: .3;
 }
 
-button.primary:hover, button.primary:focus-visible {
+button.primary:hover,
+button.primary:focus-visible {
     background-color: #e3af24;
     background-image: -webkit-linear-gradient(top, #dcc25c, #e3af24);
     background-image: linear-gradient(to bottom, #dcc25c, #e3af24);
