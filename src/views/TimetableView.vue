@@ -100,6 +100,7 @@ const { handlePrint } = useVueToPrint({
 </script>
 
 <template>
+    <HeroImage />
     <main class="container dark">
         <TmsScheduleUploadSection />
         <section id="edit" ref="editSection" v-if="transformedTable.length > 0">
@@ -266,7 +267,7 @@ const { handlePrint } = useVueToPrint({
                     </Tabs>
                     <div class="buttons"
                         style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-left: 16px; padding-right: 16px;">
-                        <ButtonPrimary @click="handlePrint">
+                        <ButtonPrimary class="full" @click="handlePrint">
                             Afdrukken</ButtonPrimary>
                     </div>
                 </SidePanel>
@@ -294,14 +295,6 @@ const { handlePrint } = useVueToPrint({
 </template>
 
 <style scoped>
-div.container {
-    min-height: calc(100vh - 70px);
-}
-
-h2 {
-    margin-bottom: 16px;
-}
-
 #print-component {
     position: relative;
 

@@ -11,8 +11,13 @@ const props = defineProps<{
 </template>
 
 <style>
+@property --size {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 18px;
+}
+
 .icon {
-    --size: 18px;
     -webkit-user-select: none;
     user-select: none;
     font-variation-settings: 'FILL' 0;
@@ -28,5 +33,12 @@ const props = defineProps<{
 
 .icon.fill {
     font-variation-settings: 'FILL' 1;
+}
+
+button.primary .icon,
+button.secondary .icon {
+    vertical-align: middle;
+    --size: 22px;
+    margin-right: 8px;
 }
 </style>

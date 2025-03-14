@@ -27,11 +27,11 @@ const routes: RouteRecordRaw[] = [
         }
     },
     {
-        path: '/memo',
-        name: 'memo',
-        component: () => import('../views/MemoView.vue'),
+        path: '/slideshow',
+        name: 'slideshow',
+        component: () => import('../views/SlideshowView.vue'),
         meta: {
-            title: 'Memo',
+            title: 'Diavoorstelling',
         }
     },
     {

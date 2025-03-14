@@ -1,7 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
+import { useWindowScroll } from '@vueuse/core';
 import { format } from 'date-fns';
+
+const { y, arrivedState, directions } = useWindowScroll();
+const isSticky = ref(false);
+const header = ref(null);
+const isVisible = ref(false);
+
+watch(y, async (y) => {
+    if (y > 270 && !isSticky.value) {
+        header.value.setAttribute('style', 'transform: translateY(-100%) !important;');
+        setTimeout(() => {
+            isSticky.value = true;
+            header.value.removeAttribute('style');
+        }, 5);
+    } // Sets isSticky to true when scrolled down past 270
+    if (y <= 0) isSticky.value = false; // Sets isSticky to false when scrolled to the top
+});
+
+watch(directions, (directions) => {
+    if (directions.top) isVisible.value = true; // Adds is-visible as soon as scrolling up starts
+    if (directions.bottom) isVisible.value = false; // Remove is-visible as soon as scrolling down starts
+});
 
 const now = ref(new Date())
 setInterval(updateNowValue, 1000)
@@ -15,16 +37,16 @@ function updateNowValue() {
 </script>
 
 <template>
-    <header>
+    <header ref="header" :class="{ 'is-sticky': isSticky, 'is-visible': isSticky && isVisible }">
         <div class="wrapper">
             <RouterLink to="/" class="logo-wrapper">
-                <img alt="Pathé logo" class="logo" src="@/assets/logo-01.png" height="46" />
+                <img alt="Pathé logo" class="logo" src="@/assets/logo-international-white.svg" height="46" />
             </RouterLink>
 
             <nav>
                 <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
                 <RouterLink to="/announcer">Omroepen</RouterLink>
-                <RouterLink to="/memo">Memo</RouterLink>
+                <!-- <RouterLink to="/slideshow">Diavoorstelling</RouterLink> -->
                 <RouterLink to="/intermission-finder">Filmpauze</RouterLink>
             </nav>
 
@@ -35,37 +57,54 @@ function updateNowValue() {
     <RouterView />
 
     <footer>
-        <span>© 2024 Quinten Althues</span>
-        <a title="E-mail" href="mailto:quinten@althues.nl">
-            <Icon>mail</Icon>
-        </a>
-        <a title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
-            <Icon>code</Icon>
-        </a>
+        <div class="flex icons">
+            <a title="E-mail" href="mailto:quinten@althues.nl">
+                <Icon>mail</Icon>
+            </a>
+            <a title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
+                <Icon>code</Icon>
+            </a>
+        </div>
+        <p>Quinten Althues © 2024-{{ new Date().getFullYear() }}</p>
     </footer>
 </template>
 
 <style scoped>
 header {
-    position: sticky;
     top: 0;
     left: 0;
     right: 0;
-    height: 70px;
+    height: 72px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    background-color: #ffc426;
+    background: linear-gradient(180deg, rgba(28, 29, 31, .5) 26.11%, rgba(28, 29, 31, 0) 100%);
+
     z-index: 10;
+    transition: background 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+
+    &.is-sticky {
+        position: sticky;
+        pointer-events: none;
+        background: #1b1d23;
+        opacity: 1;
+        transform: translateY(-100%);
+        transition: all cubic-bezier(.25, .1, .25, 1) .3s allow-discrete;
+    }
+
+    &.is-visible {
+        transform: translateY(0);
+        pointer-events: all;
+    }
 }
 
 div.wrapper {
     width: 100%;
-    max-width: 1180px;
-    padding-left: 20px;
-    padding-right: 20px;
+    /* max-width: 1180px; */
+    padding-inline: 32px;
+    padding-block: 12px;
 
     display: grid;
     grid-template-columns: 80px 1fr auto;
@@ -73,67 +112,72 @@ div.wrapper {
 }
 
 .logo-wrapper {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    text-decoration: none;
+
+    &::after {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        content: "TOOLS";
+        color: #fff;
+        font: 12px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    }
 }
 
 nav {
+    margin-left: 32px;
     display: flex;
 }
 
 nav a {
-    position: relative;
-    padding: 20px;
-    color: #4c3c0c;
-    font: 700 16px Arial, Helvetica, sans-serif;
+    margin-right: 32px;
+    color: #ffffffb3;
+    font-weight: 500;
     text-decoration: none;
-    text-shadow: 0 1px #ffda74;
 }
 
 nav a:hover,
 nav a.router-link-active {
-    color: #151515;
-}
-
-nav>a:not(:first-of-type):before {
-    border-left: 1px solid #f2b000;
-    content: "";
-    display: inline-block;
-    height: 40px;
-    left: 0;
-    position: absolute;
-    top: 9px;
+    color: #fff;
+    text-shadow: 0px 0px 1px #fff;
 }
 
 footer {
-    height: 70px;
-
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 12px;
 
-    background-color: #ffc426;
+    padding-block: 32px;
+
+    background-color: #101114;
+    color: #fff;
     z-index: 10;
 }
 
 footer a {
     cursor: pointer;
+    color: currentColor;
+    text-decoration: none;
 }
 
 footer .icon {
     vertical-align: middle;
+    --size: 24px;
 }
 
-footer a,
-footer span {
-    color: #151515;
-    text-decoration: none;
+footer p {
+    font-size: 12px;
+    margin: 0;
 }
 
 .clock {
-    color: #00000055;
+    color: #ffffffb3;
     font: 700 16px Arial, Helvetica, sans-serif;
 }
 </style>

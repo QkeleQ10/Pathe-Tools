@@ -13,7 +13,7 @@ const password = useLocalStorage('server-password', 'admin')
 fetchData();
 
 async function fetchData() {
-	const response = await fetch(`${url.value}/${username.value}/timetable`, {
+	const response = await fetch(`${url.value}/users/${username.value}/timetable`, {
 		headers: { Authorization: 'Basic ' + btoa(`${username.value}:${password.value}`) }
 	});
 	const data = await response.json();
@@ -21,7 +21,7 @@ async function fetchData() {
 }
 
 async function submitData() {
-	await fetch(`${url.value}/${username.value}/timetable`, {
+	await fetch(`${url.value}/users/${username.value}/timetable`, {
 		method: 'POST',
 		headers: {
 			Authorization: 'Basic ' + btoa(`${username.value}:${password.value}`),
@@ -39,7 +39,7 @@ async function fileUploaded(files: FileList) {
 
 <template>
 	<section id="upload">
-		<h2>Account</h2>
+		<!-- <h2>Account</h2>
 		<div class="block">
 			<InputText v-model="url" identifier="url">
 				<span>URL</span>
@@ -51,10 +51,10 @@ async function fileUploaded(files: FileList) {
 				<span>Wachtwoord</span>
 			</InputText>
 			<ButtonPrimary @click="fetchData">Ophalen</ButtonPrimary>
-		</div>
+		</div> -->
 		<h2>Gegevensbestand</h2>
-		<div class="block">
-			<p v-if="'name' in tmsScheduleStore.metadata">
+		<div class="flex block">
+			<p v-if="'name' in tmsScheduleStore.metadata" style="flex-grow: 1;">
 				{{ tmsScheduleStore.metadata.name }}
 				<br>
 				<small>
@@ -65,25 +65,23 @@ async function fileUploaded(files: FileList) {
 					}}
 				</small>
 			</p>
-			<p v-else>Geen bestand geüpload</p>
-			<FileUploadArea id="file-upload-area" @files-uploaded="fileUploaded" accept="text/csv,.csv">
-				<small>CSV-bestand uit RosettaBridge (met optie 'times only')</small>
-			</FileUploadArea>
+			<p v-else style="flex-grow: 1;">
+				Geen bestand geüpload
+				<br>
+				<small>Upload hiernaast een CSV-bestand uit RosettaBridge (met optie 'times only')</small>
+			</p>
+			<div class="buttons">
+				<FileUploadButton id="file-upload-area" class="large" @files-uploaded="fileUploaded"
+					accept="text/csv,.csv">
+					<small>Of sleep een bestand hiernaartoe</small>
+				</FileUploadButton>
+			</div>
 		</div>
 	</section>
 </template>
 
 <style scoped>
-h2 {
-	margin-bottom: 16px;
-}
-
 .block {
-	padding: 16px;
-	border-radius: 5px;
-	background-color: #ffffff14;
-	color: #ffffffcc;
-
 	text-align: center;
 	line-height: 2;
 }

@@ -205,6 +205,7 @@ function parseAuditorium(auditorium: string) {
 </script>
 
 <template>
+    <HeroImage />
     <main class="container dark">
         <TmsScheduleUploadSection />
         <section>
@@ -218,8 +219,8 @@ function parseAuditorium(auditorium: string) {
                                 :key="announcement.key" :class="{ 'announcing': announcement.status === 'announcing' }">
                                 <div class="room">
                                     {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium ===
-                                        'Rooftop') ? 'RT' :
-                                        announcement.show.auditoriumNumber }}
+                                    'Rooftop') ? 'RT' :
+                                    announcement.show.auditoriumNumber }}
                                 </div>
                                 <div class="title">{{ announcement.show.title }}</div>
                                 <div class="time">
@@ -289,7 +290,7 @@ function parseAuditorium(auditorium: string) {
                                     voices.default.sounds.filter(id => id.startsWith('auditorium')),
                                     ...options.selectedVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
                                 ]" v-show="ids?.length > 0">
-                                    <ButtonText v-for="id of ids"
+                                    <button v-for="id of ids"
                                         @click="soundQueue.push({ id, key: new Date().getTime() + id })"
                                         :class="{ translucent: id !== 'chime' && !options.selectedVoices.some(e => voices[e].sounds.includes(id)) }">
                                         <Icon v-if="id === 'chime'" :fill="true"
@@ -298,7 +299,7 @@ function parseAuditorium(auditorium: string) {
                                         <span v-else>
                                             {{ getSoundInfo(id).name }}
                                         </span>
-                                    </ButtonText>
+                                    </button>
                                 </div>
                             </fieldset>
 
@@ -317,7 +318,7 @@ function parseAuditorium(auditorium: string) {
                                 </div>
                             </fieldset>
                         </Tab>
-                        <Tab value="Geavanceerd">
+                        <Tab value="Regels">
                             <div v-if="warningShown" @click="warningShown = false" class="parameters-warning">
                                 <Icon fill style="--size: 48px;">warning</Icon>
                                 <p>
@@ -422,10 +423,6 @@ function parseAuditorium(auditorium: string) {
 <style scoped>
 div.container {
     min-height: calc(100vh - 70px);
-}
-
-h2 {
-    margin-bottom: 16px;
 }
 
 #upcoming-announcements {
@@ -541,15 +538,16 @@ h2 {
     flex-wrap: wrap;
     gap: 6px;
 
-    &>button.primary {
+    &>button {
         display: flex;
         align-items: center;
         height: 22px;
         padding-inline: 6px;
-        border-radius: 4px;
         font: 13px Arial, Helvetica, sans-serif;
         text-transform: none;
         background-color: #ffffff14;
+        border: none;
+        border-radius: 4px;
         color: #fff;
     }
 
