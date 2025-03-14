@@ -7,11 +7,11 @@ export const useTmsXmlStore = defineStore('tmsXml', () => {
     const metadata = ref<{ name: string, type: string, lastModified: number, size: number } | {}>({});
 
     async function addFiles(fileList: FileList) {
+        const file = fileList[0];
+        if (!file || !isXmlFile(file)) return;
+        
         obj.value = {};
         metadata.value = {};
-
-        const file = fileList[0];
-        if (!isXmlFile(file)) return;
 
         const text = await file.text();
         const xml = xml2js(text, { compact: true }) as { CompositionPlaylist: Record<string, any> } | Record<string, any>;

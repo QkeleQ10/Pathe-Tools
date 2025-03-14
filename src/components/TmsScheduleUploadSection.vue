@@ -90,4 +90,11 @@ async function fileUploaded(files: FileList) {
 	font: small Arial, Helvetica, sans-serif;
 	text-transform: none;
 }
+
+.buttons {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 8px;
+}
 </style>

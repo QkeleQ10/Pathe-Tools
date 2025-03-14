@@ -39,14 +39,13 @@ function nextSlide() {
 function previousSlide() {
     currentSlide.value = ((currentSlide.value - 1 + imgUrls.value.length) % imgUrls.value.length) || 0;
 }
-
 startSlideshow();
 </script>
 
 <template>
     <HeroImage />
     <main class="container dark">
-        <SlideshowUploadSection v-model="imgUrls" />
+        <SlideshowUploadSection v-model="imgUrls" @slide-clicked="currentSlide = $event" />
         <section id="pictures">
             <div class="grid">
                 <div>
@@ -94,6 +93,9 @@ startSlideshow();
                                         De automatische weergave is uitgeschakeld.
                                     </small>
                                 </InputNumber>
+                                <ButtonSecondary class="full" @click="currentSlide = 0; startSlideshow(); enter()">
+                                    <Icon>play_arrow</Icon>Automatische weergave starten
+                                </ButtonSecondary>
                             </fieldset>
                         </Tab>
                     </Tabs>
@@ -117,7 +119,7 @@ startSlideshow();
     aspect-ratio: 16 / 9;
 
     background-color: #000;
-    border: 1px solid #fff;
+    border: 1px solid #ffffff33;
     border-radius: 6px;
 
     overflow: hidden;
@@ -159,7 +161,7 @@ startSlideshow();
 
         background-color: #0000008d;
         color: #fff;
-        border: none;
+        border: 1px solid #ffffff33;
         border-radius: 50%;
         cursor: pointer;
 

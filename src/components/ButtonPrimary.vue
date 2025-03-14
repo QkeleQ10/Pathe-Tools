@@ -29,7 +29,7 @@ button {
     border: none;
     box-sizing: border-box;
 
-    &:hover {
+    &:hover, &[data-drag-active=true] {
         box-shadow: 0 0 0 8px #ffffff0d;
         background: #1f252e;
     }
@@ -54,7 +54,7 @@ button.primary {
     color: #090a0b;
     background-color: #feb91e;
 
-    &:hover {
+    &:hover, &[data-drag-active=true] {
         background-color: #ffdc6e;
     }
 }

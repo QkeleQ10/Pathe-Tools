@@ -409,6 +409,7 @@ table.timetable {
     color: var(--color);
     width: 18cm;
     max-height: 26cm;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: 12.5px;
 
     thead>tr {
@@ -419,12 +420,14 @@ table.timetable {
 
     tr,
     thead {
+        font: inherit;
         height: 21.5px;
         min-height: 21.5px;
         max-height: 21.5px;
     }
 
     tr {
+        font: inherit;
         background-color: var(--row-color);
 
         &:nth-child(even) {

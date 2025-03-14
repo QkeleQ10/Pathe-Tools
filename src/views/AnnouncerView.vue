@@ -5,7 +5,8 @@ import { ReturnedValue, useSound } from '@vueuse/sound';
 import { voices, getSoundInfo } from '@/voices.ts';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Announcement, AnnouncementTypes, Show } from '@/classes/classes';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow, formatDistanceToNowStrict } from 'date-fns';
+import { nl } from 'date-fns/locale';
 
 const { table: scheduleTable } = useTmsScheduleStore()
 
@@ -53,8 +54,8 @@ Object.entries(voices).forEach(([voice, { file, sprite }]) => {
     howls[voice] = useSound(file, {
         sprite,
         preload: true,
-        onplay: () => document.dispatchEvent(new CustomEvent('announcerSoundPlay')),
-        onend: () => document.dispatchEvent(new CustomEvent('announcerSoundEnd')),
+        onplay: (id) => document.dispatchEvent(new CustomEvent('announcerSoundPlay', { detail: id })),
+        onend: (id) => document.dispatchEvent(new CustomEvent('announcerSoundEnd', { detail: id })),
     });
 });
 
@@ -69,26 +70,33 @@ watch(soundQueue, async () => {
             currentVoice = options.value.selectedVoices[Math.floor(Math.random() * options.value.selectedVoices.length)]; // Randomize voice when a chime is played
         }
 
-        let usedVoice = playSound(currentVoice, soundQueue[0]);
+        let { voice: usedVoice, duration = 0 } = playSound(currentVoice, soundQueue[0]);
         if (options.value.selectedVoices.includes(usedVoice)) currentVoice = usedVoice;
 
-        await new Promise(resolve => document.addEventListener('announcerSoundEnd', resolve, { once: true }))
-        soundQueue.shift()
+        // Promise is now determined by sprite length (more flexible)
+        await new Promise(resolve => setTimeout(resolve,
+            soundQueue[0].id === 'chime'
+                ? 2800
+                : duration + 200
+        ));
+        // await new Promise(resolve => document.addEventListener('announcerSoundEnd', resolve, { once: true }))
+
+        soundQueue.shift();
     }
 }, { deep: true })
 
-function playSound(preferredVoice: string, sound: { id: string }) {
+function playSound(preferredVoice: string, sound: { id: string }): { voice: string; duration: number; } {
     if (voices[preferredVoice]?.sprite[sound.id]) {
         // @ts-expect-error Typing mistake in PlayOptions.id in @vueuse/sound: should be of type string
         howls[preferredVoice].play(sound)
-        return preferredVoice;
+        return { voice: preferredVoice, duration: voices[preferredVoice].sprite[sound.id][1] };
     }
 
     for (const voice of options.value.selectedVoices) {
         if (voices[voice]?.sprite[sound.id]) {
             // @ts-expect-error Typing mistake in PlayOptions.id in @vueuse/sound: should be of type string
             howls[voice].play(sound)
-            return voice;
+            return { voice, duration: voices[voice].sprite[sound.id][1] };
         }
     }
 
@@ -96,12 +104,12 @@ function playSound(preferredVoice: string, sound: { id: string }) {
         if (voices[voice]?.sprite[sound.id]) {
             // @ts-expect-error Typing mistake in PlayOptions.id in @vueuse/sound: should be of type string
             howls[voice].play(sound);
-            return voice;
+            return { voice, duration: voices[voice].sprite[sound.id][1] };
         }
     }
 
     soundQueue.shift();
-    return null;
+    return { voice: null, duration: 0 };
 }
 
 const announcementsToMake = ref<Announcement[]>([])
@@ -219,8 +227,8 @@ function parseAuditorium(auditorium: string) {
                                 :key="announcement.key" :class="{ 'announcing': announcement.status === 'announcing' }">
                                 <div class="room">
                                     {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium ===
-                                    'Rooftop') ? 'RT' :
-                                    announcement.show.auditoriumNumber }}
+                                        'Rooftop') ? 'RT' :
+                                        announcement.show.auditoriumNumber }}
                                 </div>
                                 <div class="title">{{ announcement.show.title }}</div>
                                 <div class="time">
@@ -549,6 +557,7 @@ div.container {
         border: none;
         border-radius: 4px;
         color: #fff;
+        cursor: pointer;
     }
 
     &+& {

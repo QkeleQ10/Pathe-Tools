@@ -8,11 +8,11 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     async function addFiles(fileList: FileList) {
         return new Promise<void>(async (resolve, reject) => {
+            const file = fileList[0];
+            if (!file || !isCsvFile(file)) return;
+
             while (table.value.length) table.value.pop();
             metadata.value = {};
-
-            const file = fileList[0];
-            if (!isCsvFile(file)) return;
 
             const text = await file.text();
             const rows = text.split('\n');

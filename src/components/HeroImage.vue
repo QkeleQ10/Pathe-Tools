@@ -6,7 +6,7 @@ function getImageUrl(name) {
 
 <template>
     <div class="hero">
-        <div class="image" :style="`background-image: url(${getImageUrl(Math.floor(Math.random() * 8))})`">
+        <div class="image" :style="`background-image: url(${getImageUrl(Math.floor(Math.random() * 13))})`">
         </div>
     </div>
 </template>

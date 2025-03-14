@@ -72,7 +72,7 @@ onUnmounted(() => {
 }
 
 .file-upload-area[data-drag-active=true] {
-    outline: 4px dashed #ffffffcc;
-    outline-offset: -2px;
+    outline: 3px dashed #ffffffcc;
+    outline-offset: 4px;
 }
 </style>

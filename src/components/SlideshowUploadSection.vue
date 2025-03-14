@@ -6,6 +6,9 @@ import { nl } from 'date-fns/locale';
 import { ref } from 'vue';
 
 const imgUrls = defineModel<string[]>();
+const emit = defineEmits<{
+	'slide-clicked': [index: number]
+}>();
 
 const url = useLocalStorage('server-url', '');
 const username = useLocalStorage('server-username', '');
@@ -14,17 +17,17 @@ const password = useLocalStorage('server-password', '');
 fetchData();
 
 async function fetchData() {
-	const response = await fetch(`${url.value}/users/${username.value}/pictures`, {
-		headers: { Authorization: 'Basic ' + btoa(`${username.value}:${password.value}`) }
-	});
+	const response = await fetch(`${url.value}/users/${username.value}/pictures`);
 	const data = await response.json();
 
-	imgUrls.value.push(...data.map((fileId: string) => `${url.value}/users/${username.value}/pictures/${fileId}`));
+	imgUrls.value = data.map((fileId: string) => `${url.value}/users/${username.value}/pictures/${fileId}`);
 }
 
-async function uploadImage(image: File) {
+async function uploadImages(files: FileList) {
 	const formData = new FormData();
-	formData.append('pictures', image);
+	for (const file of files) {
+		formData.append('pictures', file);
+	}
 
 	const response = await fetch(`${url.value}/users/${username.value}/pictures`, {
 		method: 'POST',
@@ -35,13 +38,7 @@ async function uploadImage(image: File) {
 	});
 	const data = await response.json();
 
-	imgUrls.value.push(...data.files.map((fileId: string) => `${url.value}/users/${username.value}/pictures/${fileId}`));
-}
-
-async function filesUploaded(files: FileList) {
-	for (const file of files) {
-		await uploadImage(file);
-	}
+	imgUrls.value = [...imgUrls.value, ...data.files.map((fileId: string) => `${url.value}/users/${username.value}/pictures/${fileId}`)].sort((a, b) => a.localeCompare(b));
 }
 
 async function deleteAll() {
@@ -51,7 +48,7 @@ async function deleteAll() {
 	});
 	const data = await response.json();
 
-	while (imgUrls.value.length) imgUrls.value.pop();
+	imgUrls.value = [];
 }
 </script>
 
@@ -68,24 +65,28 @@ async function deleteAll() {
 			<InputText v-model="password" identifier="password">
 				<span>Wachtwoord</span>
 			</InputText>
-			<ButtonSecondary @click="fetchData"><Icon>cloud_download</Icon>Nu ophalen</ButtonSecondary>
+			<ButtonSecondary @click="fetchData">
+				<Icon>cloud_download</Icon>Nu ophalen
+			</ButtonSecondary>
 		</div>
 		<h2>Dia's</h2>
 		<div class="flex block">
 			<div v-if="imgUrls.length" class="pictures" style="flex-grow: 1;">
-				<img v-for="imgUrl in imgUrls" :src="imgUrl" />
+				<img v-for="(imgUrl, index) in imgUrls" :src="imgUrl" @click="emit('slide-clicked', index)" />
 			</div>
 			<p v-else style="flex-grow: 1;">
 				Geen afbeeldingen geüpload
 				<br>
 				<small>Geen afbeeldingen aanwezig op server of geen verbinding met server</small>
 			</p>
-			<div class="buttons" style="flex-shrink: 0;">
+			<div class="buttons" style="flex-shrink: 0;" v-if="url && username && password">
 				<FileUploadButton id="file-upload-area" :class="{ large: !imgUrls.length }"
-					@files-uploaded="filesUploaded" accept="image/*" multiple>
+					@files-uploaded="uploadImages" accept="image/*" multiple>
 					<small v-if="!imgUrls.length">Of sleep bestanden hiernaartoe</small>
 				</FileUploadButton>
-				<ButtonSecondary v-if="imgUrls.length" @click="deleteAll">Alles verwijderen</ButtonSecondary>
+				<ButtonSecondary v-if="imgUrls.length" @click="deleteAll">
+					<Icon>delete_forever</Icon>Alles verwijderen
+				</ButtonSecondary>
 			</div>
 		</div>
 	</section>
@@ -98,7 +99,7 @@ async function deleteAll() {
 }
 
 .pictures {
-	height: 100px;
+	height: 110px;
 
 	display: flex;
 	gap: 8px;
@@ -106,11 +107,11 @@ async function deleteAll() {
 	overflow-x: auto;
 
 	img {
-		max-width: 150px;
+		max-width: 140px;
 		object-fit: contain;
 
 		background-color: #000;
-		border: 1px solid #fff;
+		border: 1px solid #ffffff33;
 		border-radius: 6px;
 	}
 }
@@ -125,7 +126,5 @@ async function deleteAll() {
 	flex-direction: column;
 	justify-content: center;
 	gap: 8px;
-
-	color: #fff;
 }
 </style>
