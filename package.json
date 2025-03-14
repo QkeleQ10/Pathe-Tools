@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cd dist && copy index.html 404.html && copy index.html timetable.html && copy index.html announcer.html && copy index.html slideshow.html && copy index.html intermission-finder.html && cd ...",
+    "build": "vite build && cd dist && cp index.html 404.html && cp index.html timetable.html && cp index.html announcer.html && cp index.html slideshow.html && cp index.html intermission-finder.html && cd ..",
     "preview": "vite preview"
   },
   "dependencies": {
