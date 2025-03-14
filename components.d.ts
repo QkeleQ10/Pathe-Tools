@@ -8,10 +8,12 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ButtonPrimary: typeof import('./src/components/ButtonPrimary.vue')['default']
+    ButtonSecondary: typeof import('./src/components/ButtonSecondary.vue')['default']
     ButtonText: typeof import('./src/components/ButtonText.vue')['default']
     Chip: typeof import('./src/components/Chip.vue')['default']
     ContextMenu: typeof import('./src/components/ContextMenu.vue')['default']
-    DropZone: typeof import('./src/components/DropZone.vue')['default']
+    FileUploadButton: typeof import('./src/components/FileUploadButton.vue')['default']
+    HeroImage: typeof import('./src/components/HeroImage.vue')['default']
     Icon: typeof import('./src/components/Icon.vue')['default']
     InputAnnouncement: typeof import('./src/components/InputAnnouncement.vue')['default']
     InputCheckbox: typeof import('./src/components/InputCheckbox.vue')['default']
@@ -21,6 +23,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SidePanel: typeof import('./src/components/SidePanel.vue')['default']
+    SlideshowUploadSection: typeof import('./src/components/SlideshowUploadSection.vue')['default']
     Tab: typeof import('./src/components/Tab.vue')['default']
     Tabs: typeof import('./src/components/Tabs.vue')['default']
     TmsScheduleUploadSection: typeof import('./src/components/TmsScheduleUploadSection.vue')['default']

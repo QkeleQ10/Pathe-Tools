@@ -2,7 +2,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useStorage } from '@vueuse/core'
 
-import { useTmsXmlStore } from '@/stores/tmsXml.js'
+import { useTmsXmlStore } from '@/stores/tmsXml'
 import SidePanel from '@/components/SidePanel.vue';
 const tmsXmlStore = useTmsXmlStore()
 
@@ -122,17 +122,18 @@ Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint
 </script>
 
 <template>
+    <HeroImage />
     <main class="container dark">
         <TmsXmlUploadSection />
         <section>
             <div class="flex" style="flex-wrap: wrap;">
-                <div style="flex: 50% 1 1;" v-if="tmsXmlStore.metadata?.name">
+                <div style="flex: 50% 1 1;">
                     <h2>Filminformatie</h2>
-                    <div class="film">
+                    <div class="film" v-if="tmsXmlStore.metadata?.name">
                         <div class="room">
                             <Icon fill style="--size: 24px; opacity: 0.5;">theaters</Icon>
                         </div>
-                        <div class="title">{{ filmTitle }}</div>
+                        <h3 class="title">{{ filmTitle }}</h3>
                         <div class="time" v-if="!reels.some(reel => reel.frameRate !== reels[0].frameRate)">
                             {{ formatDuration(filmDuration, reels[0].frameRate) }}
                             <span :class="{ bold: reels[0].frameRate !== 24, colour: reels[0].frameRate !== 24 }">
@@ -162,9 +163,11 @@ Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint
                             </div>
                             <table class="reels">
                                 <thead>
-                                    <td>Reel</td>
-                                    <td>Duur (hh:mm:ss:ff)</td>
-                                    <td>Starttijd (hh:mm:ss:ff)</td>
+                                    <tr>
+                                        <td>Reel</td>
+                                        <td>Duur (hh:mm:ss:ff)</td>
+                                        <td>Starttijd (hh:mm:ss:ff)</td>
+                                    </tr>
                                 </thead>
                                 <tr v-for="(reel, i) in reels" :title="formatReelInformation(reel, i)">
                                     <td>{{ i + 1 }}</td>
@@ -181,17 +184,18 @@ Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint
                             </table>
                             <div class="extra-extra">
                                 <h4>Pauzesuggestie</h4>
-                                <span v-if="Math.abs(mostCentralGap - 0.5) < (intermissionPercentageDev / 100)">
+                                <p v-if="Math.abs(mostCentralGap - 0.5) < (intermissionPercentageDev / 100)">
                                     Een pauze zou kunnen worden ingepland tussen de {{ reelAfterGapIndex }}<sup>e</sup>
                                     en de
                                     {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel
                                     (na {{ formatDuration(mostCentralGap * filmDuration, reels[0].frameRate) }} of {{
                                         (mostCentralGap * 100).toLocaleString('nl-NL',
                                             { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%).
-                                </span>
-                                <span v-else>
+                                </p>
+                                <p v-else-if="reels.length > 1">
                                     Er is geen reel die tussen {{ 50 -
-                                        intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de film
+                                        intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
+                                    film
                                     eindigt.
                                     <a v-if="(Math.abs(mostCentralGap - 0.5) - (intermissionPercentageDev / 100)) < 0.05"
                                         class="link"
@@ -201,23 +205,34 @@ Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint
                                     <br>
                                     Een pauze zou kunnen worden ingepland tijdens de
                                     {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel (bijvoorbeeld na
-                                    {{ formatDuration(0.5 * filmDuration, reels[0].frameRate) }} of 50%).
+                                    <b>{{ formatDuration(0.5 * filmDuration, reels[0].frameRate) }}</b> of 50%).
                                     <br>
-                                </span>
+                                </p>
+                                <p v-else>
+                                    Er is maar één reel.
+                                    <br>
+                                    Een pauze zou halverwege kunnen worden ingepland (bijvoorbeeld na
+                                    <b>{{ formatDuration(0.5 * filmDuration, reels[0].frameRate) }}</b> of 50%).
+                                </p>
                             </div>
                         </div>
                     </div>
+                    <p v-else>Geen bestand geüpload</p>
                 </div>
                 <SidePanel style="flex: 229px 1 1;">
                     <Tabs>
-                        <Tab value="Opties pauzesuggestie">
-                            <InputNumber v-model.number="intermissionPercentageDev"
-                                identifier="intermissionPercentageDev" unit="%">
-                                Maximale afwijking van middenpunt
-                                <small>De filmpauze kan worden geplaatst tussen {{ 50 -
-                                    intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de film.
-                                </small>
-                            </InputNumber>
+                        <Tab value="Configuratie">
+                            <fieldset>
+                                <legend>Pauzesuggestie</legend>
+                                <InputNumber v-model.number="intermissionPercentageDev"
+                                    identifier="intermissionPercentageDev" unit="%">
+                                    Maximale afwijking van middenpunt
+                                    <small>De filmpauze kan worden geplaatst tussen {{ 50 -
+                                        intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
+                                        film.
+                                    </small>
+                                </InputNumber>
+                            </fieldset>
                         </Tab>
                     </Tabs>
                 </SidePanel>
@@ -231,11 +246,6 @@ div.container {
     min-height: calc(100vh - 70px);
 }
 
-h2 {
-    margin-bottom: 16px;
-}
-
-
 .film {
     display: grid;
     grid-template-columns: 64px 1fr;
@@ -248,6 +258,11 @@ h2 {
     color: #fff;
     font-size: 14px;
     overflow: hidden;
+}
+
+.film h3,
+.film h4 {
+    margin: 0;
 }
 
 .film .room {
@@ -292,6 +307,10 @@ h2 {
     margin-top: 0;
     padding: 12px;
     background-color: #ffffff14;
+
+    p {
+        margin-block: 4px;
+    }
 }
 
 table {

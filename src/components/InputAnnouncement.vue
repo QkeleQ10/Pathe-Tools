@@ -1,13 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import { useFocus } from '@vueuse/core';
-import { getSoundInfo } from '@/voices.ts'
+import { getSoundInfo } from '@/voices.ts';
 
-const props = defineProps(['identifier'])
-const model = defineModel()
+const props = defineProps<{ identifier: string }>();
+const model = defineModel<string[]>({ default: [] });
 
-const inputElement = ref(null)
-const { focused } = useFocus(inputElement)
+const inputElement = ref<HTMLInputElement>(null);
+const { focused } = useFocus(inputElement);
 </script>
 
 <template>
@@ -17,11 +17,12 @@ const { focused } = useFocus(inputElement)
         </div>
         <div class="input">
             <input ref="inputElement" type="text" inputmode="numeric" pattern="[0-9]+" name="" :id="identifier"
-                :value="model.join(' ')" @input="$emit('update:modelValue', $event.target.value.split(' '))">
+                :value="model.join(' ')"
+                @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value.split(' '))">
             <div v-show="!focused" class="words">
                 <div v-for="soundInfo in model.map(getSoundInfo)" class="word"
                     :class="{ valid: soundInfo.valid, translucent: soundInfo.probability < 1 }">
-                    <span v-for="(split, i) in soundInfo.id.split('|')">
+                    <span v-for="(split, i) in soundInfo.id.split('|')" :key="i">
                         <Icon v-if="split === 'chime'" :fill="true" style="--size: 14px; vertical-align: middle;">
                             music_note</Icon>
                         <span v-else>

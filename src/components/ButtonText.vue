@@ -1,18 +1,18 @@
 <template>
-    <button class="primary" type="button">
+    <button class="text" type="button">
         <slot></slot>
     </button>
 </template>
 
 <style scoped>
-button.primary {
+button.text {
     display: flex;
     align-items: baseline;
     gap: 8px;
     justify-content: center;
     box-sizing: border-box;
     border: none;
-    color: #000;
+    color: currentColor;
     cursor: pointer;
     font: 16px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
     text-align: center;
@@ -22,12 +22,12 @@ button.primary {
     user-select: none;
 }
 
-button[data-active=true] {
+button.text[data-active=true] {
     opacity: .3;
 }
 
-button.primary:hover,
-button.primary:focus-visible {
+button.text:hover,
+button.text:focus-visible {
     opacity: 0.8;
 }
 </style>

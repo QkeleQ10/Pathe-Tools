@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue';
 import { useStorage } from '@vueuse/core';
-import { HowlStatic, useSound } from '@vueuse/sound';
+import { ReturnedValue, useSound } from '@vueuse/sound';
 import { voices, getSoundInfo } from '@/voices.ts';
-
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-const tmsScheduleStore = useTmsScheduleStore()
+import { Announcement, AnnouncementTypes, Show } from '@/classes/classes';
+import { format } from 'date-fns';
+
+const { table: scheduleTable } = useTmsScheduleStore()
 
 const warningShown = ref(true)
 
@@ -46,7 +48,7 @@ const options = useStorage('announcer-options', {
     selectedVoices: ['default']
 }, localStorage, { mergeDefaults: true })
 
-const howls = reactive({});
+const howls = reactive<{ [key: string]: ReturnedValue }>({});
 Object.entries(voices).forEach(([voice, { file, sprite }]) => {
     howls[voice] = useSound(file, {
         sprite,
@@ -77,20 +79,22 @@ watch(soundQueue, async () => {
 
 function playSound(preferredVoice: string, sound: { id: string }) {
     if (voices[preferredVoice]?.sprite[sound.id]) {
+        // @ts-expect-error Typing mistake in PlayOptions.id in @vueuse/sound: should be of type string
         howls[preferredVoice].play(sound)
         return preferredVoice;
     }
 
     for (const voice of options.value.selectedVoices) {
         if (voices[voice]?.sprite[sound.id]) {
+            // @ts-expect-error Typing mistake in PlayOptions.id in @vueuse/sound: should be of type string
             howls[voice].play(sound)
             return voice;
         }
     }
 
     for (const voice in voices) {
-        console.log(voice)
         if (voices[voice]?.sprite[sound.id]) {
+            // @ts-expect-error Typing mistake in PlayOptions.id in @vueuse/sound: should be of type string
             howls[voice].play(sound);
             return voice;
         }
@@ -100,62 +104,62 @@ function playSound(preferredVoice: string, sound: { id: string }) {
     return null;
 }
 
-const announcementsToMake = ref([])
-watch([tmsScheduleStore, options], ([store]) => compileListOfAnnouncements(store), { deep: true })
-compileListOfAnnouncements(tmsScheduleStore)
-function compileListOfAnnouncements(store) {
-    let array = []
-    const announcementTypes = ['start', 'plfStart', 'mainShow', 'credits', 'end', 'finalMainShowStart'];
-    store.table.forEach((row: any, i: number) => {
+const announcementsToMake = ref<Announcement[]>([])
+watch([scheduleTable, options], compileListOfAnnouncements, { deep: true })
+compileListOfAnnouncements()
+function compileListOfAnnouncements() {
+    let array: Announcement[] = []
+    const announcementTypes = Object.values(AnnouncementTypes);
+    scheduleTable.forEach((row: Show, i: number) => {
         if (!row.scheduledTime) return;
-        announcementTypes.forEach(type => {
-            if (!options.value[type].enabled) return;
-            let announceTime;
-            let announcement = options.value[type].announcement.map(e => e.replace('#', parseAuditorium(row.AUDITORIUM)));
+        announcementTypes.forEach(announcementType => {
+            if (!options.value[announcementType].enabled) return;
+            let announcementTime: Date;
+            let announcementContent: string[] = options.value[announcementType].announcement.map((e: string) => e.replace('#', parseAuditorium(row.auditorium)));
 
-            switch (type) {
-                case 'start':
-                    announceTime = row.scheduledTime;
+            switch (announcementType) {
+                case AnnouncementTypes.Start:
+                    announcementTime = row.scheduledTime;
                     break;
-                case 'plfStart':
-                    if (!row.AUDITORIUM?.includes('4DX')) return;
-                    announceTime = new Date(row.scheduledTime.getTime() - (options.value.plfStart.minutesBeforeStartTime * 60000));
+                case AnnouncementTypes.PlfStart:
+                    if (!row.auditorium?.includes('4DX')) return;
+                    announcementTime = new Date(row.scheduledTime.getTime() - (options.value.plfStart.minutesBeforeStartTime * 60000));
                     break;
-                case 'mainShow':
-                    announceTime = row.featureTime;
+                case AnnouncementTypes.MainShow:
+                    announcementTime = row.mainShowTime;
                     break;
-                case 'credits':
-                    announceTime = new Date(row.creditsTime.getTime() - (options.value.credits.secondsBeforeCreditsTime * 1000));
+                case AnnouncementTypes.Credits:
+                    announcementTime = new Date(row.creditsTime.getTime() - (options.value.credits.secondsBeforeCreditsTime * 1000));
                     break;
-                case 'end':
-                    announceTime = row.endTime;
+                case AnnouncementTypes.End:
+                    announcementTime = row.endTime;
                     break;
-                case 'finalMainShowStart':
-                    if (i !== store.table.length - 1) return;
-                    announceTime = row.featureTime;
+                case AnnouncementTypes.FinalMainShowStart:
+                    if (i !== scheduleTable.length - 1) return;
+                    announcementTime = row.mainShowTime;
                     break;
             }
-            if (announceTime) {
-                array.push({
-                    announceTime,
-                    announcement,
+            if (announcementTime) {
+                array.push(new Announcement({
+                    time: announcementTime,
+                    type: announcementType,
+                    announcement: announcementContent,
                     status: 'unscheduled',
-                    announcementType: type,
-                    ...row,
-                    key: announceTime + announcement.join()
-                });
+                    key: announcementTime + announcementContent.join(),
+                    scheduleItem: row,
+                }))
             }
         });
     });
 
     announcementsToMake.value.filter((a) => a.status === 'scheduled').forEach((a) => {
-        const newElement = array.findIndex((b) => a.announceTime === b.announceTime && a.announcement.join() === b.announcement.join())
+        const newElement = array.findIndex((b) => a.time === b.time && a.announcement.join() === b.announcement.join())
         if (newElement) array.splice(newElement, 1)
         array.push(a)
     })
 
     announcementsToMake.value = [
-        ...array.filter((a) => Date.now() - a.announceTime < 10000).sort((a, b) => a.announceTime - b.announceTime)
+        ...array.filter((a) => Date.now() - a.time.getTime() < 10000).sort((a, b) => a.time.getTime() - b.time.getTime())
     ]
 
     updateNowValue()
@@ -166,15 +170,15 @@ watch(announcementsToMake, scheduleAnnouncements)
 scheduleAnnouncements()
 function scheduleAnnouncements() {
     announcementsToMake.value
-        .filter((obj) => obj.announceTime - Date.now() < 60000 && obj.status === 'unscheduled')
-        .forEach((obj) => {
+        .filter((obj: Announcement) => obj.time.getTime() - Date.now() < 60000 && obj.status === 'unscheduled')
+        .forEach((obj: Announcement) => {
             if (obj.status === 'scheduled') return
             obj.status = 'scheduled'
             setTimeout(() => {
                 if (obj.status !== 'scheduled') return
                 obj.status = 'announcing'
                 obj.announcement.forEach((id: string) => { soundQueue.push({ id, key: new Date().getTime() + id }) })
-            }, Math.max(obj.announceTime - Date.now() - 5000, 0))
+            }, Math.max(obj.time.getTime() - Date.now() - 5000, 0))
         })
 }
 
@@ -201,6 +205,7 @@ function parseAuditorium(auditorium: string) {
 </script>
 
 <template>
+    <HeroImage />
     <main class="container dark">
         <TmsScheduleUploadSection />
         <section>
@@ -209,52 +214,63 @@ function parseAuditorium(auditorium: string) {
                     <h2>Geplande omroepen</h2>
                     <div id="upcoming-announcements">
                         <TransitionGroup name="list">
-                            <div v-for="row in announcementsToMake" v-show="now.getTime() - row.announceTime < 10000"
-                                class="film" :key="row.key" :class="{ 'announcing': row.status === 'announcing' }">
+                            <div v-for="announcement in announcementsToMake"
+                                v-show="now.getTime() - announcement.time.getTime() < 10000" class="film"
+                                :key="announcement.key" :class="{ 'announcing': announcement.status === 'announcing' }">
                                 <div class="room">
-                                    {{ (row.AUDITORIUM === 'PULR 8' || row.AUDITORIUM === 'Rooftop') ? 'RT' :
-                                        row.AUDITORIUM.replace(/^\w+\s/, '').split(' ')[0] }}
+                                    {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium ===
+                                    'Rooftop') ? 'RT' :
+                                    announcement.show.auditoriumNumber }}
                                 </div>
-                                <div class="title">{{ row.title }}</div>
+                                <div class="title">{{ announcement.show.title }}</div>
                                 <div class="time">
-                                    {{ row.scheduledTime.toLocaleTimeString('nl-NL') }} –
-                                    {{ row.endTime.toLocaleTimeString('nl-NL') }}</div>
+                                    {{ format(announcement.show.scheduledTime, 'HH:mm') }} –
+                                    {{ format(announcement.show.endTime, 'HH:mm:ss') }}</div>
                                 <div class="flex chips">
-                                    <Chip v-for="extra in row.extras"
-                                        :class="{ 'translucent-white': !(row.announcementType === 'start4dx' && extra === '4DX') }">
+                                    <Chip v-for="extra in announcement.show.extras"
+                                        :class="{ 'translucent-white': !(announcement.type === AnnouncementTypes.PlfStart && extra === '4DX') }">
                                         {{ extra }}
                                     </Chip>
                                 </div>
-                                <div class="announcement" :class="row.announcement"
-                                    @dblclick="row.announcement.forEach(id => { soundQueue.push({ id, key: new Date().getTime() + id }) })"
+                                <div class="announcement" :class="announcement.announcement"
+                                    @dblclick="announcement.announcement.forEach(id => { soundQueue.push({ id, key: new Date().getTime() + id }) })"
                                     style="display: grid; grid-template-columns: 64px 130px 1fr;">
 
-                                    <Icon v-if="row.announcementType === 'plfStart'"
-                                        :class="{ pulsate: row.status === 'scheduled' }">line_start_diamond</Icon>
-                                    <Icon v-else-if="row.announcementType === 'start'"
-                                        :class="{ pulsate: row.status === 'scheduled' }">line_start_square</Icon>
-                                    <Icon v-else-if="row.announcementType === 'mainShow'"
-                                        :class="{ pulsate: row.status === 'scheduled' }">line_start_circle</Icon>
-                                    <Icon v-else-if="row.announcementType === 'credits'"
-                                        :class="{ pulsate: row.status === 'scheduled' }">line_end_circle</Icon>
-                                    <Icon v-else-if="row.announcementType === 'end'"
-                                        :class="{ pulsate: row.status === 'scheduled' }">line_end_square</Icon>
+                                    <Icon v-if="announcement.type === AnnouncementTypes.PlfStart"
+                                        :class="{ pulsate: announcement.status === 'scheduled' }">line_start_diamond
+                                    </Icon>
+                                    <Icon v-else-if="announcement.type === AnnouncementTypes.Start"
+                                        :class="{ pulsate: announcement.status === 'scheduled' }">line_start_square
+                                    </Icon>
+                                    <Icon v-else-if="announcement.type === AnnouncementTypes.MainShow"
+                                        :class="{ pulsate: announcement.status === 'scheduled' }">line_start_circle
+                                    </Icon>
+                                    <Icon v-else-if="announcement.type === AnnouncementTypes.Credits"
+                                        :class="{ pulsate: announcement.status === 'scheduled' }">line_end_circle
+                                    </Icon>
+                                    <Icon v-else-if="announcement.type === AnnouncementTypes.End"
+                                        :class="{ pulsate: announcement.status === 'scheduled' }">line_end_square
+                                    </Icon>
+                                    <Icon v-else-if="announcement.type === AnnouncementTypes.FinalMainShowStart"
+                                        :class="{ pulsate: announcement.status === 'scheduled' }">line_start_circle
+                                    </Icon>
                                     <Icon v-else>schedule</Icon>
                                     <div>
-                                        {{ row.announceTime.toLocaleTimeString('nl-NL') }}
-                                        ({{ formatTimeLeft(row.announceTime - now.getTime()) }})
+                                        {{ format(announcement.time, 'HH:mm:ss') }}
+                                        ({{ formatTimeLeft(announcement.time.getTime() - now.getTime()) }})
                                     </div>
-                                    <div :style="{ opacity: row.status === 'announcing' ? 1 : 0.35 }">
-                                        '<span v-for="(id, i) in row.announcement" v-show="id !== 'chime'" class="word"
-                                            :class="{ announcing: row.announceTime <= now && soundQueue[0]?.id === id }">
-                                            {{ getSoundInfo(id).name }}{{ i < row.announcement.length - 1 ? '&nbsp;'
-                                                : '' }} </span>'
+                                    <div :style="{ opacity: announcement.status === 'announcing' ? 1 : 0.35 }">
+                                        '<span v-for="(id, i) in announcement.announcement" v-show="id !== 'chime'"
+                                            class="word"
+                                            :class="{ announcing: announcement.time <= now && soundQueue[0]?.id === id }">
+                                            {{ getSoundInfo(id).name }}{{ i < announcement.announcement.length - 1
+                                                ? '&nbsp;' : '' }} </span>'
                                     </div>
                                 </div>
                             </div>
-                            <p v-if="announcementsToMake.filter(row => now.getTime() - row.announceTime < 10000).length < 1"
+                            <p v-if="announcementsToMake.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
                                 key="0">Er zijn geen omroepen gepland.</p>
-                            <p v-if="tmsScheduleStore.table.length < 1">Upload eerst een bestand.</p>
+                            <p v-if="scheduleTable.length < 1">Upload eerst een bestand.</p>
                         </TransitionGroup>
                     </div>
                 </div>
@@ -274,7 +290,7 @@ function parseAuditorium(auditorium: string) {
                                     voices.default.sounds.filter(id => id.startsWith('auditorium')),
                                     ...options.selectedVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
                                 ]" v-show="ids?.length > 0">
-                                    <ButtonText v-for="id of ids"
+                                    <button v-for="id of ids"
                                         @click="soundQueue.push({ id, key: new Date().getTime() + id })"
                                         :class="{ translucent: id !== 'chime' && !options.selectedVoices.some(e => voices[e].sounds.includes(id)) }">
                                         <Icon v-if="id === 'chime'" :fill="true"
@@ -283,7 +299,7 @@ function parseAuditorium(auditorium: string) {
                                         <span v-else>
                                             {{ getSoundInfo(id).name }}
                                         </span>
-                                    </ButtonText>
+                                    </button>
                                 </div>
                             </fieldset>
 
@@ -302,7 +318,7 @@ function parseAuditorium(auditorium: string) {
                                 </div>
                             </fieldset>
                         </Tab>
-                        <Tab value="Geavanceerd">
+                        <Tab value="Regels">
                             <div v-if="warningShown" @click="warningShown = false" class="parameters-warning">
                                 <Icon fill style="--size: 48px;">warning</Icon>
                                 <p>
@@ -402,30 +418,11 @@ function parseAuditorium(auditorium: string) {
             </div>
         </section>
     </main>
-    <div class="clock">{{ now.toLocaleTimeString('nl-NL') }}</div>
 </template>
 
 <style scoped>
-.clock {
-    position: fixed;
-    top: 0;
-    right: max(calc(50vw - 590px), 0px);
-    height: 70px;
-    width: 90px;
-    padding-right: 20px;
-    display: flex;
-    align-items: center;
-    z-index: 11;
-    color: #00000055;
-    font: 700 16px Arial, Helvetica, sans-serif;
-}
-
 div.container {
     min-height: calc(100vh - 70px);
-}
-
-h2 {
-    margin-bottom: 16px;
 }
 
 #upcoming-announcements {
@@ -541,15 +538,16 @@ h2 {
     flex-wrap: wrap;
     gap: 6px;
 
-    &>button.primary {
+    &>button {
         display: flex;
         align-items: center;
         height: 22px;
         padding-inline: 6px;
-        border-radius: 4px;
         font: 13px Arial, Helvetica, sans-serif;
         text-transform: none;
         background-color: #ffffff14;
+        border: none;
+        border-radius: 4px;
         color: #fff;
     }
 

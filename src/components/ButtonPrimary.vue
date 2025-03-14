@@ -1,41 +1,61 @@
 <template>
-    <button class="primary" type="button">
+    <button class="primary center" type="button">
         <slot></slot>
     </button>
 </template>
 
 <style scoped>
-button.primary {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    justify-content: center;
-    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .12);
-    border: none;
+button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    vertical-align: middle;
+    height: 48px;
+    min-width: 56px;
+    max-width: 400px;
+    line-height: 48px;
     border-radius: 6px;
-    box-sizing: border-box;
-    color: rgba(21, 21, 21, .96);
-    cursor: pointer;
-    font-family: "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    font-family: Heebo, arial, sans-serif;
     font-size: 16px;
-    height: 34px;
-    line-height: 34px;
-    padding: 0 30px;
-    text-align: center;
+    font-weight: 500;
+    transition: all .15s ease-out;
+    cursor: pointer;
+    color: #fff;
+    padding: 0 20px;
+    outline: none;
     text-decoration: none;
-    text-transform: uppercase;
-    background-color: #ffc426;
-    background-image: linear-gradient(to bottom, #f7da66, #ffc426);
-    user-select: none;
+    background: #1c2129;
+    white-space: nowrap;
+    border: none;
+    box-sizing: border-box;
+
+    &:hover {
+        box-shadow: 0 0 0 8px #ffffff0d;
+        background: #1f252e;
+    }
 }
 
-button[data-active=true] {
-    opacity: .3;
+button.center {
+    justify-content: center;
 }
 
-button.primary:hover, button.primary:focus-visible {
-    background-color: #e3af24;
-    background-image: -webkit-linear-gradient(top, #dcc25c, #e3af24);
-    background-image: linear-gradient(to bottom, #dcc25c, #e3af24);
+button.full {
+    width: 100%;
+    max-width: none;
+}
+
+button.large {
+    height: auto;
+    line-height: normal;
+    padding-block: 16px;
+}
+
+button.primary {
+    color: #090a0b;
+    background-color: #feb91e;
+
+    &:hover {
+        background-color: #ffdc6e;
+    }
 }
 </style>

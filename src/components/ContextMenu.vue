@@ -1,17 +1,22 @@
-<script setup>
-import { ref, defineProps, defineEmits } from 'vue'
-import { onClickOutside } from '@vueuse/core'
+<script setup lang="ts">
+import { ref } from 'vue';
+import { onClickOutside } from '@vueuse/core';
 
-const { x, y } = defineProps(['x', 'y'])
-const emit = defineEmits(['click-outside'])
+const props = defineProps<{
+    x: number;
+    y: number;
+}>();
+const emit = defineEmits<{
+    'click-outside': [MouseEvent];
+}>();
 
-const target = ref(null)
+const target = ref<HTMLElement | null>(null);
 
-onClickOutside(target, event => emit('click-outside', event))
+onClickOutside(target, (event: MouseEvent) => emit('click-outside', event));
 </script>
 
 <template>
-    <div class="context-menu" ref="target" :style="{ top: y + 'px', left: x + 'px' }">
+    <div class="context-menu" ref="target" :style="{ top: props.y + 'px', left: props.x + 'px' }">
         <slot></slot>
     </div>
 </template>

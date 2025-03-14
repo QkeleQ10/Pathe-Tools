@@ -1,13 +1,14 @@
 import voiceDefault from '@/assets/sounds/voices/rosetta.ogg';
 import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg';
 import voiceJaron from '@/assets/sounds/voices/jaron.ogg';
+import { SpriteMap } from '@vueuse/sound';
 
 export class Voice {
     name: string;
     language: string;
     file: any;
-    sprite: { [key: string]: [number, number] };
-    constructor(voice: { name: string; language: string; file: any; sprite: { [key: string]: [number, number] }; }) {
+    sprite: SpriteMap;
+    constructor(voice: { name: string; language: string; file: any; sprite: SpriteMap; }) {
         this.name = voice.name;
         this.language = voice.language;
         this.file = voice.file;

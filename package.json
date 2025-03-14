@@ -4,25 +4,29 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cd docs && copy index.html 404.html && copy index.html timetable.html && copy index.html announcer.html && cd ...",
+    "build": "vite build && cd dist && copy index.html 404.html && copy index.html timetable.html && copy index.html announcer.html && copy index.html slideshow.html && copy index.html intermission-finder.html && cd ...",
     "preview": "vite preview"
   },
   "dependencies": {
     "@vueuse/core": "^12.4.0",
     "@vueuse/sound": "^2.1.3",
+    "date-fns": "^4.1.0",
+    "pathe": "^2.0.3",
     "pinia": "^2.2.4",
     "typescript": "^5.7.3",
     "vue": "^3.5.12",
-    "vue-router": "^4.4.3",
-    "vue-to-print": "^1.2.0",
+    "vue-router": "^4.5.0",
+    "vue-to-print": "^1.3.1",
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
-    "@types/estree": "^1.0.5",
-    "@types/web-bluetooth": "^0.0.20",
+    "@types/node": "^22.13.0",
     "@vitejs/plugin-vue": "^5.0.5",
+    "sharp": "^0.33.5",
+    "svgo": "^3.3.2",
     "unplugin-vue-components": "^0.27.3",
-    "vite": "^5.4.11",
+    "vite": "^6.2.1",
+    "vite-plugin-image-optimizer": "^1.1.8",
     "vite-plugin-vue-devtools": "^7.3.1"
   }
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const props = defineProps(['identifier'])
-const model = defineModel()
+const props = defineProps<{ identifier: string }>();
+const model = defineModel<boolean>();
 </script>
 
 <template>
@@ -8,7 +8,7 @@ const model = defineModel()
         <div class="title">
             <slot></slot>
         </div>
-        <input type="checkbox" name="" :id="identifier" v-model="model">
+        <input type="checkbox" :id="identifier" v-model="model">
     </label>
 </template>
 
@@ -58,9 +58,8 @@ input[type="checkbox"]::before {
 }
 
 label:hover input[type="checkbox"]::before,
-input[type="checkbox"]:focus-visible:before {
+input[type="checkbox"]:focus-visible::before {
     background-color: #e3af24;
-    background-image: -webkit-linear-gradient(top, #dcc25c, #e3af24);
     background-image: linear-gradient(to bottom, #dcc25c, #e3af24);
 }
 

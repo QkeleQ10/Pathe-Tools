@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const props = defineProps(['identifier'])
-const model = defineModel()
+const props = defineProps<{ identifier: string }>();
+const model = defineModel<string>();
 </script>
 
 <template>
@@ -8,7 +8,7 @@ const model = defineModel()
         <div class="title">
             <slot></slot>
         </div>
-        <input type="text" inputmode="numeric" pattern="[0-9]+" name="" :id="identifier" v-model="model">
+        <input type="text" :id="identifier" v-model="model">
     </label>
 </template>
 
