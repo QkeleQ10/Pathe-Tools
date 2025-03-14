@@ -7,9 +7,9 @@ import { ref } from 'vue';
 
 const imgUrls = defineModel<string[]>();
 
-const url = useLocalStorage('server-url', 'http://localhost:3000');
-const username = useLocalStorage('server-username', 'admin');
-const password = useLocalStorage('server-password', 'admin');
+const url = useLocalStorage('server-url', '');
+const username = useLocalStorage('server-username', '');
+const password = useLocalStorage('server-password', '');
 
 fetchData();
 
