@@ -4,27 +4,6 @@ import { RouterLink, RouterView } from 'vue-router';
 import { useWindowScroll } from '@vueuse/core';
 import { format } from 'date-fns';
 
-const { y, arrivedState, directions } = useWindowScroll();
-const isSticky = ref(false);
-const header = ref(null);
-const isVisible = ref(false);
-
-watch(y, async (y) => {
-    if (y > 270 && !isSticky.value) {
-        header.value.setAttribute('style', 'transform: translateY(-100%) !important;');
-        setTimeout(() => {
-            isSticky.value = true;
-            header.value.removeAttribute('style');
-        }, 5);
-    } // Sets isSticky to true when scrolled down past 270
-    if (y <= 0) isSticky.value = false; // Sets isSticky to false when scrolled to the top
-});
-
-watch(directions, (directions) => {
-    if (directions.top) isVisible.value = true; // Adds is-visible as soon as scrolling up starts
-    if (directions.bottom) isVisible.value = false; // Remove is-visible as soon as scrolling down starts
-});
-
 const now = ref(new Date())
 setInterval(updateNowValue, 1000)
 updateNowValue()
@@ -37,7 +16,7 @@ function updateNowValue() {
 </script>
 
 <template>
-    <header ref="header" :class="{ 'is-sticky': isSticky, 'is-visible': isSticky && isVisible }">
+    <header ref="header">
         <div class="wrapper">
             <RouterLink to="/" class="logo-wrapper">
                 <img alt="Pathé logo" class="logo" src="@/assets/logo-international-white.svg" height="46" />
@@ -46,7 +25,7 @@ function updateNowValue() {
             <nav>
                 <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
                 <RouterLink to="/announcer">Omroepen</RouterLink>
-                <!-- <RouterLink to="/slideshow">Diavoorstelling</RouterLink> -->
+                <RouterLink to="/slideshow">Diavoorstelling</RouterLink>
                 <RouterLink to="/intermission-finder">Filmpauze</RouterLink>
             </nav>
 

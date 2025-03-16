@@ -6,26 +6,29 @@ import { nl } from 'date-fns/locale'
 
 const tmsScheduleStore = useTmsScheduleStore()
 
-const url = useLocalStorage('server-url', '')
+const url = "https://kid-daring-robin.ngrok-free.app"
 const username = useLocalStorage('server-username', '')
 const password = useLocalStorage('server-password', '')
 
 fetchData();
 
 async function fetchData() {
-	const response = await fetch(`${url.value}/users/${username.value}/timetable`, {
-		headers: { Authorization: 'Basic ' + btoa(`${username.value}:${password.value}`) }
+	const response = await fetch(`${url}/users/${username.value}/timetable`, {
+		headers: {
+			'ngrok-skip-browser-warning': 'true'
+		}
 	});
 	const data = await response.json();
 	tmsScheduleStore.loadFromJson(data);
 }
 
 async function submitData() {
-	await fetch(`${url.value}/users/${username.value}/timetable`, {
+	await fetch(`${url}/users/${username.value}/timetable`, {
 		method: 'POST',
 		headers: {
 			Authorization: 'Basic ' + btoa(`${username.value}:${password.value}`),
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/json',
+			'ngrok-skip-browser-warning': 'true'
 		},
 		body: JSON.stringify({ timetable: tmsScheduleStore.table, metadata: tmsScheduleStore.metadata })
 	});
@@ -41,9 +44,6 @@ async function fileUploaded(files: FileList) {
 	<section id="upload">
 		<!-- <h2>Account</h2>
 		<div class="block">
-			<InputText v-model="url" identifier="url">
-				<span>URL</span>
-			</InputText>
 			<InputText v-model="username" identifier="username">
 				<span>Gebruikersnaam</span>
 			</InputText>

@@ -14,7 +14,6 @@ export default defineConfig({
         ViteImageOptimizer({
             webp: {
                 lossless: false,
-                force: true
             }
         }),
     ],

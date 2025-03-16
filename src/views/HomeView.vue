@@ -17,9 +17,9 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue';
                     <RouterLink to="/announcer" style="text-decoration: none;">
                         <ButtonPrimary>Serviceomroepen</ButtonPrimary>
                     </RouterLink>
-                    <!-- <RouterLink to="/slideshow" style="text-decoration: none;">
+                    <RouterLink to="/slideshow" style="text-decoration: none;">
                         <ButtonPrimary>Diavoorstelling</ButtonPrimary>
-                    </RouterLink> -->
+                    </RouterLink>
                 </div>
             </div>
             <div style="flex: 50%;">

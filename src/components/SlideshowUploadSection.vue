@@ -1,64 +1,101 @@
 <script setup lang="ts">
-import { FileMetadata } from '@/classes/classes';
 import { useLocalStorage } from '@vueuse/core';
-import { format } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import { ref } from 'vue';
 
+const requestStatus = ref<'creds_missing' | 'loading' | 'success' | 'error'>('creds_missing');
 const imgUrls = defineModel<string[]>();
 const emit = defineEmits<{
 	'slide-clicked': [index: number]
 }>();
 
-const url = useLocalStorage('server-url', '');
+const url = "https://kid-daring-robin.ngrok-free.app";
 const username = useLocalStorage('server-username', '');
 const password = useLocalStorage('server-password', '');
 
-fetchData();
+if (username.value) fetchData();
 
 async function fetchData() {
-	const response = await fetch(`${url.value}/users/${username.value}/pictures`);
-	const data = await response.json();
+	imgUrls.value = [];
+	requestStatus.value = 'loading';
 
-	imgUrls.value = data.map((fileId: string) => `${url.value}/users/${username.value}/pictures/${fileId}`);
+	try {
+		const response = await fetch(`${url}/users/${username.value}/pictures`, {
+			headers: {
+				'ngrok-skip-browser-warning': 'true'
+			}
+		});
+		const data = await response.json();
+
+		imgUrls.value = await Promise.all(data.map(async (fileId: string) => await fetchImage(fileId)));
+		requestStatus.value = 'success';
+	} catch (error) {
+		requestStatus.value = 'error';
+	}
 }
 
 async function uploadImages(files: FileList) {
-	const formData = new FormData();
-	for (const file of files) {
-		formData.append('pictures', file);
+	requestStatus.value = 'loading';
+
+	try {
+		const formData = new FormData();
+		for (const file of files) {
+			formData.append('pictures', file);
+		}
+
+		const response = await fetch(`${url}/users/${username.value}/pictures`, {
+			method: 'POST',
+			headers: {
+				Authorization: 'Basic ' + btoa(`${username.value}:${password.value}`),
+				'ngrok-skip-browser-warning': 'true'
+			},
+			body: formData
+		});
+		const data = await response.json();
+
+		imgUrls.value = [...imgUrls.value, ...(await Promise.all(data.files.map(async (fileId: string) => await fetchImage(fileId))))].sort((a, b) => a.localeCompare(b));
+		requestStatus.value = 'success';
+	} catch (error) {
+		requestStatus.value = 'error';
 	}
-
-	const response = await fetch(`${url.value}/users/${username.value}/pictures`, {
-		method: 'POST',
-		headers: {
-			Authorization: 'Basic ' + btoa(`${username.value}:${password.value}`)
-		},
-		body: formData
-	});
-	const data = await response.json();
-
-	imgUrls.value = [...imgUrls.value, ...data.files.map((fileId: string) => `${url.value}/users/${username.value}/pictures/${fileId}`)].sort((a, b) => a.localeCompare(b));
 }
 
 async function deleteAll() {
-	const response = await fetch(`${url.value}/users/${username.value}/pictures`, {
-		method: 'DELETE',
-		headers: { Authorization: 'Basic ' + btoa(`${username.value}:${password.value}`) }
-	});
-	const data = await response.json();
+	requestStatus.value = 'loading';
 
-	imgUrls.value = [];
+	try {
+		await fetch(`${url}/users/${username.value}/pictures`, {
+			method: 'DELETE',
+			headers: {
+				Authorization: 'Basic ' + btoa(`${username.value}:${password.value}`),
+				'ngrok-skip-browser-warning': 'true'
+			}
+		});
+
+		imgUrls.value = [];
+		requestStatus.value = 'success';
+	} catch (error) {
+		requestStatus.value = 'error';
+	}
+}
+
+async function fetchImage(fileId: string) {
+	const response = await fetch(`${url}/users/${username.value}/pictures/${fileId}`, {
+		headers: {
+			'ngrok-skip-browser-warning': 'true'
+		}
+	});
+	const blob = await response.blob();
+	return URL.createObjectURL(blob);
 }
 </script>
 
 <template>
 	<section id="upload">
-		<h2>Opslaglocatie</h2>
+		<h2>Waarschuwing</h2>
 		<div class="block">
-			<InputText v-model="url" identifier="url">
-				<span>Adres</span>
-			</InputText>
+			<p>
+				Dit is experimenteel. Het werkt alleen als de tijdelijke server actief is ({{ url }}).
+			</p>
 			<InputText v-model="username" identifier="username">
 				<span>Gebruikersnaam</span>
 			</InputText>
@@ -71,13 +108,28 @@ async function deleteAll() {
 		</div>
 		<h2>Dia's</h2>
 		<div class="flex block">
-			<div v-if="imgUrls.length" class="pictures" style="flex-grow: 1;">
+			<div v-if="imgUrls.length && requestStatus === 'success'" class="pictures" style="flex-grow: 1;">
 				<img v-for="(imgUrl, index) in imgUrls" :src="imgUrl" @click="emit('slide-clicked', index)" />
 			</div>
-			<p v-else style="flex-grow: 1;">
+			<p v-else-if="requestStatus === 'success'" style="flex-grow: 1;">
 				Geen afbeeldingen geüpload
 				<br>
-				<small>Geen afbeeldingen aanwezig op server of geen verbinding met server</small>
+				<small>Geen afbeeldingen aanwezig op server.</small>
+			</p>
+			<p v-else-if="requestStatus === 'error'" style="flex-grow: 1;">
+				Ophalen van afbeeldingen mislukt
+				<br>
+				<small>De inloggegevens zijn niet correct of er is een probleem met de server.</small>
+			</p>
+			<p v-else-if="requestStatus === 'creds_missing'" style="flex-grow: 1;">
+				Ophalen van afbeeldingen mislukt
+				<br>
+				<small>Een gebruikersnaam ontbreekt.</small>
+			</p>
+			<p v-else style="flex-grow: 1;">
+				Afbeeldingen ophalen...
+				<br>
+				<small>Even geduld...</small>
 			</p>
 			<div class="buttons" style="flex-shrink: 0;" v-if="url && username && password">
 				<FileUploadButton id="file-upload-area" :class="{ large: !imgUrls.length }"
@@ -113,6 +165,8 @@ async function deleteAll() {
 		background-color: #000;
 		border: 1px solid #ffffff33;
 		border-radius: 6px;
+
+		cursor: pointer;
 	}
 }
 

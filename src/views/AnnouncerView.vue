@@ -76,7 +76,7 @@ watch(soundQueue, async () => {
         // Promise is now determined by sprite length (more flexible)
         await new Promise(resolve => setTimeout(resolve,
             soundQueue[0].id === 'chime'
-                ? 2800
+                ? 2500
                 : duration + 200
         ));
         // await new Promise(resolve => document.addEventListener('announcerSoundEnd', resolve, { once: true }))
