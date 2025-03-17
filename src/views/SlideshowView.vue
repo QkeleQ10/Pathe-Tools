@@ -35,6 +35,7 @@ function handleMouseMove() {
         isMouseMoving.value = false;
     }, 2000);
 };
+handleMouseMove();
 
 function nextSlide() {
     currentSlide.value = ((currentSlide.value + 1) % imgUrls.value.length) || 0;
@@ -158,6 +159,7 @@ startSlideshow();
         width: 100%;
         height: 100%;
         object-fit: contain;
+        pointer-events: none;
     }
 
     &>.control {
