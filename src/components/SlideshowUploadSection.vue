@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core';
+import { useLocalStorage, useUrlSearchParams } from '@vueuse/core';
 import { ref } from 'vue';
 
 const requestStatus = ref<'creds_missing' | 'loading' | 'success' | 'error'>('creds_missing');
@@ -8,9 +8,11 @@ const emit = defineEmits<{
 	'slide-clicked': [index: number]
 }>();
 
+const params = useUrlSearchParams('history');
+
 const url = "https://kid-daring-robin.ngrok-free.app";
-const username = useLocalStorage('server-username', '');
-const password = useLocalStorage('server-password', '');
+const username = params.username ? ref(params.username as string) : useLocalStorage('server-username', '');
+const password = params.password ? ref(params.password as string) : useLocalStorage('server-password', '');
 
 if (username.value) fetchData();
 

@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { useLocalStorage } from '@vueuse/core'
-import { format } from 'date-fns'
-import { nl } from 'date-fns/locale'
+import { ref } from 'vue';
+import { useTmsScheduleStore } from '@/stores/tmsSchedule';
+import { useLocalStorage, useUrlSearchParams } from '@vueuse/core';
+import { format } from 'date-fns';
+import { nl } from 'date-fns/locale';
 
-const tmsScheduleStore = useTmsScheduleStore()
+const tmsScheduleStore = useTmsScheduleStore();
 
-const url = "https://kid-daring-robin.ngrok-free.app"
-const username = useLocalStorage('server-username', '')
-const password = useLocalStorage('server-password', '')
+const params = useUrlSearchParams('history');
+
+const url = "https://kid-daring-robin.ngrok-free.app";
+const username = params.username ? ref(params.username as string) : useLocalStorage('server-username', '');
+const password = params.password ? ref(params.password as string) : useLocalStorage('server-password', '');
 
 fetchData();
 

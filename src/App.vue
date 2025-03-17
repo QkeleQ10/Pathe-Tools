@@ -10,8 +10,8 @@ updateNowValue()
 function updateNowValue() {
     now.value = new Date();
 
-    // Reload the page at 05:00:00
-    if (now.value.getHours() === 5 && now.value.getMinutes() === 0 && now.value.getSeconds() === 0) location.reload();
+    // Reload the page at 06:00:00
+    if (now.value.getHours() === 6 && now.value.getMinutes() === 0 && now.value.getSeconds() === 0) location.reload();
 }
 </script>
 

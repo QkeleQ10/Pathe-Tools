@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useFullscreen, useLocalStorage } from '@vueuse/core';
-import { ref, computed } from 'vue';
+import { useFullscreen, useLocalStorage, useUrlSearchParams } from '@vueuse/core';
+import { ref, watch } from 'vue';
 
 const carousel = ref<HTMLElement>(null);
 
@@ -10,6 +10,18 @@ const currentSlide = ref(0);
 const slideDuration = useLocalStorage('slideshow-duration', 60);
 
 const { isFullscreen, enter, exit, toggle } = useFullscreen(carousel);
+
+const params = useUrlSearchParams('history');
+const fakeFullscreen = ref(params.fullscreen === 'true');
+
+function toggleFullscreen() {
+    if (isFullscreen.value || fakeFullscreen.value) {
+        fakeFullscreen.value = false;
+        exit();
+    } else {
+        enter();
+    }
+}
 
 const isMouseMoving = ref(false);
 
@@ -24,14 +36,6 @@ function handleMouseMove() {
     }, 2000);
 };
 
-function startSlideshow() {
-    clearTimeout(slideshowTimeout);
-    slideshowTimeout = setTimeout(() => {
-        nextSlide();
-        startSlideshow();
-    }, slideDuration.value * 1000);
-};
-
 function nextSlide() {
     currentSlide.value = ((currentSlide.value + 1) % imgUrls.value.length) || 0;
 }
@@ -39,6 +43,14 @@ function nextSlide() {
 function previousSlide() {
     currentSlide.value = ((currentSlide.value - 1 + imgUrls.value.length) % imgUrls.value.length) || 0;
 }
+
+function startSlideshow() {
+    clearTimeout(slideshowTimeout);
+    slideshowTimeout = setTimeout(() => {
+        nextSlide();
+        startSlideshow();
+    }, slideDuration.value * 1000);
+};
 startSlideshow();
 </script>
 
@@ -50,7 +62,8 @@ startSlideshow();
             <div class="grid">
                 <div>
                     <h2>Diavoorstelling</h2>
-                    <div class="carousel" ref="carousel" :class="{ 'mouse-moving': isMouseMoving }"
+                    <div class="carousel" ref="carousel"
+                        :class="{ 'mouse-moving': isMouseMoving, 'fake-fullscreen': fakeFullscreen }"
                         @mousemove="handleMouseMove" @mouseenter="isMouseMoving = true"
                         @mouseleave="isMouseMoving = false">
 
@@ -58,11 +71,10 @@ startSlideshow();
                             <img v-for="(url, index) in imgUrls" :key="url" :src="url" v-show="index === currentSlide">
                         </TransitionGroup>
 
+                        <p v-if="!imgUrls.length" class="message">Niet beschikbaar</p>
 
-                        <p v-if="!imgUrls.length" class="message">Geen afbeeldingen geüpload</p>
-
-                        <button class="control fullscreen" @click="toggle">
-                            <Icon v-if="isFullscreen">fullscreen_exit</Icon>
+                        <button class="control fullscreen" @click="toggleFullscreen">
+                            <Icon v-if="isFullscreen || fakeFullscreen">fullscreen_exit</Icon>
                             <Icon v-else>fullscreen</Icon>
                         </button>
                         <button class="control previous" @click="previousSlide">
@@ -84,7 +96,7 @@ startSlideshow();
                             <fieldset>
                                 <legend>Automatische weergave</legend>
                                 <InputNumber v-model.number="slideDuration" @change="startSlideshow"
-                                    identifier="slideDuration" step="1" min="0" max="240" unit="s">
+                                    identifier="slideDuration" step="1" min="1" max="240" unit="s">
                                     Seconden per dia
                                     <small v-if="slideDuration > 0">
                                         Elke {{ slideDuration }} seconden wordt de volgende dia getoond.
@@ -93,7 +105,8 @@ startSlideshow();
                                         De automatische weergave is uitgeschakeld.
                                     </small>
                                 </InputNumber>
-                                <ButtonSecondary class="full" @click="currentSlide = 0; startSlideshow(); enter()">
+                                <ButtonSecondary class="full"
+                                    @click="currentSlide = 0; startSlideshow(); toggleFullscreen()">
                                     <Icon>play_arrow</Icon>Automatische weergave starten
                                 </ButtonSecondary>
                             </fieldset>
@@ -125,9 +138,20 @@ startSlideshow();
     overflow: hidden;
     cursor: none;
 
-    &:fullscreen {
+    &:fullscreen,
+    &.fake-fullscreen {
         border: none;
         border-radius: 0;
+    }
+
+    &.fake-fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        aspect-ratio: unset;
+        z-index: 1000;
     }
 
     img {
