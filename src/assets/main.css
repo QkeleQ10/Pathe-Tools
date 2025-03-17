@@ -39,6 +39,10 @@
 
 html {
     scroll-padding-top: calc(70px + 40px);
+
+    &:has(.fake-fullscreen) {
+        overflow: hidden;
+    }
 }
 
 body {
