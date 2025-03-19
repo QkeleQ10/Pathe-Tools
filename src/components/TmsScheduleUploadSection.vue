@@ -57,6 +57,12 @@ async function fileUploaded(files: FileList) {
 		</div> -->
 		<h2>Gegevensbestand</h2>
 		<div class="flex block">
+			<div class="buttons">
+				<FileUploadButton id="file-upload-area" class="large" @files-uploaded="fileUploaded"
+					accept="text/csv,.csv">
+					<small>Of sleep een bestand hiernaartoe</small>
+				</FileUploadButton>
+			</div>
 			<p v-if="'name' in tmsScheduleStore.metadata" style="flex-grow: 1;">
 				{{ tmsScheduleStore.metadata.name }}
 				<br>
@@ -73,12 +79,6 @@ async function fileUploaded(files: FileList) {
 				<br>
 				<small>Upload hiernaast een CSV-bestand uit RosettaBridge (met optie 'times only')</small>
 			</p>
-			<div class="buttons">
-				<FileUploadButton id="file-upload-area" class="large" @files-uploaded="fileUploaded"
-					accept="text/csv,.csv">
-					<small>Of sleep een bestand hiernaartoe</small>
-				</FileUploadButton>
-			</div>
 		</div>
 	</section>
 </template>
