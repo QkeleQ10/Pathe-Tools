@@ -6,7 +6,7 @@ export const useTmsXmlStore = defineStore('tmsXml', () => {
     const obj = ref<{}>({});
     const metadata = ref<{ name: string, type: string, lastModified: number, size: number } | {}>({});
 
-    async function addFiles(fileList: FileList) {
+    async function uploadXml(fileList: FileList) {
         const file = fileList[0];
         if (!file || !isXmlFile(file)) return;
         
@@ -26,7 +26,7 @@ export const useTmsXmlStore = defineStore('tmsXml', () => {
         };
     }
 
-    return { obj, metadata, addFiles };
+    return { obj, metadata, uploadXml };
 });
 
 function isXmlFile(file: File): boolean {

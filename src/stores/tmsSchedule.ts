@@ -1,18 +1,145 @@
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useUrlSearchParams, useLocalStorage } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { FileMetadata, Show } from '@/classes/classes'
+import { useServerStore } from './server';
+
+interface TmsScheduleJson {
+    timetable: Show[],
+    metadata: FileMetadata
+}
 
 export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     const table = ref<Show[]>([]);
     const metadata = ref<FileMetadata | {}>({});
+    const status = ref<'no-connection' | 'no-credentials' | 'sending' | 'sent' | 'send-error' | 'receiving' | 'received' | 'receive-error' | 'error'>('no-connection');
 
-    async function addFiles(fileList: FileList) {
-        return new Promise<void>(async (resolve, reject) => {
-            const file = fileList[0];
-            if (!file || !isCsvFile(file)) return;
+    const serverStore = useServerStore();
+
+    onMounted(connect);
+
+    const now = new Date();
+    const target = new Date();
+    target.setHours(5, 0, 0, 0);
+    if (now > target) target.setDate(target.getDate() + 1);
+    setTimeout(() => {
+        connect();
+        setInterval(connect, 24 * 60 * 60 * 1000); // Call connect every 24 hours
+    }, target.getTime() - now.getTime());
+
+    async function connect() {
+        while (table.value.length) table.value.pop();
+        while (Object.keys(metadata.value).length) delete metadata.value[Object.keys(metadata.value)[0]];
+
+        if (serverStore.username.length > 0) {
+            try {
+                status.value = 'receiving';
+                const json = await getFromServer();
+                if (Object.values(json)?.[0]) await importJson(json);
+                status.value = 'received';
+            } catch (error) {
+                status.value = 'receive-error';
+                console.error(error);
+            }
+        } else {
+            status.value = 'no-connection';
+        }
+    }
+
+    async function getFromServer(): Promise<TmsScheduleJson> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await fetch(`${serverStore.url}/users/${serverStore.username}/timetable`, {
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+                if (!response.ok) throw new Error(`Server responded with ${response.status} ${response.statusText}`);
+
+                const json = await response.json();
+                if (!json) throw new Error('No data found');
+                resolve(json);
+            } catch (error) {
+                console.error("Error getting data from server:", error);
+                reject(error);
+            }
+        });
+    }
+
+    async function postToServer(json: TmsScheduleJson) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await fetch(`${serverStore.url}/users/${serverStore.username}/timetable`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: 'Basic ' + btoa(`${serverStore.username}:${serverStore.password}`),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: JSON.stringify(json)
+                });
+                if (!response.ok) throw new Error(`Server responded with ${response.status} ${response.statusText}`);
+
+                resolve(await response.json());
+            } catch (error) {
+                console.error("Error sending data to server:", error);
+                reject(error);
+            }
+        });
+    }
+
+    async function filesUploaded(files: FileList | File[]) {
+        try {
+            const file = Array.isArray(files) ? files[0] : files.item(0);
+            if (!file) throw new Error("No file provided");
+
+            const json = await csvToJson(file);
+            await importJson(json);
+
+            if (serverStore.username.length > 0 && serverStore.password.length > 0) {
+                try {
+                    status.value = 'sending';
+                    await postToServer(json);
+                    status.value = 'sent';
+                } catch (error) {
+                    status.value = 'send-error';
+                    throw error;
+                }
+            } else {
+                status.value = 'no-credentials';
+            }
+        } catch (error) {
+            console.error("Error processing file:", error);
+            throw error;
+        }
+    }
+
+    async function importJson(json: TmsScheduleJson): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if (!json || !Object.values(json)?.[0] || !('timetable' in json) || !('metadata' in json)) return reject(new Error('Invalid JSON format'));
 
             while (table.value.length) table.value.pop();
-            metadata.value = {};
+            while (Object.keys(metadata.value).length) delete metadata.value[Object.keys(metadata.value)[0]];
+
+            const parsedTable = json.timetable.map(obj => ({
+                ...obj,
+                scheduledTime: new Date(obj.scheduledTime),
+                showTime: new Date(obj.showTime),
+                mainShowTime: new Date(obj.mainShowTime),
+                creditsTime: new Date(obj.creditsTime),
+                endTime: new Date(obj.endTime)
+            }));
+
+            table.value.push(...parsedTable);
+            Object.assign(metadata.value, json.metadata);
+
+            resolve();
+        });
+    }
+
+    async function csvToJson(file: File): Promise<TmsScheduleJson> {
+        return new Promise<TmsScheduleJson>(async (resolve, reject) => {
+            if (!file || !isCsvFile(file)) return reject(new Error('Invalid file type'));
 
             const text = await file.text();
             const rows = text.split('\n');
@@ -27,6 +154,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                         return obj;
                     }, {} as Record<string, string>);
                 })
+                .filter(obj => !obj.PLAYLIST.includes('TMS-BLACK'))
                 .map(obj => ({
                     title: extractExtras(obj.PLAYLIST).title,
                     extras: extractExtras(obj.PLAYLIST).extras,
@@ -43,85 +171,59 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     duration: obj.DURATION
                 }));
 
-            table.value.push(...parsedTable);
-
-            metadata.value = {
-                name: file.name,
-                type: file.type,
-                lastModified: file.lastModified,
-                uploadedDate: Date.now(),
-                size: file.size
-            };
-
-            resolve();
+            resolve({
+                timetable: parsedTable,
+                metadata: {
+                    name: file.name,
+                    type: file.type,
+                    lastModified: file.lastModified,
+                    uploadedDate: Date.now(),
+                    size: file.size
+                }
+            });
         });
     }
 
-    async function loadFromJson(json: object) {
-        return new Promise<void>((resolve, reject) => {
-            if (!json || !Object.values(json)?.[0] || !('timetable' in json) || !('metadata' in json)) return reject();
-
-            while (table.value.length) table.value.pop();
-            metadata.value = {};
-
-            const data = json as { timetable: Show[], metadata: FileMetadata };
-
-            const parsedTable = data.timetable.map(obj => ({
-                ...obj,
-                scheduledTime: new Date(obj.scheduledTime),
-                showTime: new Date(obj.showTime),
-                mainShowTime: new Date(obj.mainShowTime),
-                creditsTime: new Date(obj.creditsTime),
-                endTime: new Date(obj.endTime)
-            }));
-
-            table.value.push(...parsedTable);
-            metadata.value = data.metadata;
-
-            resolve();
-        });
+    function isCsvFile(file: File): boolean {
+        return file.type === 'text/csv' || file.type === 'application/vnd.ms-excel' || file.name.endsWith('.csv');
     }
 
-    return { table, metadata, addFiles, loadFromJson };
-});
+    function splitCsv(str: string): string[] {
+        const tokens = [];
+        let token = '';
+        let insideQuotes = false;
 
-function isCsvFile(file: File): boolean {
-    return file.type === 'text/csv' || file.type === 'application/vnd.ms-excel' || file.name.endsWith('.csv');
-}
-
-function splitCsv(str: string): string[] {
-    const tokens = [];
-    let token = '';
-    let insideQuotes = false;
-
-    for (const char of str) {
-        if (char === '"') {
-            insideQuotes = !insideQuotes;
-        } else if (char === ',' && !insideQuotes) {
-            tokens.push(token.trim());
-            token = '';
-        } else {
-            token += char;
+        for (const char of str) {
+            if (char === '"') {
+                insideQuotes = !insideQuotes;
+            } else if (char === ',' && !insideQuotes) {
+                tokens.push(token.trim());
+                token = '';
+            } else {
+                token += char;
+            }
         }
+        tokens.push(token.trim());
+        return tokens;
     }
-    tokens.push(token.trim());
-    return tokens;
-}
 
-function timeStringToDate(timeString: string): Date {
-    const now = new Date();
-    if (now.getHours() < 6) now.setDate(now.getDate() - 1);
+    function timeStringToDate(timeString: string): Date {
+        const now = new Date();
+        if (now.getHours() < 6) now.setDate(now.getDate() - 1);
 
-    const date = new Date(`${now.toDateString()} ${timeString}`);
-    if (date.getHours() < 6) date.setDate(date.getDate() + 1);
+        const date = new Date(`${now.toDateString()} ${timeString}`);
+        if (date.getHours() < 6) date.setDate(date.getDate() + 1);
 
-    return date;
-}
+        return date;
+    }
 
-function extractExtras(string: string): { extras: string[], title: string } {
-    let extraString = string.match(/(\s((4DX)|(ATMOS)|(IMX)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
-    return {
-        extras: extraString.length > 0 ? extraString.split(' ') : [],
-        title: string.replace(extraString, '').trim()
-    };
-}
+    function extractExtras(string: string): { extras: string[], title: string } {
+        let extraString = string.match(/(\s((4DX)|(ATMOS)|(IMX)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
+        return {
+            extras: extraString.length > 0 ? extraString.split(' ') : [],
+            title: string.replace(extraString, '').trim()
+        };
+    }
+
+    return { table, metadata, filesUploaded, status, connect };
+});

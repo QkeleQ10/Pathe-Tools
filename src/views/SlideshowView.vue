@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { useFullscreen, useLocalStorage, useUrlSearchParams } from '@vueuse/core';
-import { ref, watch } from 'vue';
+import { ref, onUnmounted } from 'vue';
+import { useDropZone, useFullscreen, useLocalStorage, useUrlSearchParams } from '@vueuse/core';
+import { useSlideshowImagesStore } from '@/stores/slideshowImages';
 
 const carousel = ref<HTMLElement>(null);
+const main = ref<HTMLElement>(null)
 
-const imgUrls = ref<string[]>([]);
+const store = useSlideshowImagesStore();
 const currentSlide = ref(0);
 
 const slideDuration = useLocalStorage('slideshow-duration', 60);
@@ -38,11 +40,11 @@ function handleMouseMove() {
 handleMouseMove();
 
 function nextSlide() {
-    currentSlide.value = ((currentSlide.value + 1) % imgUrls.value.length) || 0;
+    currentSlide.value = ((currentSlide.value + 1) % store.images.length) || 0;
 }
 
 function previousSlide() {
-    currentSlide.value = ((currentSlide.value - 1 + imgUrls.value.length) % imgUrls.value.length) || 0;
+    currentSlide.value = ((currentSlide.value - 1 + store.images.length) % store.images.length) || 0;
 }
 
 function startSlideshow() {
@@ -53,12 +55,41 @@ function startSlideshow() {
     }, slideDuration.value * 1000);
 };
 startSlideshow();
+
+function handleKeydown(event: KeyboardEvent) {
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
+    switch (event.key) {
+        case 'ArrowLeft': previousSlide(); break;
+        case 'ArrowRight': nextSlide(); break;
+        case 'Escape': case 'F11': case 'F5': case 'f': event.preventDefault(); toggleFullscreen(); break;
+        default:
+            if (!isNaN(Number(event.key))) {
+                const slideIndex = Number(event.key) - 1;
+                if (slideIndex >= 0 && slideIndex < store.images.length) {
+                    currentSlide.value = slideIndex;
+                }
+            }
+            break;
+    }
+}
+
+window.addEventListener('keydown', handleKeydown);
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeydown);
+});
+
+const { isOverDropZone } = useDropZone(main, {
+    onDrop: store.filesUploaded,
+    dataTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/*'],
+    multiple: true
+})
 </script>
 
 <template>
-    <HeroImage />
-    <main class="container dark">
-        <SlideshowUploadSection v-model="imgUrls" @slide-clicked="currentSlide = $event" />
+    <main ref="main">
+        <HeroImage />
+        <SlideshowUploadSection @slide-clicked="currentSlide = $event" />
         <section id="pictures">
             <div class="grid">
                 <div>
@@ -69,10 +100,12 @@ startSlideshow();
                         @mouseleave="isMouseMoving = false">
 
                         <TransitionGroup name="slide">
-                            <img v-for="(url, index) in imgUrls" :key="url" :src="url" v-show="index === currentSlide">
+                            <img v-for="(url, index) in store.images" :key="url" :src="url"
+                                v-show="index === currentSlide">
                         </TransitionGroup>
 
-                        <p v-if="!imgUrls.length" class="message">Niet beschikbaar</p>
+                        <p v-if="['sending', 'receiving'].includes(store.status)" class="message">Laden...</p>
+                        <p v-else-if="!store.images?.length" class="message">Leeg</p>
 
                         <button class="control fullscreen" @click="toggleFullscreen">
                             <Icon v-if="isFullscreen || fakeFullscreen">fullscreen_exit</Icon>
@@ -85,7 +118,7 @@ startSlideshow();
                             <Icon>chevron_right</Icon>
                         </button>
                         <div class="control dotnav">
-                            <button v-for="(url, index) in imgUrls" @click="currentSlide = index"
+                            <button v-for="(url, index) in store.images" @click="currentSlide = index"
                                 :class="{ active: index === currentSlide }"></button>
                         </div>
                     </div>
@@ -116,6 +149,9 @@ startSlideshow();
                 </SidePanel>
             </div>
         </section>
+        <div v-if="isOverDropZone" class="dropzone">
+            Laat los om bestand(en) te uploaden
+        </div>
     </main>
 </template>
 

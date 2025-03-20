@@ -25,7 +25,7 @@ const tmsXmlStore = useTmsXmlStore()
 				<small>Upload hiernaast een XML-bestand uit RosettaBridge</small>
 			</p>
 			<div class="buttons">
-				<FileUploadButton id="file-upload-area" class="large" @files-uploaded="tmsXmlStore.addFiles"
+				<FileUploadButton id="file-upload-area" class="large" @files-uploaded="tmsXmlStore.uploadXml"
 					accept="text/xml,.xml">
 					<small>Of sleep een bestand hiernaartoe</small>
 				</FileUploadButton>

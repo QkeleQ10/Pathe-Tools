@@ -65,7 +65,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from) => {
-    document.title = (to.meta?.title as string) ?? 'Pathé Tools';
+    document.title = to.meta?.title ? `${to.meta.title} - Pathé Tools` : 'Pathé Tools';
 });
 
 export default router;

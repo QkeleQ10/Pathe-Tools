@@ -8,7 +8,7 @@ import { Announcement, AnnouncementTypes, Show } from '@/classes/classes';
 import { format, formatDistanceToNow, formatDistanceToNowStrict } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
-const { table: scheduleTable } = useTmsScheduleStore()
+const { table, metadata, filesUploaded } = useTmsScheduleStore()
 
 const warningShown = ref(true)
 
@@ -76,7 +76,7 @@ watch(soundQueue, async () => {
         // Promise is now determined by sprite length (more flexible)
         await new Promise(resolve => setTimeout(resolve,
             soundQueue[0].id === 'chime'
-                ? 2500
+                ? 2700
                 : duration + 200
         ));
         // await new Promise(resolve => document.addEventListener('announcerSoundEnd', resolve, { once: true }))
@@ -113,12 +113,12 @@ function playSound(preferredVoice: string, sound: { id: string }): { voice: stri
 }
 
 const announcementsToMake = ref<Announcement[]>([])
-watch([scheduleTable, options], compileListOfAnnouncements, { deep: true })
+watch([table, options], compileListOfAnnouncements, { deep: true })
 compileListOfAnnouncements()
 function compileListOfAnnouncements() {
     let array: Announcement[] = []
     const announcementTypes = Object.values(AnnouncementTypes);
-    scheduleTable.forEach((row: Show, i: number) => {
+    table.forEach((row: Show, i: number) => {
         if (!row.scheduledTime) return;
         announcementTypes.forEach(announcementType => {
             if (!options.value[announcementType].enabled) return;
@@ -143,7 +143,7 @@ function compileListOfAnnouncements() {
                     announcementTime = row.endTime;
                     break;
                 case AnnouncementTypes.FinalMainShowStart:
-                    if (i !== scheduleTable.length - 1) return;
+                    if (i !== table.length - 1) return;
                     announcementTime = row.mainShowTime;
                     break;
             }
@@ -213,9 +213,9 @@ function parseAuditorium(auditorium: string) {
 </script>
 
 <template>
-    <HeroImage />
     <main class="container dark">
-        <TmsScheduleUploadSection />
+        <HeroImage />
+        <TimetableUploadSection />
         <section>
             <div class="flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex: 50% 1 1;">
@@ -226,7 +226,8 @@ function parseAuditorium(auditorium: string) {
                                 v-show="now.getTime() - announcement.time.getTime() < 10000" class="film"
                                 :key="announcement.key" :class="{ 'announcing': announcement.status === 'announcing' }">
                                 <div class="room">
-                                    {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium ===
+                                    {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium
+                                        ===
                                         'Rooftop') ? 'RT' :
                                         announcement.show.auditoriumNumber }}
                                 </div>
@@ -278,7 +279,7 @@ function parseAuditorium(auditorium: string) {
                             </div>
                             <p v-if="announcementsToMake.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
                                 key="0">Er zijn geen omroepen gepland.</p>
-                            <p v-if="scheduleTable.length < 1">Upload eerst een bestand.</p>
+                            <p v-if="table.length < 1">Upload eerst een bestand.</p>
                         </TransitionGroup>
                     </div>
                 </div>

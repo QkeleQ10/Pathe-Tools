@@ -1,0 +1,219 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useSlideshowImagesStore } from '@/stores/slideshowImages';
+import { httpStatuses, useServerStore } from '@/stores/server';
+
+const emit = defineEmits<{
+	'slide-clicked': [index: number]
+}>();
+
+const store = useSlideshowImagesStore();
+
+const serverStore = useServerStore();
+
+const showOptions = ref<boolean>(false);
+</script>
+
+<template>
+	<section id="upload">
+		<h2>Dia's
+			<button id="upload-status" @click="showOptions = true"
+				:title="httpStatuses[store.status].long || store.status + '\nKlik om serveropties te wijzigen'">
+				<div id="upload-status-light" :class="store.status"></div>
+				{{ httpStatuses[store.status].short || store.status }}
+			</button>
+		</h2>
+		<FileUploadBlock @files-uploaded="store.filesUploaded" accept="image/*" multiple>
+			<div v-if="store.images?.length" class="pictures" style="flex-grow: 1;">
+				<img v-for="(imgUrl, index) in store.images" :src="imgUrl" @click="emit('slide-clicked', index)" />
+			</div>
+			<p v-else style="flex-grow: 1;">
+				Geen afbeeldingen
+				<br>
+				<small>Upload afbeeldingen met de knop of sleep ze naar deze pagina.</small>
+			</p>
+			<template #buttons>
+				<ButtonSecondary v-if="store.images?.length" @click="store.deleteAll">
+					<Icon>delete_forever</Icon>Alles verwijderen
+				</ButtonSecondary>
+			</template>
+		</FileUploadBlock>
+
+		<Transition>
+			<ModalDialog v-if="showOptions" @dismiss="showOptions = false">
+				<h3>Opslag op server</h3>
+				<p>
+					Als je een geldige gebruikersnaam en wachtwoord hebt opgegeven, dan worden de door jou ingelezen
+					afbeeldingen bewaard op de server.
+					<br><br>
+					Je kunt vervolgens later (eventueel vanaf een ander apparaat) de afbeeldingen terugzien als je daar
+					ook je gebruikersnaam opgeeft.
+					<br><br>
+					Afbeeldingen worden gesorteerd op bestandsnaam. Er kan maar één afbeelding met dezelfde bestandsnaam
+					zijn.
+					Als je een afbeelding overschrijft of alle afbeeldingen wist, dan kan dat niet ongedaan worden
+					gemaakt.
+					<br><br>
+				</p>
+				<div id="server-options">
+					<em class="label">Status</em>
+					<div class="server-options-container">
+						<p>
+							<span id="upload-status-light" :class="store.status"></span>
+							<strong>{{ httpStatuses[store.status].short || store.status }}</strong>
+						</p>
+						<p>{{ httpStatuses[store.status].long }}</p>
+					</div>
+
+					<em class="label">Configuratie</em>
+					<div class="server-options-container">
+						<InputText v-model="serverStore.username" identifier="username">
+							<span>Gebruikersnaam</span>
+						</InputText>
+						<InputText v-model="serverStore.password" identifier="password">
+							<span>Wachtwoord</span>
+						</InputText>
+					</div>
+					<ButtonPrimary class="full" @click="showOptions = false; store.connect();">
+						<Icon>check</Icon>Vernieuwen
+					</ButtonPrimary>
+				</div>
+			</ModalDialog>
+		</Transition>
+	</section>
+</template>
+
+<style scoped>
+.block {
+	text-align: center;
+	line-height: 2;
+}
+
+.pictures {
+	height: 110px;
+
+	display: flex;
+	gap: 8px;
+
+	overflow-x: auto;
+
+	img {
+		max-width: 140px;
+		object-fit: contain;
+
+		background-color: #000;
+		border: 1px solid #ffffff33;
+		border-radius: 6px;
+
+		cursor: pointer;
+	}
+}
+
+#file-upload-area>div>small {
+	font: small Arial, Helvetica, sans-serif;
+	text-transform: none;
+}
+
+#upload-status {
+	height: 53px;
+	float: right;
+	display: flex;
+	align-items: center;
+
+	background-color: transparent;
+	border: none;
+	color: currentColor;
+	font: 16px Heebo, arial, sans-serif;
+	text-shadow: 0px 0px 8px #000;
+
+	cursor: pointer;
+
+	&:hover,
+	&:focus {
+		text-decoration: underline;
+	}
+
+	#upload-status-light {
+		box-shadow: 0px 0px 8px #000;
+	}
+}
+
+#upload-status-light {
+	display: inline-block;
+	position: relative;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	margin-right: 10px;
+	--background-color: hsl(0, 0%, 55%);
+	background-color: var(--background-color);
+
+	&.sent,
+	&.received {
+		--background-color: hsl(134, 80%, 55%);
+	}
+
+	&.error,
+	&.send-error,
+	&.receive-error {
+		--background-color: hsl(354, 80%, 55%);
+	}
+
+	&.sending,
+	&.receiving {
+		--background-color: hsl(208, 80%, 55%);
+
+		&::after {
+			content: '';
+			border: 2px solid var(--background-color);
+			border-radius: 50%;
+			position: absolute;
+			top: -4px;
+			left: -4px;
+			right: -4px;
+			bottom: -4px;
+			animation: pulsate 750ms infinite;
+		}
+	}
+
+	&.receiving {
+		&::after {
+			animation: pulsate 750ms infinite reverse;
+		}
+	}
+}
+
+.server-options-container {
+	padding: 1rem;
+	padding-block: 8px;
+	padding-bottom: 8px;
+	margin-top: 6px;
+	margin-bottom: 16px;
+	border-radius: 6px;
+	background-color: #ffffff0d;
+
+	&>p:first-child {
+		margin-top: 8px;
+	}
+
+	&>.input {
+		margin-block: 8px;
+	}
+}
+
+@keyframes pulsate {
+	0% {
+		scale: 0.8;
+		opacity: 0.0;
+	}
+
+	50% {
+		opacity: 1.0;
+	}
+
+	100% {
+		scale: 1.3;
+		opacity: 0.0;
+	}
+}
+</style>

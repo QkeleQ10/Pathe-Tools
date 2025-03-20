@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
-import { useStorage } from '@vueuse/core'
+import { useStorage, useDropZone } from '@vueuse/core'
 import { useVueToPrint } from "vue-to-print"
 import { format } from 'date-fns'
+import { nl } from 'date-fns/locale'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show, TimetableShow } from '@/classes/classes'
 
-const { table } = useTmsScheduleStore()
+const store = useTmsScheduleStore()
 
 const columns = {
     mainTime: {
@@ -42,7 +43,7 @@ while (postCreditsFilms.value.size > 20) {
 }
 
 const printComponent = ref(null)
-const editSection = ref(null)
+const main = ref<HTMLElement>(null)
 
 const showMenu = ref(false)
 const menuX = ref(0)
@@ -65,17 +66,17 @@ function closeContextMenu() {
 }
 
 const transformedTable = computed(() => {
-    let arr = table.slice().map((show: Show, i: number) => {
+    let arr = store.table?.slice().map((show: Show, i: number) => {
         let timetableShow = show as TimetableShow
-        timetableShow.overlapWithPlf = table.filter(testRow => testRow.auditorium?.includes('4DX')).some(testRow =>
+        timetableShow.overlapWithPlf = store.table.filter(testRow => testRow.auditorium?.includes('4DX')).some(testRow =>
             timetableShow.creditsTime.getTime() - testRow.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&
             timetableShow.creditsTime.getTime() - testRow.mainShowTime.getTime() <= 0
         )
         timetableShow.hasPostCredits = postCreditsFilms.value.has(timetableShow.title?.trim())
-        timetableShow.timeToNextUsherout = table[i + 1]?.creditsTime.getTime() - (timetableShow.hasPostCredits ? timetableShow.endTime : timetableShow.creditsTime).getTime()
-        timetableShow.nextStartTime = table.find((testRow, testI) => testI > i && testRow.auditorium === timetableShow.auditorium)?.scheduledTime
+        timetableShow.timeToNextUsherout = store.table[i + 1]?.creditsTime.getTime() - (timetableShow.hasPostCredits ? timetableShow.endTime : timetableShow.creditsTime).getTime()
+        timetableShow.nextStartTime = store.table.find((testRow, testI) => testI > i && testRow.auditorium === timetableShow.auditorium)?.scheduledTime
         return timetableShow
-    })
+    }) || []
 
     arr.filter(testRow => testRow.auditorium?.includes('4DX')).forEach(plfRow => {
         let index: number = 0;
@@ -97,13 +98,19 @@ const { handlePrint } = useVueToPrint({
     content: () => printComponent.value,
     documentTitle: "Tijdenlijstje " + format(new Date(), 'MM/dd/yyyy'),
 })
+
+const { isOverDropZone } = useDropZone(main, {
+    onDrop: store.filesUploaded,
+    dataTypes: ['text/csv', '.csv'],
+    multiple: false
+})
 </script>
 
 <template>
-    <HeroImage />
-    <main class="container dark">
-        <TmsScheduleUploadSection />
-        <section id="edit" ref="editSection" v-if="transformedTable.length > 0">
+    <main ref="main">
+        <HeroImage />
+        <TimetableUploadSection />
+        <section id="edit" v-if="transformedTable.length > 0">
             <div class="flex" style="flex-wrap: wrap-reverse;">
                 <div>
                     <h2>Tijdenlijstje bewerken</h2>
@@ -152,10 +159,8 @@ const { handlePrint } = useVueToPrint({
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
                                     {{ format(row.mainShowTime, 'HH:mm:ss') }}
                                 </td>
-                                <td nowrap contenteditable class="special-cell"
-                                    :class="{ 'intermission-checkbox': !!row.intermissionAfter }"
-                                    @dblclick="transformedTable.at(i).intermissionAfter = !row.intermissionAfter">
-                                    {{ transformedTable[i]?.isNearPlf ? '4DX' : ' ' }}
+                                <td nowrap contenteditable class="special-cell">
+                                    {{ transformedTable[i]?.isNearPlf }}
                                 </td>
                                 <td nowrap>
                                     <div class="double-usherout"
@@ -219,7 +224,8 @@ const { handlePrint } = useVueToPrint({
                             </fieldset>
                             <fieldset :disabled="!transformedTable.some(row => row.auditorium?.includes('4DX'))">
                                 <legend>4DX-inloop</legend>
-                                <small>Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een streeplijntje.</small>
+                                <small>Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
+                                    streeplijntje.</small>
 
                                 <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30"
                                     unit="min"
@@ -277,21 +283,20 @@ const { handlePrint } = useVueToPrint({
             <h2>Tijdenlijstje bewerken</h2>
             <p>Upload eerst een bestand.</p>
         </section>
+        <Transition>
+            <ContextMenu v-if="showMenu" class="dark" :x="menuX" :y="menuY" @click-outside="closeContextMenu">
+                <button
+                    @click="postCreditsFilms.has(targetRow.title?.trim()) ? postCreditsFilms.delete(targetRow.title?.trim()) : postCreditsFilms.add(targetRow.title?.trim()); closeContextMenu()">
+                    <div class="check" :class="{ 'empty': !postCreditsFilms.has(targetRow.title?.trim()) }"></div>
+                    Post-credits-scène bij {{ targetRow.title }}
+                </button>
+            </ContextMenu>
+        </Transition>
+
+        <div v-if="isOverDropZone" class="dropzone">
+            Laat los om bestand te uploaden
+        </div>
     </main>
-    <Transition>
-        <ContextMenu v-if="showMenu" class="dark" :x="menuX" :y="menuY" @click-outside="closeContextMenu">
-            <button
-                @click="transformedTable.at(targetI).intermissionAfter = !targetRow.intermissionAfter; closeContextMenu()">
-                <div class="check" :class="{ 'empty': !transformedTable.at(targetI).intermissionAfter }"></div>
-                Selectievakje boven deze rij
-            </button>
-            <button
-                @click="postCreditsFilms.has(targetRow.title?.trim()) ? postCreditsFilms.delete(targetRow.title?.trim()) : postCreditsFilms.add(targetRow.title?.trim()); closeContextMenu()">
-                <div class="check" :class="{ 'empty': !postCreditsFilms.has(targetRow.title?.trim()) }"></div>
-                Post-credits-scène bij {{ targetRow.title }}
-            </button>
-        </ContextMenu>
-    </Transition>
 </template>
 
 <style scoped>
@@ -452,19 +457,6 @@ table.timetable {
             text-align: end;
             padding-right: 14px;
             font-weight: normal;
-        }
-
-        &.intermission-checkbox:before {
-            content: '';
-            position: absolute;
-            right: 42px;
-            top: 50%;
-            transform: translateY(-50%);
-            border: 1px solid var(--color);
-            background-color: var(--row-color);
-            opacity: 0.5;
-            height: 12px;
-            width: 12px;
         }
 
         .double-usherout {

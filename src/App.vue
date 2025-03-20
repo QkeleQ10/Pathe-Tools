@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
-import { useWindowScroll } from '@vueuse/core';
 import { format } from 'date-fns';
 
 const now = ref(new Date())
@@ -9,9 +8,6 @@ setInterval(updateNowValue, 1000)
 updateNowValue()
 function updateNowValue() {
     now.value = new Date();
-
-    // Reload the page at 06:00:00
-    if (now.value.getHours() === 6 && now.value.getMinutes() === 0 && now.value.getSeconds() === 0) location.reload();
 }
 </script>
 
