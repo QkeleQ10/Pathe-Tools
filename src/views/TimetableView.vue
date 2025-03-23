@@ -160,7 +160,7 @@ const { isOverDropZone } = useDropZone(main, {
                                     {{ format(row.mainShowTime, 'HH:mm:ss') }}
                                 </td>
                                 <td nowrap contenteditable class="special-cell">
-                                    {{ transformedTable[i]?.isNearPlf }}
+                                    {{ transformedTable[i]?.isNearPlf ? '4DX' : '' }}
                                 </td>
                                 <td nowrap>
                                     <div class="double-usherout"
