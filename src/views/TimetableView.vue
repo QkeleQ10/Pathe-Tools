@@ -273,8 +273,8 @@ const { isOverDropZone } = useDropZone(main, {
                     </Tabs>
                     <div class="buttons"
                         style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-left: 16px; padding-right: 16px;">
-                        <ButtonPrimary class="full" @click="handlePrint">
-                            Afdrukken</ButtonPrimary>
+                        <Button class="primary full" @click="handlePrint">
+                            Afdrukken</Button>
                     </div>
                 </SidePanel>
             </div>

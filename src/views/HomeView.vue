@@ -1,24 +1,24 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
 
-import ButtonPrimary from '@/components/ButtonPrimary.vue';
+import Button from '@/components/Button.vue';
 </script>
 
 <template>
     <HeroImage class="large" />
-    <main class="container dark">
+    <main>
         <section class="flex">
             <div style="flex: 50%;">
                 <h2>Voor theaters</h2>
                 <div class="flex">
                     <RouterLink to="/timetable" style="text-decoration: none;">
-                        <ButtonPrimary>Tijdenlijstje maken</ButtonPrimary>
+                        <Button class="primary">Tijdenlijstje maken</Button>
                     </RouterLink>
                     <RouterLink to="/announcer" style="text-decoration: none;">
-                        <ButtonPrimary>Serviceomroepen</ButtonPrimary>
+                        <Button class="primary">Serviceomroepen</Button>
                     </RouterLink>
                     <RouterLink to="/slideshow" style="text-decoration: none;">
-                        <ButtonPrimary>Diavoorstelling</ButtonPrimary>
+                        <Button class="primary">Diavoorstelling</Button>
                     </RouterLink>
                 </div>
             </div>
@@ -26,7 +26,7 @@ import ButtonPrimary from '@/components/ButtonPrimary.vue';
                 <h2>Voor POC</h2>
                 <div class="flex">
                     <RouterLink to="/intermission-finder" style="text-decoration: none;">
-                        <ButtonPrimary>Pauzemoment bepalen</ButtonPrimary>
+                        <Button class="primary">Pauzemoment bepalen</Button>
                     </RouterLink>
                 </div>
             </div>

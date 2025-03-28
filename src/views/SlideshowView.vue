@@ -139,10 +139,10 @@ const { isOverDropZone } = useDropZone(main, {
                                         De automatische weergave is uitgeschakeld.
                                     </small>
                                 </InputNumber>
-                                <ButtonSecondary class="full"
+                                <Button class="secondary full"
                                     @click="currentSlide = 0; startSlideshow(); toggleFullscreen()">
                                     <Icon>play_arrow</Icon>Automatische weergave starten
-                                </ButtonSecondary>
+                                </Button>
                             </fieldset>
                         </Tab>
                     </Tabs>

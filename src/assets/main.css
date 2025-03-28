@@ -54,7 +54,7 @@ body {
 }
 
 main {
-    min-height: calc(100vh - 70px);
+    min-height: calc(100vh - 300px);
 }
 
 h1:not(:empty),
@@ -204,11 +204,18 @@ em.label {
 .block {
     padding: 16px 20px;
     border-radius: 5px;
-    background-image: radial-gradient(90% 90% at 0% 100%, #ffffff1a 0%, transparent 100%);
     background-color: #1b1d23;
+    background-image: radial-gradient(90% 90% at 0% 100%, #ffffff1a 0%, transparent 100%);
     background-repeat: no-repeat;
     background-size: 340px 100%;
     color: #ffffffcc;
+
+    &.blur {
+        background-color: #ffffff1a;
+        background-image: none;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 0 0 1px #fff3;
+    }
 }
 
 .dropzone {

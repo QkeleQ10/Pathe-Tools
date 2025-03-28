@@ -1,36 +1,30 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import { useTmsXmlStore } from '@/stores/tmsXml'
 
-const tmsXmlStore = useTmsXmlStore()
+const store = useTmsXmlStore()
 </script>
 
 <template>
 	<section id="upload">
 		<h2>Gegevensbestand</h2>
-		<div class="flex block">
-			<p v-if="'name' in tmsXmlStore.metadata" style="flex-grow: 1;">
-				{{ tmsXmlStore.metadata.name }}
+
+		<FileUploadBlock @files-uploaded="store.uploadXml" accept="text/xml,.xml">
+			<p v-if="'name' in store.metadata" style="flex-grow: 1;">
+				{{ store.metadata.name }}
 				<br>
 				<small>
-					Laatst gewijzigd op {{ format(new Date(tmsXmlStore.metadata.lastModified), 'PPPpp',
-						{ locale: nl }) }}
+					Laatst gewijzigd op {{ format(new Date(store.metadata.lastModified), 'PPPpp',
+					{ locale: nl }) }}
 				</small>
 			</p>
 			<p v-else style="flex-grow: 1;">
-				Geen bestand geüpload
+				Geen gegevens
 				<br>
-				<small>Upload hiernaast een XML-bestand uit RosettaBridge</small>
+				<small>Upload een XML-bestand uit RosettaBridge met de knop of door hem hierheen te slepen.</small>
 			</p>
-			<div class="buttons">
-				<FileUploadButton id="file-upload-area" class="large" @files-uploaded="tmsXmlStore.uploadXml"
-					accept="text/xml,.xml">
-					<small>Of sleep een bestand hiernaartoe</small>
-				</FileUploadButton>
-			</div>
-		</div>
+		</FileUploadBlock>
 	</section>
 </template>
 

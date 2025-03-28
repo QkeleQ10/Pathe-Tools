@@ -9,7 +9,7 @@ const props = defineProps<{
 </script>
 
 <template>
-	<div class="flex block">
+	<div class="flex block blur">
 		<slot></slot>
 		<div class="buttons">
 			<FileUploadButton id="file-upload-area" @files-uploaded="(files) => emit('files-uploaded', files)"

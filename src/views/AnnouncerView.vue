@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue';
-import { useStorage } from '@vueuse/core';
+import { useDropZone, useStorage } from '@vueuse/core';
 import { ReturnedValue, useSound } from '@vueuse/sound';
 import { voices, getSoundInfo } from '@/voices.ts';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Announcement, AnnouncementTypes, Show } from '@/classes/classes';
-import { format, formatDistanceToNow, formatDistanceToNowStrict } from 'date-fns';
-import { nl } from 'date-fns/locale';
+import { format } from 'date-fns';
 
-const { table, metadata, filesUploaded } = useTmsScheduleStore()
+const store = useTmsScheduleStore()
+
+const main = ref<HTMLElement>(null)
 
 const warningShown = ref(true)
 
@@ -113,12 +114,12 @@ function playSound(preferredVoice: string, sound: { id: string }): { voice: stri
 }
 
 const announcementsToMake = ref<Announcement[]>([])
-watch([table, options], compileListOfAnnouncements, { deep: true })
+watch([store.table, options], compileListOfAnnouncements, { deep: true })
 compileListOfAnnouncements()
 function compileListOfAnnouncements() {
     let array: Announcement[] = []
     const announcementTypes = Object.values(AnnouncementTypes);
-    table.forEach((row: Show, i: number) => {
+    store.table.forEach((row: Show, i: number) => {
         if (!row.scheduledTime) return;
         announcementTypes.forEach(announcementType => {
             if (!options.value[announcementType].enabled) return;
@@ -143,7 +144,7 @@ function compileListOfAnnouncements() {
                     announcementTime = row.endTime;
                     break;
                 case AnnouncementTypes.FinalMainShowStart:
-                    if (i !== table.length - 1) return;
+                    if (i !== store.table.length - 1) return;
                     announcementTime = row.mainShowTime;
                     break;
             }
@@ -210,10 +211,16 @@ function parseAuditorium(auditorium: string) {
     if (auditorium?.toLowerCase().includes('rooftop')) return '10'
     else return String(auditorium?.match(/\d+/)).padStart(2, '0')
 }
+
+const { isOverDropZone } = useDropZone(main, {
+    onDrop: store.filesUploaded,
+    dataTypes: ['text/csv', '.csv'],
+    multiple: false
+})
 </script>
 
 <template>
-    <main class="container dark">
+    <main ref="main">
         <HeroImage />
         <TimetableUploadSection />
         <section>
@@ -279,7 +286,7 @@ function parseAuditorium(auditorium: string) {
                             </div>
                             <p v-if="announcementsToMake.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
                                 key="0">Er zijn geen omroepen gepland.</p>
-                            <p v-if="table.length < 1">Upload eerst een bestand.</p>
+                            <p v-if="store.table.length < 1">Upload eerst een bestand.</p>
                         </TransitionGroup>
                     </div>
                 </div>
@@ -426,6 +433,10 @@ function parseAuditorium(auditorium: string) {
                 </SidePanel>
             </div>
         </section>
+
+        <div v-if="isOverDropZone" class="dropzone">
+            Laat los om bestand te uploaden
+        </div>
     </main>
 </template>
 

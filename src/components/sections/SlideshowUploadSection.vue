@@ -30,12 +30,12 @@ const showOptions = ref<boolean>(false);
 			<p v-else style="flex-grow: 1;">
 				Geen afbeeldingen
 				<br>
-				<small>Upload afbeeldingen met de knop of sleep ze naar deze pagina.</small>
+				<small>Upload afbeeldingen met de knop of door ze hierheen te slepen.</small>
 			</p>
 			<template #buttons>
-				<ButtonSecondary v-if="store.images?.length" @click="store.deleteAll">
+				<Button class="secondary" v-if="store.images?.length" @click="store.deleteAll">
 					<Icon>delete_forever</Icon>Alles verwijderen
-				</ButtonSecondary>
+				</Button>
 			</template>
 		</FileUploadBlock>
 
@@ -74,9 +74,9 @@ const showOptions = ref<boolean>(false);
 							<span>Wachtwoord</span>
 						</InputText>
 					</div>
-					<ButtonPrimary class="full" @click="showOptions = false; store.connect();">
+					<Button class="primary full" @click="showOptions = false; store.connect();">
 						<Icon>check</Icon>Vernieuwen
-					</ButtonPrimary>
+					</Button>
 				</div>
 			</ModalDialog>
 		</Transition>

@@ -14,13 +14,15 @@ const showOptions = ref<boolean>(false);
 
 <template>
     <section id="upload">
-        <h2>Gegevensbestand
+        <div class="floating">
+        <!-- <h2>Gegevensbestand -->
             <button id="upload-status" @click="showOptions = true"
                 :title="httpStatuses[store.status].long || store.status + '\nKlik om serveropties te wijzigen'">
                 <div id="upload-status-light" :class="store.status"></div>
                 {{ httpStatuses[store.status].short || store.status }}
             </button>
-        </h2>
+        <!-- </h2> -->
+        </div>
         <FileUploadBlock @files-uploaded="store.filesUploaded" accept="text/csv,.csv">
             <p v-if="'name' in store.metadata" style="flex-grow: 1;">
                 {{ store.metadata.name }}
@@ -36,7 +38,7 @@ const showOptions = ref<boolean>(false);
             <p v-else style="flex-grow: 1;">
                 Geen gegevens
                 <br>
-                <small>Upload een CSV-bestand uit RosettaBridge (met optie 'times only')</small>
+                <small>Upload een CSV-bestand uit RosettaBridge met de knop of door hem hierheen te slepen.</small>
             </p>
         </FileUploadBlock>
 
@@ -76,9 +78,9 @@ const showOptions = ref<boolean>(false);
                         style="display: block; margin-block: 12px;">Let op:
                         als
                         je gegevens vernieuwt, dan gaan niet-geüploade wijzigingen verloren.</small>
-                    <ButtonPrimary class="full" @click="showOptions = false; store.connect();">
+                    <Button class="primary full" @click="showOptions = false; store.connect();">
                         <Icon>check</Icon>Vernieuwen
-                    </ButtonPrimary>
+                    </Button>
                 </div>
             </ModalDialog>
         </Transition>
@@ -86,9 +88,18 @@ const showOptions = ref<boolean>(false);
 </template>
 
 <style scoped>
+#upload {
+    width: 90%;
+
+    .floating {
+        display: flex;
+        justify-content: end;
+    }
+}
+
 #upload-status {
     height: 53px;
-    float: right;
+    /* float: right; */
     display: flex;
     align-items: center;
 

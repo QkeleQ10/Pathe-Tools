@@ -1,27 +1,28 @@
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
-import { useStorage } from '@vueuse/core'
-
+import { ref, computed } from 'vue'
+import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsXmlStore } from '@/stores/tmsXml'
-import SidePanel from '@/components/SidePanel.vue';
-const tmsXmlStore = useTmsXmlStore()
+
+const store = useTmsXmlStore()
+
+const main = ref(null)
 
 const intermissionPercentageDev = useStorage('intermission-percentage-dev', 5)
 
 const filmMeta = computed(() => {
     return findObjectValue(
-        (tmsXmlStore.obj?.ReelList?.Reel?.[0] || tmsXmlStore.obj?.ReelList?.Reel)?.AssetList,
+        (store.obj?.ReelList?.Reel?.[0] || store.obj?.ReelList?.Reel)?.AssetList,
         ([key]) => key.includes('CompositionMetadataAsset'))
 })
 const filmTitle = computed(() => {
     return findObjectValue(
         filmMeta.value,
         ([key]) => key.includes('TitleText')
-    )?._text || tmsXmlStore.obj?.AnnotationText?._text.split('_')[0]
+    )?._text || store.obj?.AnnotationText?._text.split('_')[0]
 })
 const filmIs3d = computed(() => {
     return !!findObjectValue(
-        (tmsXmlStore.obj?.ReelList?.Reel?.[0] || tmsXmlStore.obj?.ReelList?.Reel)?.AssetList,
+        (store.obj?.ReelList?.Reel?.[0] || store.obj?.ReelList?.Reel)?.AssetList,
         ([key]) => key.includes('StereoscopicPicture'))
 })
 const filmSpokenLanguage = computed(() => {
@@ -42,7 +43,7 @@ const filmSubtitleLanguage = computed(() => {
 })
 
 const reels = computed(() => {
-    const reelsOrigin = tmsXmlStore.obj?.ReelList?.Reel
+    const reelsOrigin = store.obj?.ReelList?.Reel
     let reels = []
 
     if (reelsOrigin?.length > 0) {
@@ -119,17 +120,23 @@ Duur: ${formatDuration(reel.duration, reel.frameRate)} (${reel.frames} frames)\n
 Intrinsieke duur: ${formatDuration(reel.intrinsicDuration, reel.frameRate)} (${reel.intrinsicFrames} frames)
 Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint} frames)`
 }
+
+const { isOverDropZone } = useDropZone(main, {
+    onDrop: store.uploadXml,
+    dataTypes: ['text/xml', '.xml'],
+    multiple: false
+})
 </script>
 
 <template>
     <HeroImage />
-    <main class="container dark">
+    <main ref="main">
         <TmsXmlUploadSection />
         <section>
             <div class="flex" style="flex-wrap: wrap;">
                 <div style="flex: 50% 1 1;">
                     <h2>Filminformatie</h2>
-                    <div class="film" v-if="tmsXmlStore.metadata?.name">
+                    <div class="film" v-if="store.metadata?.name">
                         <div class="room">
                             <Icon fill style="--size: 24px; opacity: 0.5;">theaters</Icon>
                         </div>
@@ -178,7 +185,7 @@ Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint
                                     </td>
                                     <td>{{ formatDuration(reel.properStart * filmDuration, reel.frameRate) }}
                                         ({{ (reel.properStart * 100).toLocaleString('nl-NL',
-                                            { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%)
+                                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%)
                                     </td>
                                 </tr>
                             </table>
@@ -189,19 +196,19 @@ Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint
                                     en de
                                     {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel
                                     (na {{ formatDuration(mostCentralGap * filmDuration, reels[0].frameRate) }} of {{
-                                        (mostCentralGap * 100).toLocaleString('nl-NL',
-                                            { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%).
+                                    (mostCentralGap * 100).toLocaleString('nl-NL',
+                                    { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%).
                                 </p>
                                 <p v-else-if="reels.length > 1">
                                     Er is geen reel die tussen {{ 50 -
-                                        intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
+                                    intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
                                     film
                                     eindigt.
                                     <a v-if="(Math.abs(mostCentralGap - 0.5) - (intermissionPercentageDev / 100)) < 0.05"
                                         class="link"
                                         @click="intermissionPercentageDev = Math.ceil(Math.abs(mostCentralGap - 0.5) * 100)">
                                         Maximale afwijking bijstellen tot {{ Math.ceil(Math.abs(mostCentralGap - 0.5) *
-                                            100) }}%?</a>
+                                        100) }}%?</a>
                                     <br>
                                     Een pauze zou kunnen worden ingepland tijdens de
                                     {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel (bijvoorbeeld na
@@ -238,6 +245,10 @@ Startpunt: ${formatDuration(reel.entryPoint, reel.frameRate)} (${reel.entryPoint
                 </SidePanel>
             </div>
         </section>
+
+        <div v-if="isOverDropZone" class="dropzone">
+            Laat los om bestand te uploaden
+        </div>
     </main>
 </template>
 

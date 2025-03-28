@@ -29,7 +29,8 @@ button {
     border: none;
     box-sizing: border-box;
 
-    &:hover {
+    &:hover,
+    &[data-drag-active=true] {
         box-shadow: 0 0 0 8px #ffffff0d;
         background: #1f252e;
     }
@@ -51,6 +52,16 @@ button.large {
 }
 
 button.primary {
+    color: #090a0b;
+    background-color: #feb91e;
+
+    &:hover,
+    &[data-drag-active=true] {
+        background-color: #ffdc6e;
+    }
+}
+
+button.secondary {
     color: #fff;
     background-color: #ffffff1a;
 
