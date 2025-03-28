@@ -1,12 +1,29 @@
-<script setup>
-function getImageUrl(name) {
-    return new URL(`../assets/heroes/${name}.webp`, import.meta.url).href
-}
+<script setup lang="ts">
+import { FastAverageColor } from 'fast-average-color';
+import { ref } from 'vue';
+
+const imageUrl = new URL(`../assets/heroes/${Math.floor(Math.random() * 13)}.webp`, import.meta.url).href
+const color = ref('');
+
+const fac = new FastAverageColor();
+
+fac.getColorAsync(imageUrl, {
+    ignoredColor: [
+        [255, 255, 255, 255, 100]
+    ]
+})
+    .then(result => {
+        color.value = result.hex;
+        fac.destroy();
+    })
+    .catch(console.log);
+
 </script>
 
 <template>
     <div class="hero">
-        <div class="image" :style="`background-image: url(${getImageUrl(Math.floor(Math.random() * 13))})`">
+        <div class="color-bleed" :style="{ backgroundColor: color }">{{ color }}</div>
+        <div class="image" :style="`background-image: url(${imageUrl})`">
         </div>
     </div>
 </template>
@@ -21,7 +38,7 @@ function getImageUrl(name) {
         left: 0;
         right: 0;
         width: 100%;
-        height: 370px;
+        height: 350px;
         z-index: -1;
 
         background-size: cover;
@@ -29,18 +46,33 @@ function getImageUrl(name) {
         mask-image: linear-gradient(to bottom, #000, #00000041 60%, transparent);
     }
 
+    .color-bleed {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 750px;
+        z-index: -1;
+        mask: linear-gradient(to bottom, #00000031 60%, transparent);
+    }
+
     &.large {
         height: 170px;
 
         .image {
-            height: 500px;
+            height: 450px;
+        }
+
+        .color-bleed {
+            height: 850px;
         }
     }
 }
 
-@media (prefers-reduced-motion) {
+/* @media (prefers-reduced-motion) {
     .hero {
         display: none;
     }
-}
+} */
 </style>
