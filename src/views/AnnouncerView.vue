@@ -114,7 +114,8 @@ function playSound(preferredVoice: string, sound: { id: string }): { voice: stri
 }
 
 const announcementsToMake = ref<Announcement[]>([])
-watch([store.table, options], compileListOfAnnouncements, { deep: true })
+store.$subscribe(compileListOfAnnouncements, { deep: true })
+watch(options, compileListOfAnnouncements, { deep: true })
 compileListOfAnnouncements()
 function compileListOfAnnouncements() {
     let array: Announcement[] = []
