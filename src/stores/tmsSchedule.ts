@@ -1,5 +1,4 @@
 import { ref, onMounted } from 'vue'
-import { useUrlSearchParams, useLocalStorage } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { FileMetadata, Show } from '@/classes/classes'
 import { useServerStore } from './server';
@@ -13,6 +12,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     const table = ref<Show[]>([]);
     const metadata = ref<FileMetadata | {}>({});
     const status = ref<'no-connection' | 'no-credentials' | 'sending' | 'sent' | 'send-error' | 'receiving' | 'received' | 'receive-error' | 'error'>('no-connection');
+    const flags = ref<string[]>([]);
 
     const serverStore = useServerStore();
 
@@ -28,9 +28,6 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     }, target.getTime() - now.getTime());
 
     async function connect() {
-        while (table.value.length) table.value.pop();
-        while (Object.keys(metadata.value).length) delete metadata.value[Object.keys(metadata.value)[0]];
-
         if (serverStore.username.length > 0) {
             try {
                 status.value = 'receiving';
@@ -93,7 +90,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             const file = Array.isArray(files) ? files[0] : files.item(0);
             if (!file) throw new Error("No file provided");
 
-            const json = await csvToJson(file);
+            const json = await transformToJson(file);
             await importJson(json);
 
             if (serverStore.username.length > 0 && serverStore.password.length > 0) {
@@ -118,9 +115,6 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         return new Promise<void>((resolve, reject) => {
             if (!json || !Object.values(json)?.[0] || !('timetable' in json) || !('metadata' in json)) return reject(new Error('Invalid JSON format'));
 
-            while (table.value.length) table.value.pop();
-            while (Object.keys(metadata.value).length) delete metadata.value[Object.keys(metadata.value)[0]];
-
             const parsedTable = json.timetable.map(obj => ({
                 ...obj,
                 scheduledTime: new Date(obj.scheduledTime),
@@ -130,25 +124,27 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                 endTime: new Date(obj.endTime)
             }));
 
-            table.value.push(...parsedTable);
-            Object.assign(metadata.value, json.metadata);
+            table.value = parsedTable;
+            metadata.value = json.metadata;
 
             resolve();
         });
     }
 
-    async function csvToJson(file: File): Promise<TmsScheduleJson> {
+    async function transformToJson(file: File): Promise<TmsScheduleJson> {
         return new Promise<TmsScheduleJson>(async (resolve, reject) => {
-            if (!file || !isCsvFile(file)) return reject(new Error('Invalid file type'));
+            flags.value = [];
+
+            if (!file || !(isCsvFile(file) || isTsvFile(file))) return reject(new Error('Invalid file type'));
 
             const text = await file.text();
             const rows = text.split('\n');
-            const headers = splitCsv(rows[0]);
+            const headers = splitData(rows[0]);
 
             const parsedTable = rows
                 .slice(1)
                 .map(row => {
-                    const data = splitCsv(row);
+                    const data = splitData(row);
                     return headers.reduce((obj, header, index) => {
                         obj[header.trim()] = data[index]?.trim();
                         return obj;
@@ -178,14 +174,31 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     type: file.type,
                     lastModified: file.lastModified,
                     uploadedDate: Date.now(),
-                    size: file.size
+                    size: file.size,
+                    flags: flags.value,
                 }
             });
         });
     }
 
     function isCsvFile(file: File): boolean {
-        return file.type === 'text/csv' || file.type === 'application/vnd.ms-excel' || file.name.endsWith('.csv');
+        return file.type === 'text/csv' || file.name.endsWith('.csv');
+    }
+
+    function isTsvFile(file: File): boolean {
+        return file.type === 'text/tsv' || file.name.endsWith('.tsv');
+    }
+
+    function splitTsv(str: string): string[] {
+        const regex = /"([^"]*)"/g;
+        let match;
+        const result: string[] = [];
+
+        while ((match = regex.exec(str)) !== null) {
+            result.push(match[1]);
+        }
+
+        return result;
     }
 
     function splitCsv(str: string): string[] {
@@ -207,14 +220,33 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         return tokens;
     }
 
+    function splitData(str: string): string[] {
+        const tsvPattern = /"[^"]*"\t"[^"]*"/;
+        return tsvPattern.test(str) ? splitTsv(str) : splitCsv(str);
+    }
+
     function timeStringToDate(timeString: string): Date {
-        const now = new Date();
-        if (now.getHours() < 6) now.setDate(now.getDate() - 1);
+        try {
+            if (!timeString) return new Date(0); // No string provided
 
-        const date = new Date(`${now.toDateString()} ${timeString}`);
-        if (date.getHours() < 6) date.setDate(date.getDate() + 1);
+            const date = new Date(timeString);
 
-        return date;
+            if (date.getTime() > 0) return date; // 'ISO' or 'Friendly' format
+            else { // 'Times-only' format
+                if (!flags.value.includes('times-only')) flags.value.push('times-only');
+
+                const now = new Date();
+                if (now.getHours() < 6) now.setDate(now.getDate() - 1);
+
+                const date = new Date(`${now.toDateString()} ${timeString}`);
+                if (date.getHours() < 6) date.setDate(date.getDate() + 1);
+
+                return date;
+            }
+        } catch (error) {
+            console.error("Error converting time string to date:", error);
+            return new Date(0);
+        }
     }
 
     function extractExtras(string: string): { extras: string[], title: string } {

@@ -214,7 +214,7 @@ function parseAuditorium(auditorium: string) {
 
 const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
-    dataTypes: ['text/csv', '.csv'],
+    // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
     multiple: false
 })
 </script>
@@ -441,10 +441,6 @@ const { isOverDropZone } = useDropZone(main, {
 </template>
 
 <style scoped>
-div.container {
-    min-height: calc(100vh - 70px);
-}
-
 #upcoming-announcements {
     position: relative;
 }

@@ -4,6 +4,7 @@ export interface FileMetadata {
     size: number;
     lastModified: number;
     uploadedDate: number;
+    flags?: string[];
 };
 
 export interface Show {

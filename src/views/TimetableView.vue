@@ -3,7 +3,6 @@ import { ref, computed, nextTick } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useVueToPrint } from "vue-to-print"
 import { format } from 'date-fns'
-import { nl } from 'date-fns/locale'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show, TimetableShow } from '@/classes/classes'
 
@@ -101,7 +100,7 @@ const { handlePrint } = useVueToPrint({
 
 const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
-    dataTypes: ['text/csv', '.csv'],
+    // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
     multiple: false
 })
 </script>
