@@ -151,7 +151,8 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     }, {} as Record<string, string>);
                 })
                 .filter(obj => !obj.PLAYLIST.includes('TMS-BLACK'))
-                .map(obj => ({
+                .map((obj, index) => ({
+                    index,
                     title: extractExtras(obj.PLAYLIST).title,
                     extras: extractExtras(obj.PLAYLIST).extras,
                     playlist: obj.PLAYLIST,

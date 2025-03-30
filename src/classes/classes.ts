@@ -8,6 +8,7 @@ export interface FileMetadata {
 };
 
 export interface Show {
+    index: number;
     title: string;
     playlist: string;
     feature: string;
@@ -32,29 +33,23 @@ export interface TimetableShow extends Show {
     intermissionAfter?: boolean;
 };
 
+export interface AnnouncerShow extends Show {
+    announcements: Announcement[];
+}
+
 export enum AnnouncementTypes {
     Start = 'start',
-    PlfStart = 'plfStart',
+    Reception = 'reception',
     MainShow = 'mainShow',
     Credits = 'credits',
     End = 'end',
-    FinalMainShowStart = 'finalMainShowStart'
 };
 
-export class Announcement {
+export interface Announcement {
     time: Date;
     type: AnnouncementTypes;
-    announcement: string[];
+    sprites: string[];
     status: string;
     key?: string;
     show: Show;
-
-    constructor(item: { time: Date, type: AnnouncementTypes, announcement: string[], status: string, scheduleItem: Show, key?: string }) {
-        this.time = item.time;
-        this.type = item.type;
-        this.announcement = item.announcement;
-        this.status = item.status;
-        this.show = item.scheduleItem;
-        this.key = item.key;
-    }
 }

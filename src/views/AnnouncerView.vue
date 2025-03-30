@@ -1,27 +1,24 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
 import { ReturnedValue, useSound } from '@vueuse/sound';
 import { voices, getSoundInfo } from '@/voices.ts';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { Announcement, AnnouncementTypes, Show } from '@/classes/classes';
-import { format } from 'date-fns';
+import { Announcement, AnnouncementTypes, AnnouncerShow, Show } from '@/classes/classes';
 
 const store = useTmsScheduleStore()
+
+const announcementQueue = ref<Announcement[]>([])
 
 const main = ref<HTMLElement>(null)
 
 const warningShown = ref(true)
 
 const now = ref(new Date())
-setInterval(updateNowValue, 1000)
-updateNowValue()
-function updateNowValue() {
-    now.value = new Date()
-}
+setInterval(() => now.value = new Date(), 1000)
 
 const options = useStorage('announcer-options', {
-    plfStart: {
+    reception: {
         enabled: true,
         minutesBeforeStartTime: 15,
         announcement: ['chime', 'start', 'auditorium#']
@@ -32,6 +29,7 @@ const options = useStorage('announcer-options', {
     },
     mainShow: {
         enabled: false,
+        finalEnabled: true,
         announcement: ['chime', 'mainshow', 'auditorium#']
     },
     credits: {
@@ -42,10 +40,6 @@ const options = useStorage('announcer-options', {
     end: {
         enabled: false,
         announcement: ['chime', 'end', 'auditorium#']
-    },
-    finalMainShowStart: {
-        enabled: false,
-        announcement: ['chime', 'finalshow']
     },
     selectedVoices: ['default']
 }, localStorage, { mergeDefaults: true })
@@ -59,6 +53,16 @@ Object.entries(voices).forEach(([voice, { file, sprite }]) => {
         onend: (id) => document.dispatchEvent(new CustomEvent('announcerSoundEnd', { detail: id })),
     });
 });
+
+const announcerShows = computed<AnnouncerShow[]>(() => {
+    return store.table.map((show: Show) => {
+        const announcements: Announcement[] = [];
+
+        
+
+        return { ...show, announcements };
+    });
+})
 
 let soundQueue = reactive<{ id: string; key?: string }[]>([]);
 watch(soundQueue, async () => {
@@ -113,95 +117,21 @@ function playSound(preferredVoice: string, sound: { id: string }): { voice: stri
     return { voice: null, duration: 0 };
 }
 
-const announcementsToMake = ref<Announcement[]>([])
-store.$subscribe(compileListOfAnnouncements, { deep: true })
-watch(options, compileListOfAnnouncements, { deep: true })
-compileListOfAnnouncements()
-function compileListOfAnnouncements() {
-    let array: Announcement[] = []
-    const announcementTypes = Object.values(AnnouncementTypes);
-    store.table.forEach((row: Show, i: number) => {
-        if (!row.scheduledTime) return;
-        announcementTypes.forEach(announcementType => {
-            if (!options.value[announcementType].enabled) return;
-            let announcementTime: Date;
-            let announcementContent: string[] = options.value[announcementType].announcement.map((e: string) => e.replace('#', parseAuditorium(row.auditorium)));
-
-            switch (announcementType) {
-                case AnnouncementTypes.Start:
-                    announcementTime = row.scheduledTime;
-                    break;
-                case AnnouncementTypes.PlfStart:
-                    if (!row.auditorium?.includes('4DX')) return;
-                    announcementTime = new Date(row.scheduledTime.getTime() - (options.value.plfStart.minutesBeforeStartTime * 60000));
-                    break;
-                case AnnouncementTypes.MainShow:
-                    announcementTime = row.mainShowTime;
-                    break;
-                case AnnouncementTypes.Credits:
-                    announcementTime = new Date(row.creditsTime.getTime() - (options.value.credits.secondsBeforeCreditsTime * 1000));
-                    break;
-                case AnnouncementTypes.End:
-                    announcementTime = row.endTime;
-                    break;
-                case AnnouncementTypes.FinalMainShowStart:
-                    if (i !== store.table.length - 1) return;
-                    announcementTime = row.mainShowTime;
-                    break;
-            }
-            if (announcementTime) {
-                array.push(new Announcement({
-                    time: announcementTime,
-                    type: announcementType,
-                    announcement: announcementContent,
-                    status: 'unscheduled',
-                    key: announcementTime + announcementContent.join(),
-                    scheduleItem: row,
-                }))
-            }
-        });
-    });
-
-    announcementsToMake.value.filter((a) => a.status === 'scheduled').forEach((a) => {
-        const newElement = array.findIndex((b) => a.time === b.time && a.announcement.join() === b.announcement.join())
-        if (newElement) array.splice(newElement, 1)
-        array.push(a)
-    })
-
-    announcementsToMake.value = [
-        ...array.filter((a) => Date.now() - a.time.getTime() < 10000).sort((a, b) => a.time.getTime() - b.time.getTime())
-    ]
-
-    updateNowValue()
-}
-
-setInterval(scheduleAnnouncements, 30000)
-watch(announcementsToMake, scheduleAnnouncements)
-scheduleAnnouncements()
-function scheduleAnnouncements() {
-    announcementsToMake.value
+setInterval(setupNearAnnouncements, 30000)
+watch(announcementQueue, setupNearAnnouncements)
+setupNearAnnouncements()
+function setupNearAnnouncements() {
+    announcementQueue.value
         .filter((obj: Announcement) => obj.time.getTime() - Date.now() < 60000 && obj.status === 'unscheduled')
         .forEach((obj: Announcement) => {
-            if (obj.status === 'scheduled') return
+            if (obj.status !== 'unscheduled') return
             obj.status = 'scheduled'
             setTimeout(() => {
                 if (obj.status !== 'scheduled') return
                 obj.status = 'announcing'
-                obj.announcement.forEach((id: string) => { soundQueue.push({ id, key: new Date().getTime() + id }) })
+                obj.sprites.forEach((id: string) => { soundQueue.push({ id, key: new Date().getTime() + id }) })
             }, Math.max(obj.time.getTime() - Date.now() - 5000, 0))
         })
-}
-
-function formatTimeLeft(timeInMs: number) {
-    if (timeInMs < 60000) {
-        return Math.floor(timeInMs / 1000) + ' s'
-    } else if (timeInMs < 600000) {
-        return Math.floor(timeInMs / 60000) + ':' + String(Math.floor((timeInMs % 60000) / 1000)).padStart(2, '0') + ' min'
-    } else if (timeInMs < 3600000) {
-        return Math.floor(timeInMs / 60000) + ' min'
-    } else {
-        return Math.floor(timeInMs / 3600000) + ':' + String(Math.floor((timeInMs % 3600000) / 60000)).padStart(2, '0') + ' h'
-    }
 }
 
 function sentenceCase(string: string) {
@@ -230,14 +160,20 @@ const { isOverDropZone } = useDropZone(main, {
                     <h2>Geplande omroepen</h2>
                     <div id="upcoming-announcements">
                         <TransitionGroup name="list">
-                            <div v-for="announcement in announcementsToMake"
-                                v-show="now.getTime() - announcement.time.getTime() < 10000" class="film"
-                                :key="announcement.key" :class="{ 'announcing': announcement.status === 'announcing' }">
+                            <AnnouncerFilmCard v-for="show in store.table" :show="show" :enabled-announcements="{
+                                reception: options.reception.enabled,
+                                start: options.start.enabled,
+                                mainShow: options.mainShow.enabled,
+                                credits: options.credits.enabled,
+                                end: options.end.enabled,
+                            }" />
+                            <!-- <div v-for="announcement in announcementQueue" class="film" :key="announcement.key"
+                                :class="{ 'announcing': announcement.status === 'announcing' }">
                                 <div class="room">
                                     {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium
-                                        ===
-                                        'Rooftop') ? 'RT' :
-                                        announcement.show.auditoriumNumber }}
+                                    ===
+                                    'Rooftop') ? 'RT' :
+                                    announcement.show.auditoriumNumber }}
                                 </div>
                                 <div class="title">{{ announcement.show.title }}</div>
                                 <div class="time">
@@ -245,15 +181,15 @@ const { isOverDropZone } = useDropZone(main, {
                                     {{ format(announcement.show.endTime, 'HH:mm:ss') }}</div>
                                 <div class="flex chips">
                                     <Chip v-for="extra in announcement.show.extras"
-                                        :class="{ 'translucent-white': !(announcement.type === AnnouncementTypes.PlfStart && extra === '4DX') }">
+                                        :class="{ 'translucent-white': !(announcement.type === AnnouncementTypes.Reception && extra === '4DX') }">
                                         {{ extra }}
                                     </Chip>
                                 </div>
-                                <div class="announcement" :class="announcement.announcement"
-                                    @dblclick="announcement.announcement.forEach(id => { soundQueue.push({ id, key: new Date().getTime() + id }) })"
+                                <div class="announcement" :class="announcement.sprites"
+                                    @dblclick="announcement.sprites.forEach(id => { soundQueue.push({ id, key: new Date().getTime() + id }) })"
                                     style="display: grid; grid-template-columns: 64px 130px 1fr;">
 
-                                    <Icon v-if="announcement.type === AnnouncementTypes.PlfStart"
+                                    <Icon v-if="announcement.type === AnnouncementTypes.Reception"
                                         :class="{ pulsate: announcement.status === 'scheduled' }">line_start_diamond
                                     </Icon>
                                     <Icon v-else-if="announcement.type === AnnouncementTypes.Start"
@@ -268,24 +204,20 @@ const { isOverDropZone } = useDropZone(main, {
                                     <Icon v-else-if="announcement.type === AnnouncementTypes.End"
                                         :class="{ pulsate: announcement.status === 'scheduled' }">line_end_square
                                     </Icon>
-                                    <Icon v-else-if="announcement.type === AnnouncementTypes.FinalMainShowStart"
-                                        :class="{ pulsate: announcement.status === 'scheduled' }">line_start_circle
-                                    </Icon>
                                     <Icon v-else>schedule</Icon>
                                     <div>
                                         {{ format(announcement.time, 'HH:mm:ss') }}
                                         ({{ formatTimeLeft(announcement.time.getTime() - now.getTime()) }})
                                     </div>
                                     <div :style="{ opacity: announcement.status === 'announcing' ? 1 : 0.35 }">
-                                        '<span v-for="(id, i) in announcement.announcement" v-show="id !== 'chime'"
-                                            class="word"
-                                            :class="{ announcing: announcement.time <= now && soundQueue[0]?.id === id }">
-                                            {{ getSoundInfo(id).name }}{{ i < announcement.announcement.length - 1
-                                                ? '&nbsp;' : '' }} </span>'
+                                        '<span v-for="(id, i) in announcement.sprites" v-show="id !== 'chime'"
+                                            class="word">
+                                            {{ getSoundInfo(id).name }}{{ i < announcement.sprites.length - 1 ? '&nbsp;'
+                                                : '' }} </span>'
                                     </div>
                                 </div>
-                            </div>
-                            <p v-if="announcementsToMake.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
+                            </div> -->
+                            <p v-if="announcementQueue.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
                                 key="0">Er zijn geen omroepen gepland.</p>
                             <p v-if="store.table.length < 1">Upload eerst een bestand.</p>
                         </TransitionGroup>
@@ -350,19 +282,19 @@ const { isOverDropZone } = useDropZone(main, {
                             </div>
                             <fieldset>
                                 <legend>4DX-inloop</legend>
-                                <InputCheckbox v-model="options.plfStart.enabled" identifier="announcePlfStart">
+                                <InputCheckbox v-model="options.reception.enabled" identifier="announceReception">
                                     <span>Omroepen</span>
                                 </InputCheckbox>
-                                <InputAnnouncement v-model="options.plfStart.announcement"
-                                    identifier="announcePlfStartAnnouncement" :disabled="!options.plfStart.enabled">
+                                <InputAnnouncement v-model="options.reception.announcement"
+                                    identifier="announceReceptionAnnouncement" :disabled="!options.reception.enabled">
                                     Inhoud
                                 </InputAnnouncement>
-                                <InputNumber v-model.number="options.plfStart.minutesBeforeStartTime"
-                                    identifier="announcePlfStartGracePeriod" min="0" max="30" unit="min"
-                                    :disabled="!options.plfStart.enabled">
+                                <InputNumber v-model.number="options.reception.minutesBeforeStartTime"
+                                    identifier="announceReceptionGracePeriod" min="0" max="30" unit="min"
+                                    :disabled="!options.reception.enabled">
                                     Voorlooptijd
                                     <small>
-                                        De omroep wordt {{ options.plfStart.minutesBeforeStartTime }} min voor de
+                                        De omroep wordt {{ options.reception.minutesBeforeStartTime }} min voor de
                                         aanvangstijd afgespeeld.
                                     </small>
                                 </InputNumber>
@@ -381,6 +313,10 @@ const { isOverDropZone } = useDropZone(main, {
                                 <legend>Start hoofdfilm</legend>
                                 <InputCheckbox v-model="options.mainShow.enabled" identifier="announceMainShow">
                                     Omroepen
+                                </InputCheckbox>
+                                <InputCheckbox v-model="options.mainShow.finalEnabled"
+                                    identifier="announceFinalMainShow">
+                                    Laatste hoofdflim omroepen
                                 </InputCheckbox>
                                 <InputAnnouncement v-model="options.mainShow.announcement"
                                     identifier="announceMainShowAnnouncement" :disabled="!options.mainShow.enabled">
@@ -417,18 +353,6 @@ const { isOverDropZone } = useDropZone(main, {
                                     Inhoud
                                 </InputAnnouncement>
                             </fieldset>
-                            <fieldset>
-                                <legend>Start laatste hoofdfilm</legend>
-                                <InputCheckbox v-model="options.finalMainShowStart.enabled"
-                                    identifier="announceFinalShow">
-                                    Omroepen
-                                </InputCheckbox>
-                                <InputAnnouncement v-model="options.finalMainShowStart.announcement"
-                                    identifier="announceFinalShowAnnouncement"
-                                    :disabled="!options.finalMainShowStart.enabled">
-                                    Inhoud
-                                </InputAnnouncement>
-                            </fieldset>
                         </Tab>
                     </Tabs>
                 </SidePanel>
@@ -446,7 +370,7 @@ const { isOverDropZone } = useDropZone(main, {
     position: relative;
 }
 
-.film {
+/* .film {
     display: grid;
     grid-template-columns: 64px 1fr;
     grid-template-rows: auto auto auto;
@@ -529,7 +453,7 @@ const { isOverDropZone } = useDropZone(main, {
         background-color: #ffffff96;
         color: #000;
     }
-}
+} */
 
 .parameters-warning {
     position: absolute;
