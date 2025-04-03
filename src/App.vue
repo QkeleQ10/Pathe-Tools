@@ -175,7 +175,6 @@ footer p {
 
 #clock {
     color: #ffffffb3;
-    font: 700 16px Arial, Helvetica, sans-serif;
 }
 
 #faq {

@@ -18,14 +18,14 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     onMounted(connect);
 
-    const now = new Date();
-    const target = new Date();
-    target.setHours(5, 0, 0, 0);
-    if (now > target) target.setDate(target.getDate() + 1);
-    setTimeout(() => {
-        connect();
-        setInterval(connect, 24 * 60 * 60 * 1000); // Call connect every 24 hours
-    }, target.getTime() - now.getTime());
+    // const now = new Date();
+    // const target = new Date();
+    // target.setHours(5, 0, 0, 0);
+    // if (now > target) target.setDate(target.getDate() + 1);
+    // setTimeout(() => {
+    //     connect();
+    //     setInterval(connect, 24 * 60 * 60 * 1000); // Call connect every 24 hours
+    // }, target.getTime() - now.getTime());
 
     async function connect() {
         if (serverStore.username.length > 0) {

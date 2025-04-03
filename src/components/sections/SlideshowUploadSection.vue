@@ -16,13 +16,15 @@ const showOptions = ref<boolean>(false);
 
 <template>
 	<section id="upload">
-		<h2>Dia's
+		<div class="floating">
+			<!-- <h2>Dia's -->
 			<button id="upload-status" @click="showOptions = true"
 				:title="httpStatuses[store.status].long || store.status + '\nKlik om serveropties te wijzigen'">
 				<div id="upload-status-light" :class="store.status"></div>
 				{{ httpStatuses[store.status].short || store.status }}
 			</button>
-		</h2>
+			<!-- </h2> -->
+		</div>
 		<FileUploadBlock @files-uploaded="store.filesUploaded" accept="image/*" multiple>
 			<div v-if="store.images?.length" class="pictures" style="flex-grow: 1;">
 				<img v-for="(imgUrl, index) in store.images" :src="imgUrl" @click="emit('slide-clicked', index)" />
@@ -46,10 +48,12 @@ const showOptions = ref<boolean>(false);
 					Als je een geldige gebruikersnaam en wachtwoord hebt opgegeven, dan worden de door jou ingelezen
 					afbeeldingen bewaard op de server.
 					<br><br>
-					Je kunt vervolgens later (eventueel vanaf een ander apparaat) de afbeeldingen terugzien als je daar
+					Je kunt vervolgens later (eventueel vanaf een ander apparaat) de afbeeldingen terugzien als je
+					daar
 					ook je gebruikersnaam opgeeft.
 					<br><br>
-					Afbeeldingen worden gesorteerd op bestandsnaam. Er kan maar één afbeelding met dezelfde bestandsnaam
+					Afbeeldingen worden gesorteerd op bestandsnaam. Er kan maar één afbeelding met dezelfde
+					bestandsnaam
 					zijn.
 					Als je een afbeelding overschrijft of alle afbeeldingen wist, dan kan dat niet ongedaan worden
 					gemaakt.
@@ -67,6 +71,7 @@ const showOptions = ref<boolean>(false);
 
 					<em class="label">Configuratie</em>
 					<div class="server-options-container">
+						<p>Serveradres<span style="float: right; opacity: .5;">{{ serverStore.url }}</span></p>
 						<InputText v-model="serverStore.username" identifier="username">
 							<span>Gebruikersnaam</span>
 						</InputText>
@@ -84,9 +89,13 @@ const showOptions = ref<boolean>(false);
 </template>
 
 <style scoped>
-.block {
-	text-align: center;
-	line-height: 2;
+#upload {
+	width: 90%;
+
+	.floating {
+		display: flex;
+		justify-content: end;
+	}
 }
 
 .pictures {
@@ -107,11 +116,6 @@ const showOptions = ref<boolean>(false);
 
 		cursor: pointer;
 	}
-}
-
-#file-upload-area>div>small {
-	font: small Arial, Helvetica, sans-serif;
-	text-transform: none;
 }
 
 #upload-status {

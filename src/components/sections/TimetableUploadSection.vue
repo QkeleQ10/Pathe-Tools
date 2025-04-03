@@ -71,6 +71,7 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
 
                     <em class="label">Configuratie</em>
                     <div class="server-options-container">
+                        <p>Serveradres<span style="float: right; opacity: .5;">{{ serverStore.url }}</span></p>
                         <InputText v-model="serverStore.username" identifier="username">
                             <span>Gebruikersnaam</span>
                         </InputText>

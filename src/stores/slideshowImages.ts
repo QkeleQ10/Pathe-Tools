@@ -1,5 +1,4 @@
 import { ref, onMounted } from 'vue'
-import { useUrlSearchParams, useLocalStorage } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { useServerStore } from './server';
 
@@ -11,14 +10,14 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
 
     onMounted(connect);
 
-    const now = new Date();
-    const target = new Date();
-    target.setHours(5, 0, 0, 0);
-    if (now > target) target.setDate(target.getDate() + 1);
-    setTimeout(() => {
-        connect();
-        setInterval(connect, 24 * 60 * 60 * 1000); // Call connect every 24 hours
-    }, target.getTime() - now.getTime());
+    // const now = new Date();
+    // const target = new Date();
+    // target.setHours(5, 0, 0, 0);
+    // if (now > target) target.setDate(target.getDate() + 1);
+    // setTimeout(() => {
+    //     connect();
+    //     setInterval(connect, 24 * 60 * 60 * 1000); // Call connect every 24 hours
+    // }, target.getTime() - now.getTime());
 
     async function connect() {
         while (images.value.length) images.value.pop();

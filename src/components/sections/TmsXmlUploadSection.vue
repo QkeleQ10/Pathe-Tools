@@ -8,7 +8,7 @@ const store = useTmsXmlStore()
 
 <template>
 	<section id="upload">
-		<h2>Gegevensbestand</h2>
+		<!-- <h2>Gegevensbestand</h2> -->
 
 		<FileUploadBlock @files-uploaded="store.uploadXml" accept="text/xml,.xml">
 			<p v-if="'name' in store.metadata" style="flex-grow: 1;">
@@ -16,33 +16,25 @@ const store = useTmsXmlStore()
 				<br>
 				<small>
 					Laatst gewijzigd op {{ format(new Date(store.metadata.lastModified), 'PPPpp',
-					{ locale: nl }) }}
+						{ locale: nl }) }}
 				</small>
 			</p>
 			<p v-else style="flex-grow: 1;">
 				Geen gegevens
 				<br>
-				<small>Upload een XML-bestand uit RosettaBridge met de knop of door hem hierheen te slepen.</small>
+				<small>Upload een <b>XML</b>-bestand uit RosettaBridge met de knop of door hem hierheen te slepen.</small>
 			</p>
 		</FileUploadBlock>
 	</section>
 </template>
 
 <style scoped>
-.block {
-	text-align: center;
-	line-height: 2;
-}
+#upload {
+	width: 90%;
 
-#file-upload-area>div>small {
-	font: small Arial, Helvetica, sans-serif;
-	text-transform: none;
-}
-
-.buttons {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	gap: 8px;
+	.floating {
+		display: flex;
+		justify-content: end;
+	}
 }
 </style>
