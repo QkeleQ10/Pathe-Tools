@@ -15,15 +15,27 @@ declare global {
 };
 
 store.$subscribe(() => {
-    window.datadump = store.table
-    window.narrowcastXml = narrowcastXml.value
+    const oldTable = window.datadump;
+    const oldNarrowcastXml = window.narrowcastXml;
+
+    window.datadump = store.table;
+    window.narrowcastXml = narrowcastXml.value;
+
+    if (!store.table?.length || narrowcastXml.value.length < 10 || oldNarrowcastXml === window.narrowcastXml) return;
+
+    const blob = new Blob([narrowcastXml.value], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'data.txt';
+    link.click();
+    URL.revokeObjectURL(link.href);
 });
 
 const narrowcastXml = computed(() => {
-    return `<xml>${store.table.map(showToXml).join('')}</xml>`
+    return `<xml>${store.table.map(showToXml).join('')}</xml>`;
 
     function showToXml(show: Show) {
-        return `<Show><Title>${show.playlist}</Title><Date>${format(show.scheduledTime, 'yyyy-MM-dd')}</Date><Time>${format(show.scheduledTime, 'hh:mm:ss')}</Time></Show>`
+        return `<Show><Title>${show.playlist}</Title><Date>${format(show.scheduledTime, 'yyyy-MM-dd')}</Date><Time>${format(show.scheduledTime, 'hh:mm:ss')}</Time></Show>`;
     }
 });
 
@@ -32,7 +44,7 @@ const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
     multiple: false
-})
+});
 </script>
 
 <template>
