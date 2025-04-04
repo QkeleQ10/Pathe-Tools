@@ -27,6 +27,14 @@ const routes: RouteRecordRaw[] = [
         }
     },
     {
+        path: '/narrowcasting',
+        name: 'narrowcasting',
+        component: () => import('../views/NarrowcastingView.vue'),
+        meta: {
+            title: 'temp',
+        }
+    },
+    {
         path: '/slideshow',
         name: 'slideshow',
         component: () => import('../views/SlideshowView.vue'),

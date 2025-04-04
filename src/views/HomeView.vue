@@ -26,6 +26,11 @@ import Button from '@/components/Button.vue';
                             <Icon>present_to_all</Icon>Diavoorstelling
                         </Button>
                     </RouterLink>
+                    <RouterLink to="/narrowcasting" style="opacity: 0.1; text-decoration: none;">
+                        <Button class="secondary">
+                            <Icon>code</Icon>Datadump
+                        </Button>
+                    </RouterLink>
                 </div>
             </div>
         </section>
