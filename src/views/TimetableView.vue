@@ -5,6 +5,7 @@ import { useVueToPrint } from "vue-to-print"
 import { format } from 'date-fns'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show, TimetableShow } from '@/classes/classes'
+import { nl } from 'date-fns/locale'
 
 const store = useTmsScheduleStore()
 
@@ -95,7 +96,7 @@ const transformedTable = computed(() => {
 
 const { handlePrint } = useVueToPrint({
     content: () => printComponent.value,
-    documentTitle: "Tijdenlijstje " + format(new Date(), 'MM/dd/yyyy'),
+    documentTitle: "Tijdenlijstje " + format(transformedTable.value[0]?.scheduledTime || new Date(), 'yyyy-MM-dd', { locale: nl }),
 })
 
 const { isOverDropZone } = useDropZone(main, {
@@ -111,9 +112,12 @@ const { isOverDropZone } = useDropZone(main, {
         <TimetableUploadSection />
         <section id="edit" v-if="transformedTable.length > 0">
             <div class="flex" style="flex-wrap: wrap-reverse;">
-                <div>
+                <div style="flex-grow: 1;">
                     <h2>Tijdenlijstje bewerken</h2>
                     <div id="print-component" ref="printComponent">
+                        <div class="header">{{ format(transformedTable[0]?.scheduledTime || 0, 'EEEEEE d MMM yyyy', {
+                            locale: nl
+                        }) }}</div>
                         <table class="timetable" spellcheck="false">
                             <colgroup>
                                 <col span="1" style="width: 0;">
@@ -145,74 +149,76 @@ const { isOverDropZone } = useDropZone(main, {
                                     <td nowrap contenteditable></td>
                                 </tr>
                             </thead>
-                            <tr v-for="(row, i) in transformedTable"
-                                :class="{ targeting: showMenu && targetI === i, italic: row.auditorium?.includes('4DX'), bold: row.featureRating === '16' || row.featureRating === '18' }"
-                                @contextmenu.prevent="showContextMenu($event, row, i)">
+                            <tr v-for="(show, i) in transformedTable"
+                                :class="{ targeting: showMenu && targetI === i, italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18' }"
+                                @contextmenu.prevent="showContextMenu($event, show, i)">
                                 <td nowrap contenteditable>
-                                    {{ (row.auditorium === 'PULR 8' || row.auditorium === 'Rooftop') ? 'RT' :
-                                        row.auditorium.replace(/^\w+\s/, '') }}
+                                    {{ (show.auditorium === 'PULR 8' || show.auditorium === 'Rooftop') ? 'RT' :
+                                        show.auditorium.replace(/^\w+\s/, '') }}
                                 </td>
                                 <td nowrap contenteditable>
-                                    {{ format(row.scheduledTime, 'HH:mm') }}
+                                    {{ format(show.scheduledTime, 'HH:mm') }}
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
-                                    {{ format(row.mainShowTime, 'HH:mm:ss') }}
+                                    {{ format(show.mainShowTime, 'HH:mm:ss') }}
                                 </td>
                                 <td nowrap contenteditable class="special-cell">
                                     {{ transformedTable[i]?.isNearPlf ? '4DX' : '' }}
                                 </td>
                                 <td nowrap>
                                     <div class="double-usherout"
-                                        v-if="row.timeToNextUsherout <= shortGapInterval * 60000">
+                                        v-if="show.timeToNextUsherout <= shortGapInterval * 60000">
                                     </div>
                                     <div class="long-gap"
-                                        v-if="row.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
+                                        v-if="show.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
                                     </div>
-                                    <div class="plf-overlap" v-if="row.overlapWithPlf"></div>
+                                    <div class="plf-overlap" v-if="show.overlapWithPlf"></div>
                                     <span contenteditable class="credits-time">
-                                        {{ format(row.creditsTime, 'HH:mm:ss') }}
-                                        <span v-if="row.hasPostCredits" class="post-credits">+{{
-                                            Math.round((row.endTime.getTime() - row.creditsTime.getTime()) /
+                                        {{ format(show.creditsTime, 'HH:mm:ss') }}
+                                        <span v-if="show.hasPostCredits" class="post-credits">+{{
+                                            Math.round((show.endTime.getTime() - show.creditsTime.getTime()) /
                                                 60000)
                                         }}</span>
                                     </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.endTime" class="translucent">
-                                    {{ format(row.endTime, 'HH:mm:ss') }}
+                                    {{ format(show.endTime, 'HH:mm:ss') }}
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.nextStartTime"
                                     class="translucent" style="font-weight: normal; font-style: normal;">
-                                    {{ row.nextStartTime ? format(row.nextStartTime, 'HH:mm') : '-' }}
+                                    {{ show.nextStartTime ? format(show.nextStartTime, 'HH:mm') : '-' }}
                                 </td>
                                 <td nowrap contenteditable v-if="splitExtra">
-                                    <span>{{ row.title }}</span>
-                                    <span style="float: right">{{ row.extras.join(' ') }}</span>
+                                    <span>{{ show.title }}</span>
+                                    <span style="float: right">{{ show.extras.join(' ') }}</span>
                                 </td>
                                 <td nowrap contenteditable v-else>
-                                    {{ row.playlist }}
+                                    {{ show.playlist }}
                                 </td>
                                 <td nowrap contenteditable style="text-align: end;"
-                                    :class="{ translucent: row.featureRating !== '16' && row.featureRating !== '18' }">
-                                    {{ row.featureRating }}
+                                    :class="{ translucent: show.featureRating !== '16' && show.featureRating !== '18' }">
+                                    {{ show.featureRating }}
                                 </td>
                             </tr>
                         </table>
                         <br>
                         <span class="custom-content" contenteditable></span>
                         <div class="footer">
-                            gegenereerd op
-                            {{ new Date().toLocaleDateString('nl-NL', {
-                                weekday: 'short', day: 'numeric', month: 'short',
-                                year: 'numeric'
+                            <span v-if="'lastModified' in store.metadata">
+                                Gegevens: {{ new Date(store.metadata.lastModified).toLocaleString('nl-NL', {
+                                    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit',
+                                    minute: '2-digit'
+                                }) }} •
+                            </span>
+                            Gegenereerd: {{ new Date().toLocaleDateString('nl-NL', {
+                                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:
+                                    '2-digit'
                             }) }}
-                            om
-                            {{ new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) }}
-                            • Pathé Tools
-                            • Quinten Althues
+                            • Pathé Tools • Quinten Althues
                         </div>
                     </div>
                 </div>
-                <SidePanel style="flex-basis: 229px;">
+                <SidePanel>
                     <Tabs>
                         <Tab value="Opties">
                             <fieldset>
@@ -307,7 +313,6 @@ const { isOverDropZone } = useDropZone(main, {
     align-items: center;
     gap: 16px;
 
-    max-width: 100%;
     aspect-ratio: 210/297;
     overflow: auto;
     border-radius: 5px;
@@ -347,12 +352,25 @@ const { isOverDropZone } = useDropZone(main, {
     }
 }
 
+div.header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    color: var(--color);
+    opacity: 0.5;
+    display: none;
+    font-size: 10px;
+    text-align: center;
+}
+
 div.footer {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    opacity: 0.09;
+    color: var(--color);
+    opacity: 0.08;
     display: none;
     font-size: 10px;
     text-align: center;
@@ -362,7 +380,9 @@ div.footer {
     @page {
         size: A4 portrait;
         margin: 1.35cm;
-
+        margin-top: 0.8cm;
+        margin-bottom: 0.8cm;
+        /* padding: 0.15cm */
     }
 
     #print-component {
@@ -372,6 +392,8 @@ div.footer {
         height: auto;
         box-sizing: border-box;
         padding: 0;
+        margin-top: 16px;
+        margin-top: 16px;
         background-color: transparent;
         max-width: none;
         overflow: visible;
@@ -390,6 +412,7 @@ div.footer {
         display: none;
     }
 
+    div.header,
     div.footer {
         display: block;
     }
@@ -411,8 +434,6 @@ table.timetable {
     border: 1px solid var(--border-color);
     border-collapse: collapse;
     color: var(--color);
-    width: 18cm;
-    max-height: 26cm;
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12.5px;
 
