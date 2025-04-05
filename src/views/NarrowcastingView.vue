@@ -32,10 +32,10 @@ store.$subscribe(() => {
 });
 
 const narrowcastXml = computed(() => {
-    return `<xml>${store.table.map(showToXml).join('')}</xml>`;
+    return `<voorstellingen>${store.table.map(showToXml).join('')}</voorstellingen>`;
 
-    function showToXml(show: Show) {
-        return `<Show><Title>${show.playlist}</Title><Date>${format(show.scheduledTime, 'yyyy-MM-dd')}</Date><Time>${format(show.scheduledTime, 'hh:mm:ss')}</Time></Show>`;
+    function showToXml(show: Show, index: number) {
+        return `<Shows><ID type="Long Integer">${index}</ID><Titel type="Text">${show.playlist}</Titel><Zaal type="Text">${show.auditoriumNumber}</Zaal><Kleur type="Long Integer">4</Kleur><Permanent type="Long Integer">1</Permanent><DatumVan type="Date/Time">${format(show.scheduledTime, 'dd-MM-yyyy')}</DatumVan><DatumTot type="Date/Time">${format(show.scheduledTime.getTime() + 86400, 'dd-MM-yyyy')}</DatumTot><Tijd type="Date/Time">${format(show.scheduledTime, 'hh:mm:ss')}</Tijd></Shows>`;
     }
 });
 
