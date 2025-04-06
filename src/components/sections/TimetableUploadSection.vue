@@ -41,7 +41,8 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
             <p v-else style="flex-grow: 1;">
                 Geen gegevens
                 <br>
-                <small>Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>ISO</b>) met de knop of door hem
+                <small>Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) met de knop of door
+                    hem
                     hierheen te slepen.</small>
             </p>
         </FileUploadBlock>
@@ -99,15 +100,17 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                     <span v-if="store.metadata.flags.includes('times-only')">met de optie <b>Times only</b></span>
                     geüpload. Meestal werkt dat prima, maar soms kunnen er problemen optreden.
                     <br>
-                    <br>Kies de volgende keer in RosettaBridge
-                    liever <span v-if="store.metadata.flags.includes('times-only')"><em>ISO</em> in plaats van <i>Times
-                            only</i>.</span>
+                    <br>Kies in RosettaBridge liever
+                    <span v-if="store.metadata.flags.includes('times-only')">
+                        <em>Dates - ISO</em> in plaats van <i>Dates - Times only</i>.
+                    </span>
                     <span v-if="store.metadata.type.includes('csv')">
                         <span v-if="store.metadata.flags.includes('times-only')">
-                            <br>Klik dan op</span> <em>TSV</em> in
-                        plaats van
-                        <i>CSV</i>.
-                    </span> Dankjewel!
+                            <br>Klik dan op
+                        </span>
+                        <em>TSV</em> in plaats van <i>CSV</i>.
+                    </span>
+                    Dankjewel!
                     <br><br>
                     Groetjes,
                     <br>
