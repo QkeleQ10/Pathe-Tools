@@ -35,7 +35,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                 if (Object.values(json)?.[0]) await importJson(json);
                 status.value = 'received';
             } catch (error) {
-                status.value = 'receive-error';
+                status.value = serverStore.url === 'http://localhost:3541' ? 'no-connection' : 'receive-error';
                 console.error(error);
             }
         } else {
@@ -99,7 +99,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     await postToServer(json);
                     status.value = 'sent';
                 } catch (error) {
-                    status.value = 'send-error';
+                    status.value = serverStore.url === 'http://localhost:3541' ? 'no-connection' : 'send-error';
                     throw error;
                 }
             } else {
