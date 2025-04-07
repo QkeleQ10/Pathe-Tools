@@ -31,7 +31,7 @@ const routes: RouteRecordRaw[] = [
         name: 'narrowcasting',
         component: () => import('../views/NarrowcastingView.vue'),
         meta: {
-            title: 'Timetable',
+            title: 'Zaalverwijzer',
         }
     },
     {

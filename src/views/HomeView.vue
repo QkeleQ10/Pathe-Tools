@@ -23,7 +23,7 @@ import Button from '@/components/Button.vue';
                     </RouterLink>
                     <RouterLink to="/narrowcasting" style="text-decoration: none;">
                         <Button class="secondary">
-                            <Icon>dvr</Icon>Timetable-matrixdisplay
+                            <Icon>dvr</Icon>Zaalverwijssysteem
                         </Button>
                     </RouterLink>
                     <RouterLink to="/slideshow" style="text-decoration: none;">

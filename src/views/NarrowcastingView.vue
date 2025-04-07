@@ -59,8 +59,8 @@ const { isOverDropZone } = useDropZone(main, {
         <section>
             <div class="flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex: 100% 1 1;">
-                    <h2 style="margin-bottom: 0;">Timetable-matrixdisplay</h2>
-                    <p>Dit is een tijdelijke tool waarmee je het matrixdisplay van de Pathé Timetable kunt vullen. Volg
+                    <h2 style="margin-bottom: 0;">Zaalverwijssysteem</h2>
+                    <p>Dit is een tijdelijke tool waarmee je het zaalverwijssysteem (het matrixdisplay 'Pathé Timetable') kunt vullen. Volg
                         de instructies hieronder.</p>
                     <div class="block" v-if="serverStore.url === 'http://localhost:3541'">
                         <p>
@@ -100,10 +100,10 @@ const { isOverDropZone } = useDropZone(main, {
                             De bovenstaande gegevens zijn {{ store.status === 'sent' ? 'geüpload naar' : 'al aanwezig op' }} de
                             server.
                             <br><br>
-                            Als dit het juiste bestand is, ga dan naar de timetable-PC en doe het volgende:
+                            Als dit het juiste bestand is, ga dan naar de zaalverwijzer-PC en doe het volgende:
                         </p>
                         <ol>
-                            <li>Zorg ervoor dat de software voor de Pathé Timetable open staat.</li>
+                            <li>Zorg ervoor dat de software voor het zaalverwijssysteem van Q-lite open staat.</li>
                             <li>Dubbelklik op het bestandje 'Voorstellingen ophalen van Pathé Tools.bat'.</li>
                         </ol>
                     </div>

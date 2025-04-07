@@ -25,7 +25,7 @@ function sendEmail() {
             <nav>
                 <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
                 <RouterLink to="/announcer">Omroepen</RouterLink>
-                <RouterLink to="/narrowcasting">Timetable</RouterLink>
+                <RouterLink to="/narrowcasting">Zaalverwijzer</RouterLink>
                 <RouterLink to="/slideshow">Diavoorstelling</RouterLink>
                 <RouterLink to="/intermission-finder">Filmpauze</RouterLink>
             </nav>
