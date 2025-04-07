@@ -110,14 +110,15 @@ const { isOverDropZone } = useDropZone(main, {
     <main ref="main">
         <HeroImage />
         <TimetableUploadSection />
-        <section id="edit" v-if="transformedTable.length > 0">
+        <section id="edit">
             <div class="flex" style="flex-wrap: wrap-reverse;">
-                <div style="flex-grow: 1;">
+                <div style="flex-basis: calc(210mm + 16px);">
                     <h2>Tijdenlijstje bewerken</h2>
-                    <div id="print-component" ref="printComponent">
-                        <div class="header">{{ format(transformedTable[0]?.scheduledTime || 0, 'EEEEEE d MMM yyyy', {
-                            locale: nl
-                        }) }}</div>
+                    <div id="print-component" ref="printComponent" v-if="transformedTable.length > 0">
+                        <div class="header" v-if="'flags' in store.metadata">
+                            {{ store.metadata.flags.includes('times-only') ? 'datum onbekend' :
+                                format(transformedTable[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
+                        </div>
                         <table class="timetable" spellcheck="false">
                             <colgroup>
                                 <col span="1" style="width: 0;">
@@ -217,8 +218,9 @@ const { isOverDropZone } = useDropZone(main, {
                             • Pathé Tools • Quinten Althues
                         </div>
                     </div>
+                    <p id="upload-hint" v-else>Upload eerst een bestand.</p>
                 </div>
-                <SidePanel>
+                <SidePanel style="flex-basis: 355px;">
                     <Tabs>
                         <Tab value="Opties">
                             <fieldset>
@@ -227,14 +229,14 @@ const { isOverDropZone } = useDropZone(main, {
                                     Extra informatie scheiden van filmtitel
                                 </InputCheckbox>
                             </fieldset>
-                            <fieldset :disabled="!transformedTable.some(row => row.auditorium?.includes('4DX'))">
+                            <fieldset
+                                :disabled="transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX'))">
                                 <legend>4DX-inloop</legend>
                                 <small>Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
                                     streeplijntje.</small>
 
                                 <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30"
-                                    unit="min"
-                                    :disabled="!transformedTable.some(row => row.auditorium?.includes('4DX'))">
+                                    unit="min">
                                     Tijd voor aanvang
                                     <small v-if="plfTimeBefore > 0">De 4DX-inloop begint {{ plfTimeBefore }} minuten
                                         voor de aanvangstijd en eindigt wanneer de hoofdfilm begint.</small>
@@ -268,25 +270,22 @@ const { isOverDropZone } = useDropZone(main, {
                                     berekenen van de tijd tot de volgende uitloop.
                                 </small>
                             </fieldset>
-                        </Tab>
-                        <Tab value="Kolommen">
-                            <InputCheckbox v-for="(value, colId) in optionalColumns"
-                                v-model="optionalColumnsSetting[colId]" :identifier="String(colId)">
-                                {{ columns[colId].title }}
-                            </InputCheckbox>
+                            <fieldset>
+                                <legend>Extra kolommen</legend>
+                                <InputCheckbox v-for="(value, colId) in optionalColumns"
+                                    v-model="optionalColumnsSetting[colId]" :identifier="String(colId)">
+                                    {{ columns[colId].title }}
+                                </InputCheckbox>
+                            </fieldset>
                         </Tab>
                     </Tabs>
                     <div class="buttons"
                         style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-left: 16px; padding-right: 16px;">
-                        <Button class="primary full" @click="handlePrint">
+                        <Button class="primary full" @click="handlePrint" v-if="transformedTable.length > 0">
                             Afdrukken</Button>
                     </div>
                 </SidePanel>
             </div>
-        </section>
-        <section v-else>
-            <h2>Tijdenlijstje bewerken</h2>
-            <p>Upload eerst een bestand.</p>
         </section>
         <Transition>
             <ContextMenu v-if="showMenu" class="dark" :x="menuX" :y="menuY" @click-outside="closeContextMenu">
@@ -313,7 +312,8 @@ const { isOverDropZone } = useDropZone(main, {
     align-items: center;
     gap: 16px;
 
-    aspect-ratio: 210/297;
+    width: calc(210mm + 16px);
+    height: calc(297mm + 16px);
     overflow: auto;
     border-radius: 5px;
     background-color: #ffffff14;

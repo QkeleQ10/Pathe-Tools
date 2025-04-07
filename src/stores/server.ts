@@ -5,7 +5,7 @@ import { defineStore } from "pinia";
 export const useServerStore = defineStore('server', () => {
     const params = useUrlSearchParams('history');
 
-    const url = params.url ? ref(params.url as string) : ref("http://localhost:3541");
+    const url = params.url ? ref(params.url as string) : ref("https://pathe-tools-server.onrender.com");
     const username = params.username ? ref(params.username as string) : useLocalStorage('server-username', '');
     const password = params.password ? ref(params.password as string) : useLocalStorage('server-password', '');
 

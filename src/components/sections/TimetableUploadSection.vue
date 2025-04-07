@@ -31,11 +31,13 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                 {{ store.metadata.name }}
                 <br>
                 <small>
-                    Laatst gewijzigd op {{ format(new Date(store.metadata.lastModified), 'PPPpp',
-                        { locale: nl }) }}
-                    <br>
-                    Geüpload op {{ format(new Date(store.metadata.uploadedDate), 'PPPpp', { locale: nl })
-                    }}
+                    {{ store.table.length }} voorstellingen
+                    <span v-if="store.metadata.flags.includes('times-only')">zonder datum</span>
+                    <span v-else>op {{ format(store.table[0].scheduledTime, 'PP', { locale: nl }) }}</span>
+                    •
+                    Laatst gewijzigd op {{ format(store.metadata.lastModified, 'PPpp', { locale: nl }) }}
+                    •
+                    Geüpload op {{ format(store.metadata.uploadedDate, 'PPpp', { locale: nl }) }}
                 </small>
             </p>
             <p v-else style="flex-grow: 1;">

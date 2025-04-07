@@ -13,22 +13,22 @@ import Button from '@/components/Button.vue';
                 <div class="flex">
                     <RouterLink to="/timetable" style="text-decoration: none;">
                         <Button class="primary">
-                            <Icon>list_alt</Icon>Tijdenlijstje maken
+                            <Icon>print</Icon>Tijdenlijstje maken
                         </Button>
                     </RouterLink>
                     <RouterLink to="/announcer" style="text-decoration: none;">
                         <Button class="secondary">
-                            <Icon>text_to_speech</Icon>Serviceomroepen
+                            <Icon>alarm</Icon>Serviceomroepen
+                        </Button>
+                    </RouterLink>
+                    <RouterLink to="/narrowcasting" style="text-decoration: none;">
+                        <Button class="secondary">
+                            <Icon>dvr</Icon>Timetable-matrixdisplay
                         </Button>
                     </RouterLink>
                     <RouterLink to="/slideshow" style="text-decoration: none;">
                         <Button class="secondary">
                             <Icon>present_to_all</Icon>Diavoorstelling
-                        </Button>
-                    </RouterLink>
-                    <RouterLink to="/narrowcasting" style="opacity: 0.1; text-decoration: none;">
-                        <Button class="secondary">
-                            <Icon>code</Icon>Datadump
                         </Button>
                     </RouterLink>
                 </div>

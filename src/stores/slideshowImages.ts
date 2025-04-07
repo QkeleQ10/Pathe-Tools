@@ -40,7 +40,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
     async function getFromServer(): Promise<string[]> {
         return new Promise(async (resolve, reject) => {
             try {
-                const response = await fetch(`${serverStore.url}/users/${serverStore.username}/pictures`, {
+                const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures`, {
                     headers: {
                         'ngrok-skip-browser-warning': 'true'
                     }
@@ -69,7 +69,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
                     formData.append('pictures', file);
                 }
 
-                const response = await fetch(`${serverStore.url}/users/${serverStore.username}/pictures`, {
+                const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures`, {
                     method: 'POST',
                     headers: {
                         Authorization: 'Basic ' + btoa(`${serverStore.username}:${serverStore.password}`),
@@ -104,7 +104,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
             try {
                 status.value = 'sending';
 
-                const response = await fetch(`${serverStore.url}/users/${serverStore.username}/pictures`, {
+                const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures`, {
                     method: 'DELETE',
                     headers: {
                         Authorization: 'Basic ' + btoa(`${serverStore.username}:${serverStore.password}`),
@@ -126,7 +126,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
     }
 
     async function fetchImage(fileId: string) {
-        const response = await fetch(`${serverStore.url}/users/${serverStore.username}/pictures/${fileId}`, {
+        const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures/${fileId}`, {
             headers: {
                 'ngrok-skip-browser-warning': 'true'
             }

@@ -4,26 +4,17 @@ import { useDropZone, useUrlSearchParams } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show } from '@/classes/classes';
 import { format } from 'date-fns';
+import { useServerStore } from '@/stores/server';
 
 const store = useTmsScheduleStore();
+const serverStore = useServerStore();
 
 const params = useUrlSearchParams('history');
 
-declare global {
-    interface Window {
-        datadump: any;
-        narrowcastXml: string;
-    }
-};
+const downloaded = ref(false);
 
 store.$subscribe(() => {
-    const oldTable = window.datadump;
-    const oldNarrowcastXml = window.narrowcastXml;
-
-    window.datadump = store.table;
-    window.narrowcastXml = narrowcastXml.value;
-
-    if (!params.download || !store.table?.length || narrowcastXml.value.length < 10 || oldNarrowcastXml === window.narrowcastXml) return;
+    if (!params.download || !store.table?.length || narrowcastXml.value.length < 10 || downloaded.value) return;
 
     const blob = new Blob([narrowcastXml.value], { type: 'text/plain' });
     const link = document.createElement('a');
@@ -31,19 +22,26 @@ store.$subscribe(() => {
     link.download = 'timetable.xml';
     link.click();
     URL.revokeObjectURL(link.href);
+
+    downloaded.value = true;
 });
 
 const narrowcastXml = computed(() => {
     const indent = (level: number) => '  '.repeat(level);
-    const xmlContent = store.table.map((show, index) => {
-        const xml = showToXml(show, index);
-        return xml.split('><').join(`>\n${indent(2)}<`);
-    }).join(`\n${indent(1)}`);
+    const xmlContent = store.table
+        .map((show, index) => showToXml(show, index).split('><').join(`>\n${indent(2)}<`))
+        .join(`\n${indent(1)}`);
     return `<voorstellingen>\n${indent(1)}${xmlContent}\n</voorstellingen>`;
 });
 
 function showToXml(show: Show, index: number) {
-    return `<Shows><ID type="Long Integer">${index}</ID><DatumVan type="Date/Time">${format(show.scheduledTime, 'dd-MM-yyyy')}</DatumVan><DatumTot type="Date/Time">${format(show.scheduledTime.getTime() + 86400000, 'dd-MM-yyyy')}</DatumTot><Tijd type="Date/Time">${format(show.scheduledTime, 'HH:mm')}</Tijd><Titel type="Text">${show.playlist}</Titel><Zaal type="Text">${show.auditoriumNumber}</Zaal><Kleur type="Long Integer">4</Kleur><Permanent type="Long Integer">1</Permanent></Shows>`;
+    return `<Shows><ID type="Long Integer">${index}</ID><DatumVan type="Date/Time">${format(show.scheduledTime, 'dd-MM-yyyy')}</DatumVan><DatumTot type="Date/Time">${format(show.scheduledTime, 'dd-MM-yyyy')}</DatumTot><Tijd type="Date/Time">${format(show.scheduledTime, 'HH:mm')}</Tijd><Titel type="Text">${show.playlist}</Titel><Zaal type="Text">${show.auditoriumNumber}</Zaal><Kleur type="Long Integer">3</Kleur><Permanent type="Long Integer">1</Permanent></Shows>`;
+}
+
+function setUrl() {
+    params.url = 'https://pathe-tools-server.onrender.com';
+    serverStore.url = 'https://pathe-tools-server.onrender.com';
+    store.connect();
 }
 
 const main = ref<HTMLElement>(null);
@@ -61,23 +59,62 @@ const { isOverDropZone } = useDropZone(main, {
         <section>
             <div class="flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex: 100% 1 1;">
-                    <h2 style="margin-bottom: 0;">Datadump</h2>
-                    <small>{{ store.table.length }} voorstellingen</small>
-                    <p>Aangeboden als array in publieke variabele <code>datadump</code> en als pseudo-xml-string in
-                        publieke variabele <code>narrowcastXml</code>.
-                    </p>
-                    <Tabs>
-                        <Tab value="JSON">
-                            <div class="block">
-                                <code>{{ JSON.stringify(store.table, null, 2) }}</code>
-                            </div>
-                        </Tab>
-                        <Tab value="XML">
-                            <div class="block">
-                                <code>{{ narrowcastXml }}</code>
-                            </div>
-                        </Tab>
-                    </Tabs>
+                    <h2 style="margin-bottom: 0;">Timetable-matrixdisplay</h2>
+                    <p>Dit is een tijdelijke tool waarmee je het matrixdisplay van de Pathé Timetable kunt vullen. Volg
+                        de instructies hieronder.</p>
+                    <div class="block" v-if="serverStore.url === 'http://localhost:3541'">
+                        <p>
+                            Het serveradres is niet ingesteld.
+                        </p>
+                        <Button class="primary" @click="setUrl">Oplossen</Button>
+                    </div>
+                    <div class="block"
+                        v-else-if="['send-error', 'receive-error', 'no-credentials', 'no-connection', 'error'].includes(store.status)">
+                        <p>
+                            Er is geen verbinding met de server. Controleer de inloggegevens.
+                        </p>
+                        <Button class="primary" @click="store.connect">Opnieuw verbinden</Button>
+                    </div>
+                    <div class="block" v-else-if="['sending', 'receiving'].includes(store.status)">
+                        <p>
+                            Een ogenblik geduld...
+                        </p>
+                    </div>
+                    <div class="block"
+                        v-else-if="!params.download && !store.table.length && ['sent', 'received'].includes(store.status)">
+                        <p>
+                            Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) met de knop of
+                            door hem
+                            hierheen te slepen. Let op dat je het bestand voor de juiste datum uploadt.
+                        </p>
+                    </div>
+                    <div class="block"
+                        v-else-if="params.download && !store.table.length && ['sent', 'received'].includes(store.status)">
+                        <p>
+                            Er is nog geen bestand geüpload! Ga naar de RosettaBridge-PC en open deze pagina.
+                        </p>
+                    </div>
+                    <div class="block"
+                        v-else-if="!params.download && store.table.length && ['sent', 'received'].includes(store.status)">
+                        <p>
+                            De bovenstaande gegevens zijn {{ store.status === 'sent' ? 'geüpload naar' : 'al aanwezig op' }} de
+                            server.
+                            <br><br>
+                            Als dit het juiste bestand is, ga dan naar de timetable-PC en doe het volgende:
+                        </p>
+                        <ol>
+                            <li>Zorg ervoor dat de software voor de Pathé Timetable open staat.</li>
+                            <li>Dubbelklik op het bestandje 'Voorstellingen ophalen van Pathé Tools.bat'.</li>
+                        </ol>
+                    </div>
+                    <div class="block"
+                        v-else-if="params.download && store.table.length && ['sent', 'received'].includes(store.status)">
+                        <p>
+                            De bovenstaande gegevens zijn aanwezig op de server. Er wordt zometeen een bestand
+                            gedownload. Zorg ervoor dat dit bestand wordt gedownload als 'timetable.xml' in de
+                            standaarddownloadmap, als dat niet automatisch gebeurt.
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
