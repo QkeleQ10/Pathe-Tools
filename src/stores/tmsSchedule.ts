@@ -250,7 +250,10 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     }
 
     function extractExtras(string: string): { extras: string[], title: string } {
-        let extraString = string.match(/(\s((4DX)|(ATMOS)|(IMX)|(3D)|(Music)|(ROOFTOP)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
+        let extraString = string
+            .replace("Nederlandse versie", "NL")
+            .replace("Originele versie", "OV")
+            .match(/(\s((4DX)|(ATMOS)|(IMAX)|(IMX)|(SCREENX)|(3D)|(Music)|(ROOFTOP)|(Pride)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
         return {
             extras: extraString.length > 0 ? extraString.split(' ') : [],
             title: string.replace(extraString, '').trim()
