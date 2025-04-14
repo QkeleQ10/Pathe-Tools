@@ -50,6 +50,10 @@ const options = useStorage('announcer-options', {
     selectedVoices: ['default']
 }, localStorage, { mergeDefaults: true })
 
+const minecraftTimestamp = useStorage('minecraft-timestamp', 65); // 1h 05min
+const minecraftEnabled = useStorage('minecraft-enabled', true);
+const minecraftAnnouncement = useStorage('minecraft-announcement', ['chime', 'chickenhurt1', 'letop', 'zaalcontrole', 'auditorium#', 'chickenidle1']);
+
 const howls = reactive<{ [key: string]: ReturnedValue }>({});
 Object.entries(voices).forEach(([voice, { file, sprite }]) => {
     howls[voice] = useSound(file, {
@@ -120,33 +124,41 @@ compileListOfAnnouncements()
 function compileListOfAnnouncements() {
     let array: Announcement[] = []
     const announcementTypes = Object.values(AnnouncementTypes);
-    store.table.forEach((row: Show, i: number) => {
-        if (!row.scheduledTime) return;
+    store.table.forEach((show: Show, i: number) => {
+        if (!show.scheduledTime) return;
         announcementTypes.forEach(announcementType => {
-            if (!options.value[announcementType].enabled) return;
+            if (options.value[announcementType] && !options.value[announcementType].enabled) return;
             let announcementTime: Date;
-            let announcementContent: string[] = options.value[announcementType].announcement.map((e: string) => e.replace('#', parseAuditorium(row.auditorium)));
+            let announcementContent: string[] = options.value[announcementType]
+                ? options.value[announcementType].announcement.map((e: string) => e.replace('#', parseAuditorium(show.auditorium)))
+                : [];
 
             switch (announcementType) {
                 case AnnouncementTypes.Start:
-                    announcementTime = row.scheduledTime;
+                    announcementTime = show.scheduledTime;
                     break;
                 case AnnouncementTypes.PlfStart:
-                    if (!row.auditorium?.includes('4DX')) return;
-                    announcementTime = new Date(row.scheduledTime.getTime() - (options.value.plfStart.minutesBeforeStartTime * 60000));
+                    if (!show.auditorium?.includes('4DX')) return;
+                    announcementTime = new Date(show.scheduledTime.getTime() - (options.value.plfStart.minutesBeforeStartTime * 60000));
                     break;
                 case AnnouncementTypes.MainShow:
-                    announcementTime = row.mainShowTime;
+                    announcementTime = show.mainShowTime;
                     break;
                 case AnnouncementTypes.Credits:
-                    announcementTime = new Date(row.creditsTime.getTime() - (options.value.credits.secondsBeforeCreditsTime * 1000));
+                    announcementTime = new Date(show.creditsTime.getTime() - (options.value.credits.secondsBeforeCreditsTime * 1000));
                     break;
                 case AnnouncementTypes.End:
-                    announcementTime = row.endTime;
+                    announcementTime = show.endTime;
                     break;
                 case AnnouncementTypes.FinalMainShowStart:
                     if (i !== store.table.length - 1) return;
-                    announcementTime = row.mainShowTime;
+                    announcementTime = show.mainShowTime;
+                    break;
+                case AnnouncementTypes.Minecraft:
+                    if (!minecraftEnabled.value) return;
+                    if (!show.playlist.includes('Minecraft')) return;
+                    announcementTime = new Date(show.mainShowTime.getTime() + (minecraftTimestamp.value * 60000));
+                    announcementContent = minecraftAnnouncement.value.map((e: string) => e.replace('#', parseAuditorium(show.auditorium)));
                     break;
             }
             if (announcementTime) {
@@ -156,7 +168,7 @@ function compileListOfAnnouncements() {
                     announcement: announcementContent,
                     status: 'unscheduled',
                     key: announcementTime + announcementContent.join(),
-                    scheduleItem: row,
+                    scheduleItem: show,
                 }))
             }
         });
@@ -348,6 +360,26 @@ const { isOverDropZone } = useDropZone(main, {
                                     meer over wanneer een omroep afgespeeld wordt.
                                 </p>
                             </div>
+                            <fieldset>
+                                <legend>Speciaal</legend>
+                                <InputCheckbox v-model="minecraftEnabled" identifier="minecraftEnabled">
+                                    <span>Omroepen</span>
+                                </InputCheckbox>
+                                <InputAnnouncement v-model="minecraftAnnouncement" identifier="minecraftAnnouncement"
+                                    :disabled="!minecraftEnabled">
+                                    Inhoud
+                                </InputAnnouncement>
+                                <InputNumber v-model.number="minecraftTimestamp" identifier="minecraftTimestamp"
+                                    min="20" max="80" unit="min">A Minecraft Movie: tijdstip zaalcontrole
+                                    <small v-if="minecraftTimestamp > 0">
+                                        Het tijdstip {{ minecraftTimestamp }} minuten na start hoofdfilm wordt
+                                        gemarkeerd.
+                                    </small>
+                                    <small v-else>Er wordt geen extra tijdstip gemarkeerd bij A Minecraft Movie.</small>
+                                    <small>Standaardwaarde: 65 min. De chickenjockey-scène speelt zich af op ongeveer 69
+                                        min.</small>
+                                </InputNumber>
+                            </fieldset>
                             <fieldset>
                                 <legend>4DX-inloop</legend>
                                 <InputCheckbox v-model="options.plfStart.enabled" identifier="announcePlfStart">

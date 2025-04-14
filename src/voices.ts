@@ -1,6 +1,7 @@
 import voiceDefault from '@/assets/sounds/voices/rosetta.ogg';
 import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg';
 import voiceJaron from '@/assets/sounds/voices/jaron.ogg';
+import voiceBeau from '@/assets/sounds/voices/beau.ogg';
 import { SpriteMap } from '@vueuse/sound';
 
 export class Voice {
@@ -47,6 +48,14 @@ export const voices = {
         file: voiceJaron,
         sprite: {
             "auditorium01": [0, 996.2585034013606], "auditorium02": [1200, 977.2562358276645], "auditorium03": [2400, 1053.9229024943313], "auditorium04": [4600, 1109.8866213151925], "auditorium05": [6799.999999999999, 1125.5328798185947], "auditorium06": [9000, 1083.7641723356005], "auditorium07": [11200, 1070.2947845804988], "auditorium08": [13399.999999999998, 1134.9206349206345], "auditorium09": [15599.999999999998, 1259.2517006802736], "auditorium10": [17800, 750.5895691609971], "credits": [19000, 920.6575963718819], "end": [20200, 1177.0748299319714], "finalshow": [22400, 1377.0068027210875], "mainshow": [24599.999999999996, 1302.0634920634925], "start": [26799.999999999996, 737.8458049886625]
+        }
+    }),
+    beau: new Voice({
+        name: "Beau",
+        language: "nl",
+        file: voiceBeau,
+        sprite: {
+            "chickenhurt1": [0, 562.5170068027211], "chickenidle1": [1200.0000000000002, 514.7845804988663], "letop": [2400.0000000000005, 815.3968253968253], "zaalcontrole": [3600.0000000000005, 938.956916099773]
         }
     })
 };

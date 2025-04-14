@@ -28,6 +28,8 @@ const columns = {
 }
 const optionalColumns = Object.fromEntries(Object.entries(columns).filter(([, value]) => value.optional))
 
+const minecraftTimestamp = useStorage('minecraft-timestamp', 65) // 1h 05min
+
 const splitExtra = ref(true)
 const optionalColumnsSetting = useStorage('optional-columns', {
     mainTime: false,
@@ -159,6 +161,10 @@ const { isOverDropZone } = useDropZone(main, {
                                 </td>
                                 <td nowrap contenteditable>
                                     {{ format(show.scheduledTime, 'HH:mm') }}
+                                    <span v-if="minecraftTimestamp > 0 && show.playlist.includes('Minecraft')"
+                                        class="minecraft-timestamp">
+                                        {{ format(show.mainShowTime.getTime() + (minecraftTimestamp * 60000), 'HH:mm') }}
+                                    </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
                                     {{ format(show.mainShowTime, 'HH:mm:ss') }}
@@ -269,6 +275,19 @@ const { isOverDropZone } = useDropZone(main, {
                                     voor het
                                     berekenen van de tijd tot de volgende uitloop.
                                 </small>
+                            </fieldset>
+                            <fieldset>
+                                <legend>Speciaal</legend>
+                                <InputNumber v-model.number="minecraftTimestamp" identifier="minecraftTimestamp"
+                                    min="20" max="80" unit="min">A Minecraft Movie: tijdstip zaalcontrole
+                                    <small v-if="minecraftTimestamp > 0">
+                                        Het tijdstip {{ minecraftTimestamp }} minuten na start hoofdfilm wordt
+                                        gemarkeerd.
+                                    </small>
+                                    <small v-else>Er wordt geen extra tijdstip gemarkeerd bij A Minecraft Movie.</small>
+                                    <small>Standaardwaarde: 65 min. De chickenjockey-scène speelt zich af op ongeveer 69
+                                        min.</small>
+                                </InputNumber>
                             </fieldset>
                             <fieldset>
                                 <legend>Extra kolommen</legend>
@@ -462,6 +481,12 @@ table.timetable {
         &.targeting {
             background-color: #ffc52631;
         }
+    }
+
+    .minecraft-timestamp {
+        position: absolute;
+        left: 45px;
+        font-weight: bold;
     }
 
     tr:first-of-type>td.special-cell {

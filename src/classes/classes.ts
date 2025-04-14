@@ -38,7 +38,8 @@ export enum AnnouncementTypes {
     MainShow = 'mainShow',
     Credits = 'credits',
     End = 'end',
-    FinalMainShowStart = 'finalMainShowStart'
+    FinalMainShowStart = 'finalMainShowStart',
+    Minecraft = 'minecraft',
 };
 
 export class Announcement {
