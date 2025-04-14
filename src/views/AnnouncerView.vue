@@ -371,11 +371,9 @@ const { isOverDropZone } = useDropZone(main, {
                                 </InputAnnouncement>
                                 <InputNumber v-model.number="minecraftTimestamp" identifier="minecraftTimestamp"
                                     min="20" max="80" unit="min">A Minecraft Movie: tijdstip zaalcontrole
-                                    <small v-if="minecraftTimestamp > 0">
-                                        Het tijdstip {{ minecraftTimestamp }} minuten na start hoofdfilm wordt
-                                        gemarkeerd.
+                                    <small>
+                                        De omroep wordt {{ minecraftTimestamp }} minuten na start hoofdfilm afgespeeld.
                                     </small>
-                                    <small v-else>Er wordt geen extra tijdstip gemarkeerd bij A Minecraft Movie.</small>
                                     <small>Standaardwaarde: 65 min. De chickenjockey-scène speelt zich af op ongeveer 69
                                         min.</small>
                                 </InputNumber>
