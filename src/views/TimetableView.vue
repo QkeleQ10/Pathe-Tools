@@ -124,10 +124,9 @@ const { isOverDropZone } = useDropZone(main, {
                         <table class="timetable" spellcheck="false">
                             <colgroup>
                                 <col span="1" style="width: 0;">
-                                <col span="1" style="width: 0;">
-                                <col span="1" style="width: 16%;">
+                                <col span="1" style="width: 25%;">
                                 <col span="1" style="width: 0;" v-if="optionalColumnsSetting.mainTime">
-                                <col span="1" style="width: 28%;">
+                                <col span="1" style="width: 20%;">
                                 <col span="1" style="width: 0;" v-if="optionalColumnsSetting.endTime">
                                 <col span="1" style="width: 0;" v-if="optionalColumnsSetting.nextStartTime">
                                 <col span="1" style="width: 50%;">
@@ -140,7 +139,6 @@ const { isOverDropZone } = useDropZone(main, {
                                     <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime">
                                         {{ columns.mainTime.header }}
                                     </td>
-                                    <td nowrap contenteditable></td>
                                     <td nowrap contenteditable>Aftiteling</td>
                                     <td nowrap contenteditable v-if="optionalColumnsSetting.endTime">
                                         {{ columns.endTime.header }}
@@ -163,16 +161,16 @@ const { isOverDropZone } = useDropZone(main, {
                                     {{ format(show.scheduledTime, 'HH:mm') }}
                                     <span v-if="minecraftTimestamp > 0 && show.playlist.includes('Minecraft')"
                                         class="minecraft-timestamp">
-                                        {{ format(show.mainShowTime.getTime() + (minecraftTimestamp * 60000), 'HH:mm') }}
+                                        {{ format(show.mainShowTime.getTime() + (minecraftTimestamp * 60000), 'HH:mm')
+                                        }}
                                     </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
                                     {{ format(show.mainShowTime, 'HH:mm:ss') }}
                                 </td>
-                                <td nowrap contenteditable class="special-cell">
-                                    {{ transformedTable[i]?.isNearPlf ? '4DX' : '' }}
-                                </td>
                                 <td nowrap>
+                                    <Icon4dx class="plf-icon" src="@/assets/symbols/icon-4dx.svg"
+                                        v-if="show.isNearPlf" />
                                     <div class="double-usherout"
                                         v-if="show.timeToNextUsherout <= shortGapInterval * 60000">
                                     </div>
@@ -202,9 +200,17 @@ const { isOverDropZone } = useDropZone(main, {
                                 <td nowrap contenteditable v-else>
                                     {{ show.playlist }}
                                 </td>
-                                <td nowrap contenteditable style="text-align: end;"
-                                    :class="{ translucent: show.featureRating !== '16' && show.featureRating !== '18' }">
+                                <td nowrap contenteditable class="age-rating"
+                                    :class="{ translucent: ['AL', '6', '9', '12', '14'].includes(show.featureRating) }">
                                     {{ show.featureRating }}
+                                    <!-- <IconNicamAL class="nicam-icon" v-if="show.featureRating === 'AL'" />
+                                    <IconNicam6 class="nicam-icon" v-else-if="show.featureRating === '6'" />
+                                    <IconNicam9 class="nicam-icon" v-else-if="show.featureRating === '9'" />
+                                    <IconNicam12 class="nicam-icon" v-else-if="show.featureRating === '12'" />
+                                    <IconNicam14 class="nicam-icon" v-else-if="show.featureRating === '14'" />
+                                    <IconNicam16 class="nicam-icon" v-else-if="show.featureRating === '16'" />
+                                    <IconNicam18 class="nicam-icon" v-else-if="show.featureRating === '18'" />
+                                    <span v-else>{{ show.featureRating }}</span> -->
                                 </td>
                             </tr>
                         </table>
@@ -229,14 +235,22 @@ const { isOverDropZone } = useDropZone(main, {
                 <SidePanel style="flex-basis: 355px;">
                     <Tabs>
                         <Tab value="Opties">
-                            <fieldset>
-                                <legend>Weergave</legend>
-                                <InputCheckbox v-model="splitExtra" identifier="splitExtra">
-                                    Extra informatie scheiden van filmtitel
-                                </InputCheckbox>
+                            <fieldset
+                                v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.title?.includes('Minecraft')))">
+                                <legend>A Minecraft Movie</legend>
+                                <InputNumber v-model.number="minecraftTimestamp" identifier="minecraftTimestamp"
+                                    min="20" max="80" unit="min">Tijdstip zaalcontrole
+                                    <small v-if="minecraftTimestamp > 0">
+                                        Het tijdstip {{ minecraftTimestamp }} minuten na start hoofdfilm wordt
+                                        gemarkeerd.
+                                    </small>
+                                    <small v-else>Er wordt geen extra tijdstip gemarkeerd bij A Minecraft Movie.</small>
+                                    <small>Standaardwaarde: 65 min. De chickenjockey-scène speelt zich af op ongeveer 69
+                                        min.</small>
+                                </InputNumber>
                             </fieldset>
                             <fieldset
-                                :disabled="transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX'))">
+                                v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX')))">
                                 <legend>4DX-inloop</legend>
                                 <small>Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
                                     streeplijntje.</small>
@@ -277,17 +291,10 @@ const { isOverDropZone } = useDropZone(main, {
                                 </small>
                             </fieldset>
                             <fieldset>
-                                <legend>Speciaal</legend>
-                                <InputNumber v-model.number="minecraftTimestamp" identifier="minecraftTimestamp"
-                                    min="20" max="80" unit="min">A Minecraft Movie: tijdstip zaalcontrole
-                                    <small v-if="minecraftTimestamp > 0">
-                                        Het tijdstip {{ minecraftTimestamp }} minuten na start hoofdfilm wordt
-                                        gemarkeerd.
-                                    </small>
-                                    <small v-else>Er wordt geen extra tijdstip gemarkeerd bij A Minecraft Movie.</small>
-                                    <small>Standaardwaarde: 65 min. De chickenjockey-scène speelt zich af op ongeveer 69
-                                        min.</small>
-                                </InputNumber>
+                                <legend>Overig</legend>
+                                <InputCheckbox v-model="splitExtra" identifier="splitExtra">
+                                    Extra informatie scheiden van filmtitel
+                                </InputCheckbox>
                             </fieldset>
                             <fieldset>
                                 <legend>Extra kolommen</legend>
@@ -481,27 +488,36 @@ table.timetable {
         &.targeting {
             background-color: #ffc52631;
         }
+
+        &.italic {
+            font-style: italic;
+        }
+
+        &.bold {
+            font-weight: bold;
+        }
     }
 
     .minecraft-timestamp {
-        position: absolute;
-        left: 45px;
+        margin-left: 8px;
         font-weight: bold;
     }
 
-    tr:first-of-type>td.special-cell {
-        transform: translateY(-20%);
+    tr:first-of-type>td .plf-icon {
+        transform: translateY(50%);
     }
 
     td {
         position: relative;
         padding: 2px 6px;
 
-        &.special-cell {
-            transform: translateY(-50%);
-            text-align: end;
-            padding-right: 14px;
-            font-weight: normal;
+        .plf-icon {
+            position: absolute;
+            top: 0;
+            left: -45px;
+            height: 12px;
+            translate: 0 -50%;
+            fill: var(--color);
         }
 
         .double-usherout {
@@ -550,6 +566,21 @@ table.timetable {
             font-weight: normal;
             font-style: normal;
             margin-left: 4px;
+        }
+
+        &.age-rating {
+            text-align: end;
+            min-width: 21px;
+        }
+
+        .nicam-icon {
+            fill: var(--color);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            translate: -50% -50%;
+            width: 16px;
+            height: 16px;
         }
     }
 }

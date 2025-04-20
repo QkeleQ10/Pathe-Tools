@@ -253,6 +253,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         let transformedString = string
             .replace("Nederlandse versie", "NL")
             .replace("Originele versie", "OV")
+            .replace(" PAUZE", '')
 
         let extraString = transformedString
             .match(/(\s((4DX)|(ATMOS)|(IMAX)|(IMX)|(SCREENX)|(3D)|(Music)|(KLEUTER)|(ROOFTOP)|(Pride)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
