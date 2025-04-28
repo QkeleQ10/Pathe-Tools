@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { provide, ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { format } from 'date-fns';
 
@@ -10,9 +10,7 @@ function updateNowValue() {
     now.value = new Date();
 }
 
-function sendEmail() {
-    window.open('mailto:quinten@althues.nl', '_blank');
-}
+provide('now', now)
 </script>
 
 <template>
@@ -25,7 +23,7 @@ function sendEmail() {
             <nav>
                 <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
                 <RouterLink to="/announcer">Omroepen</RouterLink>
-                <RouterLink to="/narrowcasting">Zaalverwijzer</RouterLink>
+                <RouterLink to="/narrowcasting">Timetable</RouterLink>
                 <RouterLink to="/slideshow">Diavoorstelling</RouterLink>
                 <RouterLink to="/intermission-finder">Filmpauze</RouterLink>
             </nav>

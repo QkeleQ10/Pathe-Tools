@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, inject } from 'vue';
 import { useDropZone, useUrlSearchParams } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show } from '@/classes/classes';
 import { format } from 'date-fns';
+import { nl } from 'date-fns/locale';
 import { useServerStore } from '@/stores/server';
 
 const store = useTmsScheduleStore();
@@ -57,65 +58,99 @@ const { isOverDropZone } = useDropZone(main, {
         <HeroImage />
         <TimetableUploadSection />
         <section>
-            <div class="flex" style="flex-wrap: wrap-reverse;">
-                <div style="flex: 100% 1 1;">
-                    <h2 style="margin-bottom: 0;">Zaalverwijssysteem</h2>
-                    <p>Dit is een tijdelijke tool waarmee je het zaalverwijssysteem (het matrixdisplay 'Pathé Timetable') kunt vullen. Volg
-                        de instructies hieronder.</p>
-                    <div class="block" v-if="serverStore.url === 'http://localhost:3541'">
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 32px;">
+
+                <div id="instructions">
+                    <h2>Timetable vullen</h2>
+                    <div v-if="serverStore.url === 'http://localhost:3541'">
                         <p>
                             Het serveradres is niet ingesteld.
                         </p>
                         <Button class="primary" @click="setUrl">Oplossen</Button>
                     </div>
-                    <div class="block"
+                    <div
                         v-else-if="['send-error', 'receive-error', 'no-credentials', 'no-connection', 'error'].includes(store.status)">
                         <p>
                             Er is geen verbinding met de server. Controleer de inloggegevens.
                         </p>
                         <Button class="primary" @click="store.connect">Opnieuw verbinden</Button>
                     </div>
-                    <div class="block" v-else-if="['sending', 'receiving'].includes(store.status)">
+                    <div v-else-if="['sending', 'receiving'].includes(store.status)">
                         <p>
-                            Een ogenblik geduld...
+                            Er wordt verbinding gemaakt. Een ogenblik geduld...
                         </p>
                     </div>
-                    <div class="block"
+                    <div
                         v-else-if="!params.download && !store.table.length && ['sent', 'received'].includes(store.status)">
                         <p>
-                            Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) met de knop of
+                            Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) met de knop
+                            of
                             door hem
                             hierheen te slepen. Let op dat je het bestand voor de juiste datum uploadt.
                         </p>
                     </div>
-                    <div class="block"
+                    <div
                         v-else-if="params.download && !store.table.length && ['sent', 'received'].includes(store.status)">
                         <p>
                             Er is nog geen bestand geüpload! Ga naar de RosettaBridge-PC en open deze pagina.
                         </p>
                     </div>
-                    <div class="block"
+                    <div
                         v-else-if="!params.download && store.table.length && ['sent', 'received'].includes(store.status)">
                         <p>
-                            De bovenstaande gegevens zijn {{ store.status === 'sent' ? 'geüpload naar' : 'al aanwezig op' }} de
-                            server.
+                            De weergegeven gegevens zijn
+                            {{ store.status === 'sent' ? 'geüpload naar' : 'al aanwezig op' }}
+                            de server.
                             <br><br>
-                            Als dit het juiste bestand is, ga dan naar de zaalverwijzer-PC en doe het volgende:
+                            Als dit het juiste bestand is, ga dan naar de Timetable-PC en doe het volgende:
                         </p>
                         <ol>
-                            <li>Zorg ervoor dat de software voor het zaalverwijssysteem van Q-lite open staat.</li>
-                            <li>Dubbelklik op het bestandje 'Voorstellingen ophalen van Pathé Tools.bat'.</li>
+                            <li>Zorg ervoor dat het softwareprogramma 'CineMec TimeTable' (één keer) open staat.</li>
+                            <li>Dubbelklik op het bestandje op het bureaublad genaamd 'Voorstellingen ophalen van Pathé
+                                Tools.bat'.</li>
                         </ol>
                     </div>
-                    <div class="block"
+                    <div
                         v-else-if="params.download && store.table.length && ['sent', 'received'].includes(store.status)">
                         <p>
-                            De bovenstaande gegevens zijn aanwezig op de server. Er wordt zometeen een bestand
-                            gedownload. Zorg ervoor dat dit bestand wordt gedownload als 'timetable.xml' in de
-                            standaarddownloadmap, als dat niet automatisch gebeurt.
+                            De weergegeven gegevens zijn aanwezig op de server. Er wordt nu een bestand
+                            gedownload. Zorg ervoor dat dit bestand wordt opgeslagen als 'timetable.xml' in de
+                            standaarddownloadmap, als dat niet automatisch gebeurt. Klik eventueel op 'Behouden'.
                         </p>
                     </div>
                 </div>
+
+                <div v-show="store.table.length && ['sent', 'received'].includes(store.status)">
+                    <h2>Voorbeeld</h2>
+                    <p style="max-width: 560px;">
+                        Dit is slechts een voorbeeld. Deze pagina staat niet in directe verbinding met de Timetable.<br>
+
+                        Dit zijn de voorstellingen van <span v-if="'flags' in store.metadata">
+                            {{ store.metadata.flags.includes('times-only') ? 'onbekende datum' :
+                                format(store.table[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
+                        </span>. <span
+                            v-if="store.table[0]?.scheduledTime > new Date(new Date().setHours(0, 0, 0, 0) + 24 * 60 * 60 * 1000)">
+                            Als je deze inlaadt in de Timetable, dan worden ze pas vanaf middernacht weergegeven.
+                        </span><br><br>
+
+                        <span v-if="store.table.some(show => show.playlist.length > 37)">
+                            Sommige titels zijn te lang en moeten mogelijk nog worden verkort
+                            ({{store.table.filter(show => show.playlist.length > 37).length}}×).
+                        </span>
+                    </p>
+                    <div class="block" id="matrix-display">
+                        <span id="matrix-display-title">Pathé Timetable</span>
+                        <pre
+                            class="matrix-clock">{{ format(store.table ? store.table[0].scheduledTime.getTime() + 840000 : new Date(), 'HH:mm') }}</pre>
+                        <pre
+                            class="matrix-row green">         Welkom bij Pathé Utrecht Leidsche Rijn!          Zaal</pre>
+                        <pre class="matrix-row" v-for="(show, i) in store.table"
+                            :class="{
+                                overflowing: show.playlist.length > 37
+                            }"><div class="col">{{ format(show.scheduledTime, 'HH:mm') }}</div> <div class="col">{{ show.playlist }}</div> <div class="col" :class="{ blink: i === 1 }">{{ i === 0 ? 'is gestart' : i === 1 ? 'gaat beginnen' : '' }}</div> <div class="col">{{ show.auditoriumNumber || '?' }}</div></pre>
+                    </div>
+                </div>
+
             </div>
         </section>
 
@@ -126,7 +161,104 @@ const { isOverDropZone } = useDropZone(main, {
 </template>
 
 <style scoped>
-code {
+#matrix-display {
+    position: relative;
+}
+
+#matrix-display-title {
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    font: 28px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    text-transform: uppercase;
+}
+
+.matrix-clock,
+.matrix-row {
+    position: relative;
     white-space: pre;
+
+    box-sizing: content-box;
+    height: calc(1em + 4px);
+    padding: 4px 8px;
+    margin-block: 4px;
+    overflow: hidden;
+
+    background-color: black;
+    color: orange;
+    border-radius: 4px;
+    font-family: monospace;
+
+    &.green {
+        color: green;
+    }
+}
+
+.matrix-clock {
+    font-size: larger;
+    width: 5ch;
+    margin-left: auto;
+    margin-bottom: 16px;
+}
+
+.matrix-row {
+    width: 62ch;
+
+    &.overflowing:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 44ch;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 8px solid red;
+
+        transform: rotate(45deg);
+    }
+
+    &.overflowing:hover .col:nth-of-type(2) {
+        overflow-x: visible;
+    }
+
+    .col {
+        display: inline-block;
+        overflow-x: hidden;
+
+        &:nth-of-type(1) {
+            width: 6ch;
+        }
+
+        &:nth-of-type(2) {
+            width: 37ch;
+        }
+
+        &:nth-of-type(3) {
+            width: 14ch;
+            text-align: right;
+            color: red;
+            opacity: .2;
+        }
+
+        &:nth-of-type(4) {
+            width: 2ch;
+            text-align: right;
+        }
+
+        &.blink {
+            animation: blink 1s infinite;
+        }
+    }
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0.2;
+    }
 }
 </style>

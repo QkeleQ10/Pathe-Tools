@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, inject } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
 import { ReturnedValue, useSound } from '@vueuse/sound';
 import { voices, getSoundInfo } from '@/voices.ts';
@@ -13,12 +13,7 @@ const main = ref<HTMLElement>(null)
 
 const warningShown = ref(true)
 
-const now = ref(new Date())
-setInterval(updateNowValue, 1000)
-updateNowValue()
-function updateNowValue() {
-    now.value = new Date()
-}
+const now = inject('now') as Date
 
 const options = useStorage('announcer-options', {
     plfStart: {
@@ -183,8 +178,6 @@ function compileListOfAnnouncements() {
     announcementsToMake.value = [
         ...array.filter((a) => Date.now() - a.time.getTime() < 10000).sort((a, b) => a.time.getTime() - b.time.getTime())
     ]
-
-    updateNowValue()
 }
 
 setInterval(scheduleAnnouncements, 30000)

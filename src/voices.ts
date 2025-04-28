@@ -1,6 +1,7 @@
 import voiceDefault from '@/assets/sounds/voices/rosetta.ogg';
 import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg';
 import voiceJaron from '@/assets/sounds/voices/jaron.ogg';
+import voiceDanique from '@/assets/sounds/voices/danique.ogg';
 import voiceBeau from '@/assets/sounds/voices/beau.ogg';
 import { SpriteMap } from '@vueuse/sound';
 
@@ -48,6 +49,14 @@ export const voices = {
         file: voiceJaron,
         sprite: {
             "auditorium01": [0, 996.2585034013606], "auditorium02": [1200, 977.2562358276645], "auditorium03": [2400, 1053.9229024943313], "auditorium04": [4600, 1109.8866213151925], "auditorium05": [6799.999999999999, 1125.5328798185947], "auditorium06": [9000, 1083.7641723356005], "auditorium07": [11200, 1070.2947845804988], "auditorium08": [13399.999999999998, 1134.9206349206345], "auditorium09": [15599.999999999998, 1259.2517006802736], "auditorium10": [17800, 750.5895691609971], "credits": [19000, 920.6575963718819], "end": [20200, 1177.0748299319714], "finalshow": [22400, 1377.0068027210875], "mainshow": [24599.999999999996, 1302.0634920634925], "start": [26799.999999999996, 737.8458049886625]
+        }
+    }),
+    danique: new Voice({
+        name: "Danique",
+        language: "nl",
+        file: voiceDanique,
+        sprite: {
+            "auditorium01": [0, 737.9591836734694], "auditorium02": [1200, 820.340136054422], "auditorium03": [2400.0000000000005, 677.482993197279], "auditorium04": [3600.0000000000005, 822.6530612244902], "auditorium05": [4800.000000000001, 810.5442176870747], "auditorium06": [6000.000000000001, 795.4875283446717], "auditorium07": [7200.000000000001, 926.8027210884355], "auditorium08": [8400, 871.0430839002274], "auditorium09": [9600.000000000002, 941.8820861677997], "auditorium10": [10800, 689.569160997733], "credits": [12000.000000000002, 786.3718820861685], "end": [13200.000000000004, 1149.2743764172335], "start": [15400.000000000002, 520.2040816326523]
         }
     }),
     beau: new Voice({
