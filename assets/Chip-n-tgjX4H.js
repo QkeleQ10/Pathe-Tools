@@ -1,1 +1,0 @@
-import{_ as n,c as o,o as t,a as _}from"./index-BPQgUad6.js";const c={};function r(e,s){return t(),o("div",null,[_(e.$slots,"default",{},void 0,!0)])}const d=n(c,[["render",r],["__scopeId","data-v-0be94000"]]);export{d as _};
