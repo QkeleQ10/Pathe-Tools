@@ -142,7 +142,7 @@ const { isOverDropZone } = useDropZone(main, {
                         <pre
                             class="matrix-clock">{{ format(store.table?.[0]?.scheduledTime.getTime() + 840000 || new Date(), 'HH:mm') }}</pre>
                         <pre
-                            class="matrix-row green">         Welkom bij Pathé Utrecht Leidsche Rijn!          Zaal</pre>
+                            class="matrix-row green">        Welkom bij Pathé Utrecht Leidsche Rijn!         Zaal</pre>
                         <pre class="matrix-row" v-for="(show, i) in store.table"
                             :class="{
                                 overflowing: show.playlist.length > 37
@@ -201,13 +201,13 @@ const { isOverDropZone } = useDropZone(main, {
 }
 
 .matrix-row {
-    width: 62ch;
+    width: 60ch;
 
     &.overflowing:before {
         content: '';
         position: absolute;
         top: 0;
-        left: 44ch;
+        left: 43ch;
         border-left: 8px solid transparent;
         border-right: 8px solid transparent;
         border-bottom: 8px solid red;
@@ -224,7 +224,7 @@ const { isOverDropZone } = useDropZone(main, {
         overflow-x: hidden;
 
         &:nth-of-type(1) {
-            width: 6ch;
+            width: 5ch;
         }
 
         &:nth-of-type(2) {
@@ -232,15 +232,13 @@ const { isOverDropZone } = useDropZone(main, {
         }
 
         &:nth-of-type(3) {
-            width: 14ch;
-            text-align: right;
+            width: 13ch;
             color: red;
             opacity: .2;
         }
 
         &:nth-of-type(4) {
             width: 2ch;
-            text-align: right;
         }
 
         &.blink {
