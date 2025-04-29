@@ -11,6 +11,7 @@ declare module 'vue' {
     Button: typeof import('./src/components/Button.vue')['default']
     ButtonText: typeof import('./src/components/ButtonText.vue')['default']
     Chip: typeof import('./src/components/Chip.vue')['default']
+    CinemecTimetableTest: typeof import('./src/components/CinemecTimetableTest.vue')['default']
     ContextMenu: typeof import('./src/components/ContextMenu.vue')['default']
     FileUploadBlock: typeof import('./src/components/FileUploadBlock.vue')['default']
     FileUploadButton: typeof import('./src/components/FileUploadButton.vue')['default']

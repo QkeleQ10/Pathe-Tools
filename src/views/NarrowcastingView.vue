@@ -156,6 +156,7 @@ const { isOverDropZone } = useDropZone(main, {
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
         </div>
+        <CinemecTimetableTest/>
     </main>
 </template>
 
