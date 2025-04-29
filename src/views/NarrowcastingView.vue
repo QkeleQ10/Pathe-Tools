@@ -123,15 +123,14 @@ const { isOverDropZone } = useDropZone(main, {
                 <div v-show="store.table.length && ['sent', 'received'].includes(store.status)">
                     <h2>Voorbeeld</h2>
                     <p style="max-width: 560px;">
-                        Dit is slechts een voorbeeld. Deze pagina staat niet in directe verbinding met de Timetable.<br>
+                        Dit is slechts een voorbeeld. Deze pagina staat <u>niet</u> in directe verbinding met de
+                        Timetable.<br><br>
 
-                        Dit zijn de voorstellingen van <span v-if="'flags' in store.metadata">
-                            {{ store.metadata.flags.includes('times-only') ? 'onbekende datum' :
-                                format(store.table[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
-                        </span>. <span
+                        <span
                             v-if="store.table[0]?.scheduledTime > new Date(new Date().setHours(0, 0, 0, 0) + 24 * 60 * 60 * 1000)">
-                            Als je deze inlaadt in de Timetable, dan worden ze pas vanaf middernacht weergegeven.
-                        </span><br><br>
+                            Als je deze gegevens inlaadt in de Timetable, dan worden ze pas vanaf middernacht
+                            weergegeven.
+                        <br><br></span>
 
                         <span v-if="store.table.some(show => show.playlist.length > 37)">
                             Sommige titels zijn te lang en moeten mogelijk nog worden verkort
@@ -141,7 +140,7 @@ const { isOverDropZone } = useDropZone(main, {
                     <div class="block" id="matrix-display">
                         <span id="matrix-display-title">Pathé Timetable</span>
                         <pre
-                            class="matrix-clock">{{ format(store.table ? store.table[0].scheduledTime.getTime() + 840000 : new Date(), 'HH:mm') }}</pre>
+                            class="matrix-clock">{{ format(store.table?.[0]?.scheduledTime.getTime() + 840000 || new Date(), 'HH:mm') }}</pre>
                         <pre
                             class="matrix-row green">         Welkom bij Pathé Utrecht Leidsche Rijn!          Zaal</pre>
                         <pre class="matrix-row" v-for="(show, i) in store.table"
