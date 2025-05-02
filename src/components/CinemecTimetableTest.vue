@@ -37,14 +37,30 @@ async function sendRequest() {
             hex: parseHexTextString(input.value) // the full hex string
         })
     });
-
 }
+
+function hexToAscii(hexString) {
+    // Remove spaces and split into an array of hex bytes
+    const hexBytes = hexString.trim().split(/\s+/);
+
+    // Convert each byte to a character and join them into a single string
+    const asciiString = hexBytes.map(byte => {
+        const charCode = parseInt(byte, 16);
+        return String.fromCharCode(charCode);
+    }).join('');
+
+    return asciiString;
+}
+
 </script>
 
 <template>
     <ModalDialog v-if="show" @dismiss="show = false">
         <textarea v-model="input" identifier="input"></textarea>
-        <pre>{{ parseHexTextString(input) }}</pre>
+        <div class="flex">
+            <pre style="width: 48ch;">{{ parseHexTextString(input) }}</pre>
+            <pre style="width: 16ch;">{{ hexToAscii(parseHexTextString(input)).match(/.{1,16}/g).join('\n') }}</pre>
+        </div>
 
         <InputText v-model="host" identifier="host">
             <span>host</span>
@@ -62,11 +78,15 @@ async function sendRequest() {
 </template>
 
 <style scoped>
+textarea {
+    width: 100%;
+    min-height: 200px;
+}
+
 textarea,
 pre {
-    width: 100%;
     height: auto;
-    min-height: 200px;
-    white-space: pre-wrap;
+    white-space: break-spaces;
+    overflow-wrap: anywhere;
 }
 </style>
