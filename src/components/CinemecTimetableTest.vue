@@ -27,6 +27,8 @@ setInterval(() => {
 }, 1000);
 
 function updateInput() {
+    if (!store.table.length) return;
+    
     let futureShows = store.table.filter(show => show.scheduledTime.getTime() - Date.now() > -900000);
     let str = `AA BB 00 00 00 00 00 08 08 01 7D 04 1D 02 13 36 17 55 AA BB 00 00 00 00 00 F0 F0 00 01 `;
 
