@@ -4,7 +4,6 @@ import { useDropZone, useUrlSearchParams } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show } from '@/classes/classes';
 import { format } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import { useServerStore } from '@/stores/server';
 
 const store = useTmsScheduleStore();
@@ -118,6 +117,7 @@ const { isOverDropZone } = useDropZone(main, {
                             standaarddownloadmap, als dat niet automatisch gebeurt. Klik eventueel op 'Behouden'.
                         </p>
                     </div>
+                    <CinemecTimetableTest />
                 </div>
 
                 <div v-show="store.table.length && ['sent', 'received'].includes(store.status)">
@@ -130,7 +130,7 @@ const { isOverDropZone } = useDropZone(main, {
                             v-if="store.table[0]?.scheduledTime > new Date(new Date().setHours(0, 0, 0, 0) + 24 * 60 * 60 * 1000)">
                             Als je deze gegevens inlaadt in de Timetable, dan worden ze pas vanaf middernacht
                             weergegeven.
-                        <br><br></span>
+                            <br><br></span>
 
                         <span v-if="store.table.some(show => show.playlist.length > 37)">
                             Sommige titels zijn te lang en moeten mogelijk nog worden verkort
@@ -141,8 +141,7 @@ const { isOverDropZone } = useDropZone(main, {
                         <span id="matrix-display-title">Pathé Timetable</span>
                         <pre
                             class="matrix-clock">{{ format(store.table?.[0]?.scheduledTime.getTime() + 840000 || new Date(), 'HH:mm') }}</pre>
-                        <pre
-                            class="matrix-row green">        Welkom bij Pathé Utrecht Leidsche Rijn!         Zaal</pre>
+                        <pre class="matrix-row green">        Welkom bij Pathé Utrecht Leidsche Rijn!         Zaal</pre>
                         <pre class="matrix-row" v-for="(show, i) in store.table"
                             :class="{
                                 overflowing: show.playlist.length > 37
@@ -156,7 +155,6 @@ const { isOverDropZone } = useDropZone(main, {
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
         </div>
-        <CinemecTimetableTest/>
     </main>
 </template>
 
