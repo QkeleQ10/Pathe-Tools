@@ -16,7 +16,7 @@ const ip2 = ref("10.10.87.82");
 const port = ref("9100");
 const repeat = ref(true);
 
-const input = ref(`AA BB 00 00 00 00 00 08 08 01 7D 04 1D 02 13 36 17 55 AA BB 00 00 00 00 00 F0 F0 00 01 03 00 03 00 00 01 "Geen voorstellingen geüpload" 00 03 00 03 00 3A 01 "4 " 00 03 00 03 00 00 02 "21:20 Until Dawn 4DX                        " 00 03 00 03 00 3A 02 "3 " 00 03 00 03 00 00 03 "21:30 Drop                                  " 00 03 00 03 00 3A 03 "2 " 00 04 02 00 03 00 37 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 1F 6E AA BB 00 00 00 00 00 01 01 21 21`);
+const input = ref(`AA BB 00 00 00 00 00 08 08 01 7D 04 1D 02 13 36 17 55 AA BB 00 00 00 00 00 F0 F0 00 01 03 00 03 00 00 01 "21:00 The Amateur                           " 00 03 00 03 00 3A 01 "4 " 00 03 00 03 00 00 02 "21:20 Until Dawn 4DX                        " 00 03 00 03 00 3A 02 "3 " 00 03 00 03 00 00 03 "21:30 Drop                                  " 00 03 00 03 00 3A 03 "2 " 00 04 02 00 03 00 37 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 1F 6E AA BB 00 00 00 00 00 01 01 21 21`);
 
 store.$subscribe(() => {
     updateInput();
