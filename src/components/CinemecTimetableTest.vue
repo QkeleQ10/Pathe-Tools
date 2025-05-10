@@ -16,7 +16,24 @@ const ip2 = ref("10.10.87.82");
 const port = ref("9100");
 const repeat = ref(true);
 
-const input = ref(`AA BB 00 00 00 00 00 08 08 01 7D 04 1D 02 13 36 17 55 AA BB 00 00 00 00 00 F0 F0 00 01 03 00 03 00 00 01 "21:00 The Amateur                           " 00 03 00 03 00 3A 01 "4 " 00 03 00 03 00 00 02 "21:20 Until Dawn 4DX                        " 00 03 00 03 00 3A 02 "3 " 00 03 00 03 00 00 03 "21:30 Drop                                  " 00 03 00 03 00 3A 03 "2 " 00 04 02 00 03 00 37 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 1F 6E AA BB 00 00 00 00 00 01 01 21 21`);
+function generateTimestampHex() {
+    const date = new Date();
+
+    const year = date.getFullYear() - 1900; // tm_year
+    const month = date.getMonth() + 1;      // tm_mon (1–12)
+    const mday = date.getDate();            // tm_mday
+    const wday = date.getDay();             // tm_wday (0=Sun)
+    const hour = date.getHours();           // tm_hour
+    const minute = date.getMinutes();       // tm_min
+    const second = date.getSeconds();       // tm_sec
+    const centiseconds = Math.floor(date.getMilliseconds() / 10); // extra byte
+
+    const bytes = [year, month, mday, wday, hour, minute, second, centiseconds];
+
+    return bytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+}
+
+const input = ref(`AA BB 00 00 00 00 00 08 08 01 ${generateTimestampHex()} AA BB 00 00 00 00 00 F0 F0 00 01 03 00 03 00 00 01 "De timetable toont momenteel geen actuele   " 00 03 00 03 00 3A 01 "  " 00 03 00 03 00 00 02 "informatie. Raadpleeg uw ticket of de       " 00 03 00 03 00 3A 02 "  " 00 03 00 03 00 00 03 "schermen bij de kassa voor het zaalnummer.  " 00 03 00 03 00 3A 03 "  " 00 04 02 00 03 00 37 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 1F 6E AA BB 00 00 00 00 00 01 01 21 21`);
 
 store.$subscribe(() => {
     updateInput();
@@ -28,9 +45,9 @@ setInterval(() => {
 
 function updateInput() {
     if (!store.table.length) return;
-    
+
     let futureShows = store.table.filter(show => show.scheduledTime.getTime() - Date.now() > -900000);
-    let str = `AA BB 00 00 00 00 00 08 08 01 7D 04 1D 02 13 36 17 55 AA BB 00 00 00 00 00 F0 F0 00 01 `;
+    let str = `AA BB 00 00 00 00 00 08 08 01 ${generateTimestampHex()} AA BB 00 00 00 00 00 F0 F0 00 01 `;
 
     for (let i = 1; i <= 8; i++) {
         let show = futureShows[i - 1];
