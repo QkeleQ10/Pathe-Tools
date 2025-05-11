@@ -2,7 +2,8 @@
 import { ref, reactive, watch, inject } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
 import { ReturnedValue, useSound } from '@vueuse/sound';
-import { voices, getSoundInfo } from '@/voices.ts';
+import { voices, getSoundInfo } from '@/utils/voices';
+import { assembleAudioClient } from '@/utils/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Announcement, AnnouncementTypes, Show } from '@/classes/classes';
 import { format } from 'date-fns';
@@ -223,10 +224,27 @@ const { isOverDropZone } = useDropZone(main, {
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
     multiple: false
 })
+
+async function assembleAndPlay() {
+    const segments = [
+        // Overlap example: start next sprite 500ms before the previous ends
+        { voice: voices.default, spriteName: 'chime', offset: -850 },
+        { voice: voices.default, spriteName: 'credits', offset: 200 },
+        { voice: voices.default, spriteName: 'auditorium01' },
+    ];
+
+    // Build WAV fully in the browser
+    const url = await assembleAudioClient(segments);
+
+    // Play the result
+    const audio = new Audio(url);
+    audio.play();
+}
 </script>
 
 <template>
     <main ref="main">
+        <Button @click="assembleAndPlay">Test</Button>
         <HeroImage />
         <TimetableUploadSection />
         <section>

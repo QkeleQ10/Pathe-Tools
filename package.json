@@ -4,30 +4,30 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cd dist && cp index.html 404.html && cp index.html timetable.html && cp index.html announcer.html && cp index.html slideshow.html && cp index.html intermission-finder.html && cd ..",
+    "build": "vite build && cd dist && cp index.html 404.html && cp index.html timetable.html && cp index.html announcer.html && cp index.html narrowcasting.html && cp index.html slideshow.html && cp index.html intermission-finder.html && cd ..",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vueuse/core": "^13.0.0",
+    "@vueuse/core": "^13.1.0",
     "@vueuse/sound": "^2.1.3",
     "date-fns": "^4.1.0",
     "fast-average-color": "^9.5.0",
     "pathe": "^2.0.3",
-    "pinia": "^3.0.1",
-    "typescript": "^5.8.2",
+    "pinia": "^3.0.2",
+    "typescript": "^5.8.3",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0",
+    "vue-router": "^4.5.1",
     "vue-to-print": "^1.4.0",
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10",
-    "@vitejs/plugin-vue": "^5.2.1",
-    "sharp": "^0.33.5",
+    "@types/node": "^22.15.17",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "sharp": "^0.34.1",
     "svgo": "^3.3.2",
-    "unplugin-vue-components": "^28.4.1",
-    "vite": "^6.2.5",
+    "unplugin-vue-components": "^28.5.0",
+    "vite": "^6.3.5",
     "vite-plugin-image-optimizer": "^1.1.8",
-    "vite-plugin-vue-devtools": "^7.7.2"
+    "vite-plugin-vue-devtools": "^7.7.6"
   }
 }

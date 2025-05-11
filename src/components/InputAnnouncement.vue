@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useFocus } from '@vueuse/core';
-import { getSoundInfo } from '@/voices.ts';
+import { getSoundInfo } from '@/utils/voices';
 
 const props = defineProps<{ identifier: string }>();
 const model = defineModel<string[]>({ default: [] });

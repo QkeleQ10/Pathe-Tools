@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { voices } from '@/voices';
+import { voices } from '@/utils/voices';
 
 const model = defineModel<string[]>({ default: ['default'] });
 

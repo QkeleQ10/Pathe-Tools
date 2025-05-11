@@ -14,7 +14,7 @@ const host = ref("http://localhost:5000/send-bytes");
 const ip = ref("10.10.87.81");
 const ip2 = ref("10.10.87.82");
 const port = ref("9100");
-const repeat = ref(true);
+const repeat = ref(false);
 
 function generateTimestampHex() {
     const date = new Date();
@@ -82,24 +82,30 @@ function parseHexTextString(input) {
 }
 
 async function sendRequest() {
-    await fetch(host.value, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            ip: ip.value,
-            port: port.value,
-            hex: parseHexTextString(input.value) // the full hex string
-        })
-    });
-    await fetch(host.value, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            ip: ip2.value,
-            port: port.value,
-            hex: parseHexTextString(input.value) // the full hex string
-        })
-    });
+    if (ip.value) {
+        let res1 = await fetch(host.value, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                ip: ip.value,
+                port: port.value,
+                hex: parseHexTextString(input.value) // the full hex string
+            })
+        });
+        console.log(res1);
+    }
+    if (ip2.value) {
+        let res2 = await fetch(host.value, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                ip: ip2.value,
+                port: port.value,
+                hex: parseHexTextString(input.value) // the full hex string
+            })
+        });
+        console.log(res2);
+    }
 
     if (repeat.value) {
         setTimeout(() => {
