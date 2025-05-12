@@ -5,16 +5,123 @@ import { ReturnedValue, useSound } from '@vueuse/sound';
 import { voices, getSoundInfo } from '@/utils/voices';
 import { assembleAudioClient } from '@/utils/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { Announcement, AnnouncementTypes, Show } from '@/classes/classes';
+import { Announcement, AnnouncementTypes, Show, AnnouncementRule } from '@/classes/classes';
 import { format } from 'date-fns';
 
 const store = useTmsScheduleStore()
 
 const main = ref<HTMLElement>(null)
 
-const warningShown = ref(true)
+const showRuleEditor = ref(false)
 
 const now = inject('now') as Date
+
+const defaultRules = useStorage<AnnouncementRule[]>('default-rules', [
+    {
+        id: 'plfStart',
+        name: '4DX-inloop',
+        sprites: ['chime', 'start', 'auditorium#'],
+        enabled: true,
+        trigger: {
+            property: 'scheduledTime',
+            preponeMinutes: 15,
+        },
+        filter: {
+            plfOnly: true,
+            lastShowOnly: false,
+            firstShowOnly: false,
+            playlistTitleIncludes: '',
+            playlistTitleExcludes: '',
+        }
+    },
+    {
+        id: 'start',
+        name: 'Start',
+        sprites: ['chime', 'start', 'auditorium#'],
+        enabled: false,
+        trigger: {
+            property: 'scheduledTime',
+            preponeMinutes: 0,
+        },
+        filter: {
+            plfOnly: false,
+            lastShowOnly: false,
+            firstShowOnly: false,
+            playlistTitleIncludes: '',
+            playlistTitleExcludes: '',
+        }
+    },
+    {
+        id: 'mainShow',
+        name: 'Start hoofdfilm',
+        sprites: ['chime', 'mainshow', 'auditorium#'],
+        enabled: false,
+        trigger: {
+            property: 'mainShowTime',
+            preponeMinutes: 0,
+        },
+        filter: {
+            plfOnly: false,
+            lastShowOnly: false,
+            firstShowOnly: false,
+            playlistTitleIncludes: '',
+            playlistTitleExcludes: '',
+        }
+    },
+    {
+        id: 'credits',
+        name: 'Aftiteling',
+        sprites: ['chime', 'credits', 'auditorium#'],
+        enabled: true,
+        trigger: {
+            property: 'creditsTime',
+            preponeMinutes: 1,
+        },
+        filter: {
+            plfOnly: false,
+            lastShowOnly: false,
+            firstShowOnly: false,
+            playlistTitleIncludes: '',
+            playlistTitleExcludes: '',
+        }
+    },
+    {
+        id: 'end',
+        name: 'Einde voorstelling',
+        sprites: ['chime', 'end', 'auditorium#'],
+        enabled: false,
+        trigger: {
+            property: 'endTime',
+            preponeMinutes: 0,
+        },
+        filter: {
+            plfOnly: false,
+            lastShowOnly: false,
+            firstShowOnly: false,
+            playlistTitleIncludes: '',
+            playlistTitleExcludes: '',
+        }
+    },
+    {
+        id: 'finalMainShowStart',
+        name: 'Start laatste hoofdfilm',
+        sprites: ['chime', 'finalshow'],
+        enabled: false,
+        trigger: {
+            property: 'mainShowTime',
+            preponeMinutes: 0,
+        },
+        filter: {
+            plfOnly: false,
+            lastShowOnly: true,
+            firstShowOnly: false,
+            playlistTitleIncludes: '',
+            playlistTitleExcludes: '',
+        }
+    },
+], localStorage, { mergeDefaults: true });
+
+const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true })
 
 const options = useStorage('announcer-options', {
     plfStart: {
@@ -114,10 +221,9 @@ function playSound(preferredVoice: string, sound: { id: string }): { voice: stri
 }
 
 const announcementsToMake = ref<Announcement[]>([])
-store.$subscribe(compileListOfAnnouncements, { deep: true })
-watch(options, compileListOfAnnouncements, { deep: true })
-compileListOfAnnouncements()
-function compileListOfAnnouncements() {
+store.$subscribe(populateAnnouncements, { deep: true })
+populateAnnouncements()
+function populateAnnouncements() {
     let array: Announcement[] = []
     const announcementTypes = Object.values(AnnouncementTypes);
     store.table.forEach((show: Show, i: number) => {
@@ -257,10 +363,7 @@ async function assembleAndPlay() {
                                 v-show="now.getTime() - announcement.time.getTime() < 10000" class="film"
                                 :key="announcement.key" :class="{ 'announcing': announcement.status === 'announcing' }">
                                 <div class="room">
-                                    {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium
-                                        ===
-                                        'Rooftop') ? 'RT' :
-                                        announcement.show.auditoriumNumber }}
+                                    {{ announcement.show.auditoriumNumber }}
                                 </div>
                                 <div class="title">{{ announcement.show.title }}</div>
                                 <div class="time">
@@ -316,165 +419,69 @@ async function assembleAndPlay() {
                 </div>
 
                 <SidePanel style="flex-basis: 229px;">
-                    <Tabs>
-                        <Tab value="Opties">
-                            <fieldset>
-                                <legend>Stemmen</legend>
-                                <VoicesSelector v-model="options.selectedVoices" />
-                            </fieldset>
+                    <Button class="secondary" @click="showRuleEditor = true">
+                        <Icon>edit</Icon>
+                        <span>Regels bewerken
+                            <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
+                                {{customRules.filter(r =>
+                                    r.enabled).length}} actief)</small>
+                        </span>
+                    </Button>
+                    <fieldset>
+                        <legend>Stemmen</legend>
+                        <VoicesSelector v-model="options.selectedVoices" />
+                    </fieldset>
 
-                            <fieldset style="position: relative;">
-                                <legend>Handmatig afspelen</legend>
-                                <div class="manual-sounds-list" v-for="ids in [
-                                    voices.default.sounds.filter(id => !id.startsWith('auditorium')),
-                                    voices.default.sounds.filter(id => id.startsWith('auditorium')),
-                                    ...options.selectedVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
-                                ]" v-show="ids?.length > 0">
-                                    <button v-for="id of ids"
-                                        @click="soundQueue.push({ id, key: new Date().getTime() + id })"
-                                        :class="{ translucent: id !== 'chime' && !options.selectedVoices.some(e => voices[e].sounds.includes(id)) }">
-                                        <Icon v-if="id === 'chime'" :fill="true"
-                                            style="--size: 14px; vertical-align: middle;">
-                                            music_note</Icon>
-                                        <span v-else>
-                                            {{ getSoundInfo(id).name }}
-                                        </span>
-                                    </button>
-                                </div>
-                            </fieldset>
+                    <fieldset style="position: relative;">
+                        <legend>Handmatig afspelen</legend>
+                        <div class="manual-sounds-list" v-for="ids in [
+                            voices.default.sounds.filter(id => !id.startsWith('auditorium')),
+                            voices.default.sounds.filter(id => id.startsWith('auditorium')),
+                            ...options.selectedVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
+                        ]" v-show="ids?.length > 0">
+                            <button v-for="id of ids" @click="soundQueue.push({ id, key: new Date().getTime() + id })"
+                                :class="{ translucent: id !== 'chime' && !options.selectedVoices.some(e => voices[e].sounds.includes(id)) }">
+                                <Icon v-if="id === 'chime'" :fill="true" style="--size: 14px; vertical-align: middle;">
+                                    music_note</Icon>
+                                <span v-else>
+                                    {{ getSoundInfo(id).name }}
+                                </span>
+                            </button>
+                        </div>
+                    </fieldset>
 
-                            <fieldset>
-                                <legend>Nu afgespeeld</legend>
-                                <div class="queue">
-                                    <TransitionGroup name="list">
-                                        <div v-for="(element, i) in soundQueue" @click="soundQueue.splice(i, 1)"
-                                            :key="element.key" :class="{ 'announcing': i === 0 }">
-                                            <Icon :fill="true">graphic_eq</Icon>
-                                            {{ sentenceCase(getSoundInfo(element.id).name) }}
-                                        </div>
-                                        <p v-if="soundQueue.length < 1" key="0">Er wordt momenteel geen omroep
-                                            afgespeeld.</p>
-                                    </TransitionGroup>
+                    <fieldset>
+                        <legend>Nu afgespeeld</legend>
+                        <div class="queue">
+                            <TransitionGroup name="list">
+                                <div v-for="(element, i) in soundQueue" @click="soundQueue.splice(i, 1)"
+                                    :key="element.key" :class="{ 'announcing': i === 0 }">
+                                    <Icon :fill="true">graphic_eq</Icon>
+                                    {{ sentenceCase(getSoundInfo(element.id).name) }}
                                 </div>
-                            </fieldset>
-                        </Tab>
-                        <Tab value="Regels">
-                            <div v-if="warningShown" @click="warningShown = false" class="parameters-warning">
-                                <Icon fill style="--size: 48px;">warning</Icon>
-                                <p>
-                                    Het is afgeraden deze opties aan te passen.<br>
-                                    <br>
-                                    De standaardinstellingen zijn samengesteld op basis van wat het beste lijkt te
-                                    werken volgens de medewerkers.<br>
-                                    <br>
-                                    Als je deze instellingen aanpast, dan hebben medewerkers mogelijk geen zekerheid
-                                    meer over wanneer een omroep afgespeeld wordt.
-                                </p>
-                            </div>
-                            <fieldset>
-                                <legend>Speciaal</legend>
-                                <InputCheckbox v-model="minecraftEnabled" identifier="minecraftEnabled">
-                                    <span>Omroepen</span>
-                                </InputCheckbox>
-                                <InputAnnouncement v-model="minecraftAnnouncement" identifier="minecraftAnnouncement"
-                                    :disabled="!minecraftEnabled">
-                                    Inhoud
-                                </InputAnnouncement>
-                                <InputNumber v-model.number="minecraftTimestamp" identifier="minecraftTimestamp"
-                                    min="20" max="80" unit="min">A Minecraft Movie: tijdstip zaalcontrole
-                                    <small>
-                                        De omroep wordt {{ minecraftTimestamp }} minuten na start hoofdfilm afgespeeld.
-                                    </small>
-                                    <small>Standaardwaarde: 65 min. De chickenjockey-scène speelt zich af op ongeveer 69
-                                        min.</small>
-                                </InputNumber>
-                            </fieldset>
-                            <fieldset>
-                                <legend>4DX-inloop</legend>
-                                <InputCheckbox v-model="options.plfStart.enabled" identifier="announcePlfStart">
-                                    <span>Omroepen</span>
-                                </InputCheckbox>
-                                <InputAnnouncement v-model="options.plfStart.announcement"
-                                    identifier="announcePlfStartAnnouncement" :disabled="!options.plfStart.enabled">
-                                    Inhoud
-                                </InputAnnouncement>
-                                <InputNumber v-model.number="options.plfStart.minutesBeforeStartTime"
-                                    identifier="announcePlfStartGracePeriod" min="0" max="30" unit="min"
-                                    :disabled="!options.plfStart.enabled">
-                                    Voorlooptijd
-                                    <small>
-                                        De omroep wordt {{ options.plfStart.minutesBeforeStartTime }} min voor de
-                                        aanvangstijd afgespeeld.
-                                    </small>
-                                </InputNumber>
-                            </fieldset>
-                            <fieldset>
-                                <legend>Start</legend>
-                                <InputCheckbox v-model="options.start.enabled" identifier="announceStart">
-                                    Omroepen
-                                </InputCheckbox>
-                                <InputAnnouncement v-model="options.start.announcement"
-                                    identifier="announceStartAnnouncement" :disabled="!options.start.enabled">
-                                    Inhoud
-                                </InputAnnouncement>
-                            </fieldset>
-                            <fieldset>
-                                <legend>Start hoofdfilm</legend>
-                                <InputCheckbox v-model="options.mainShow.enabled" identifier="announceMainShow">
-                                    Omroepen
-                                </InputCheckbox>
-                                <InputAnnouncement v-model="options.mainShow.announcement"
-                                    identifier="announceMainShowAnnouncement" :disabled="!options.mainShow.enabled">
-                                    Inhoud
-                                </InputAnnouncement>
-                            </fieldset>
-                            <fieldset>
-                                <legend>Aftiteling</legend>
-                                <InputCheckbox v-model="options.credits.enabled" identifier="announceCredits">
-                                    Omroepen
-                                </InputCheckbox>
-                                <InputAnnouncement v-model="options.credits.announcement"
-                                    identifier="announceCreditsAnnouncement" :disabled="!options.credits.enabled">
-                                    Inhoud
-                                </InputAnnouncement>
-                                <InputNumber v-model.number="options.credits.secondsBeforeCreditsTime"
-                                    identifier="announceCreditsGracePeriod" step="15" min="0" max="240" unit="s"
-                                    :disabled="!options.credits.enabled">
-                                    Voorlooptijd
-                                    <small>
-                                        De omroep wordt {{ options.credits.secondsBeforeCreditsTime }} s voor de
-                                        aftiteling
-                                        afgespeeld.
-                                    </small>
-                                </InputNumber>
-                            </fieldset>
-                            <fieldset>
-                                <legend>Einde voorstelling</legend>
-                                <InputCheckbox v-model="options.end.enabled" identifier="announceEnd">
-                                    Omroepen
-                                </InputCheckbox>
-                                <InputAnnouncement v-model="options.end.announcement"
-                                    identifier="announceEndAnnouncement" :disabled="!options.end.enabled">
-                                    Inhoud
-                                </InputAnnouncement>
-                            </fieldset>
-                            <fieldset>
-                                <legend>Start laatste hoofdfilm</legend>
-                                <InputCheckbox v-model="options.finalMainShowStart.enabled"
-                                    identifier="announceFinalShow">
-                                    Omroepen
-                                </InputCheckbox>
-                                <InputAnnouncement v-model="options.finalMainShowStart.announcement"
-                                    identifier="announceFinalShowAnnouncement"
-                                    :disabled="!options.finalMainShowStart.enabled">
-                                    Inhoud
-                                </InputAnnouncement>
-                            </fieldset>
-                        </Tab>
-                    </Tabs>
+                                <p v-if="soundQueue.length < 1" key="0">Er wordt momenteel geen omroep
+                                    afgespeeld.</p>
+                            </TransitionGroup>
+                        </div>
+                    </fieldset>
                 </SidePanel>
             </div>
         </section>
+
+        <ModalDialog v-if="showRuleEditor" @dismiss="showRuleEditor = false">
+            <Tabs>
+                <Tab value="Standaardregels">
+                    <RuleList v-model="defaultRules" :toggleOnly="true" />
+                </Tab>
+                <Tab value="Eigen regels">
+                    <RuleList v-model="customRules" :toggleOnly="false" />
+                </Tab>
+            </Tabs>
+            <Button @click="populateAnnouncements(); showRuleEditor = false" style="margin-top: 16px;">
+                <Icon>refresh</Icon>
+                <span>Omroepen genereren</span>
+            </Button>
+        </ModalDialog>
 
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden

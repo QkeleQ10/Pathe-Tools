@@ -59,3 +59,21 @@ export class Announcement {
         this.key = item.key;
     }
 }
+
+export type AnnouncementRule = {
+    id: string;
+    name?: string;
+    enabled: boolean;
+    sprites: string[];
+    trigger: {
+        property: "scheduledTime" | "showTime" | "mainShowTime" | "creditsTime" | "endTime";
+        preponeMinutes: number;
+    }
+    filter: {
+        plfOnly: boolean;
+        lastShowOnly: boolean;
+        firstShowOnly: boolean;
+        playlistTitleIncludes: string;
+        playlistTitleExcludes: string;
+    }
+}

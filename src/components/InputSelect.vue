@@ -4,11 +4,13 @@ const model = defineModel<string>();
 </script>
 
 <template>
-    <label class="input text-input" :for="identifier">
+    <label class="input select-input" :for="identifier">
         <div class="title">
             <slot></slot>
         </div>
-        <input type="text" :id="identifier" v-model="model">
+        <select :id="identifier" v-model="model">
+            <slot name="options"></slot>
+        </select>
     </label>
 </template>
 
@@ -38,7 +40,7 @@ label.no-label {
     gap: 4px;
 }
 
-input {
+select {
     height: 100%;
     width: 100%;
     max-width: 200px;
@@ -50,20 +52,7 @@ input {
     border-radius: 6px;
 }
 
-input:focus-visible {
+select:focus-visible {
     outline: 1px solid #ffc426;
-}
-
-div.input.has-unit {
-    width: 82px;
-}
-
-div.input span.unit {
-    position: absolute;
-    right: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6d6e71;
-    pointer-events: none;
 }
 </style>

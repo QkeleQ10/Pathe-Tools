@@ -11,7 +11,7 @@ const { focused } = useFocus(inputElement);
 </script>
 
 <template>
-    <label class="input" :for="identifier">
+    <label class="input announcement-input" :for="identifier">
         <div class="title">
             <slot></slot>
         </div>

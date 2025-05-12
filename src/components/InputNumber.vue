@@ -4,13 +4,13 @@ const model = defineModel<number>();
 </script>
 
 <template>
-    <label class="input" :for="identifier">
+    <label class="input number-input" :for="identifier">
         <div class="title">
             <slot></slot>
         </div>
         <div class="input" :class="{ 'has-unit': !!unit }">
-            <input type="number" inputmode="numeric" pattern="[0-9]+" :id="identifier"
-                :disabled="disabled" v-model.number="model">
+            <input type="number" inputmode="numeric" pattern="[0-9]+" :id="identifier" :disabled="disabled"
+                v-model.number="model">
             <span class="unit" v-if="unit">{{ unit }}</span>
         </div>
     </label>
@@ -24,6 +24,14 @@ label {
     gap: 16px;
     cursor: pointer;
     user-select: none;
+}
+
+label.no-label {
+    display: inline-block;
+
+    .title {
+        display: none;
+    }
 }
 
 .title {
