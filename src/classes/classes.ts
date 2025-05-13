@@ -1,4 +1,4 @@
-export interface FileMetadata {
+export type FileMetadata = {
     name: string;
     type: string;
     size: number;
@@ -7,7 +7,7 @@ export interface FileMetadata {
     flags?: string[];
 };
 
-export interface Show {
+export type Show = {
     title: string;
     playlist: string;
     feature: string;
@@ -23,7 +23,7 @@ export interface Show {
     duration: string;
 };
 
-export interface TimetableShow extends Show {
+export type TimetableShow = Show & {
     overlapWithPlf?: boolean;
     hasPostCredits?: boolean;
     nextStartTime?: Date;
@@ -42,38 +42,27 @@ export enum AnnouncementTypes {
     Minecraft = 'minecraft',
 };
 
-export class Announcement {
+export type Announcement = {
     time: Date;
-    type: AnnouncementTypes;
-    announcement: string[];
-    status: string;
-    key?: string;
     show: Show;
-
-    constructor(item: { time: Date, type: AnnouncementTypes, announcement: string[], status: string, scheduleItem: Show, key?: string }) {
-        this.time = item.time;
-        this.type = item.type;
-        this.announcement = item.announcement;
-        this.status = item.status;
-        this.show = item.scheduleItem;
-        this.key = item.key;
-    }
-}
+    segments: { spriteName: string; offset: number }[];
+    audio: HTMLAudioElement | null;
+};
 
 export type AnnouncementRule = {
     id: string;
     name?: string;
     enabled: boolean;
-    sprites: string[];
+    segments: { spriteName: string; offset: number }[];
     trigger: {
         property: "scheduledTime" | "showTime" | "mainShowTime" | "creditsTime" | "endTime";
         preponeMinutes: number;
-    }
+    };
     filter: {
         plfOnly: boolean;
         lastShowOnly: boolean;
         firstShowOnly: boolean;
         playlistTitleIncludes: string;
         playlistTitleExcludes: string;
-    }
-}
+    };
+};

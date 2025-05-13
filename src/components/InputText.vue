@@ -8,7 +8,10 @@ const model = defineModel<string>();
         <div class="title">
             <slot></slot>
         </div>
-        <input type="text" :id="identifier" v-model="model">
+        <input type="text" :id="identifier" :list="identifier + '-list'" v-model="model">
+        <datalist :id="identifier + '-list'">
+            <slot name="datalist"></slot>
+        </datalist>
     </label>
 </template>
 
