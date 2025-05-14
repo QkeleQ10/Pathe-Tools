@@ -32,16 +32,6 @@ export type TimetableShow = Show & {
     intermissionAfter?: boolean;
 };
 
-export enum AnnouncementTypes {
-    Start = 'start',
-    PlfStart = 'plfStart',
-    MainShow = 'mainShow',
-    Credits = 'credits',
-    End = 'end',
-    FinalMainShowStart = 'finalMainShowStart',
-    Minecraft = 'minecraft',
-};
-
 export type Announcement = {
     time: Date;
     show: Show;

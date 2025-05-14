@@ -83,7 +83,7 @@ function addRule() {
             </p>
 
             <a @click="() => { if (!toggleOnly) showAnnouncementBuilder = true }">
-                Omroep:
+                <u>Omroep</u>:
                 <span style="opacity: .5;">
                     {{rule.segments.map(segment => getSoundInfo(segment.spriteName).name).join(' - ')}}
                 </span>
@@ -97,7 +97,7 @@ function addRule() {
 
             <a v-if="!toggleOnly || Object.values(rule.filter).some(v => typeof v === 'string' ? v.length > 0 : v)"
                 @click="() => { if (!toggleOnly) showFilterDialog = true }">
-                Filter:
+                <u>Filter</u>:
                 <span v-if="Object.values(rule.filter).some(v => typeof v === 'string' ? v.length > 0 : v)"
                     style="opacity: .5;">
                     alleen
@@ -108,7 +108,7 @@ function addRule() {
                         'en' }}
                     <span v-if="rule.filter.playlistTitleIncludes">met <b>{{
                         rule.filter.playlistTitleIncludes
-                            }}</b> in de titel
+                    }}</b> in de titel
                     </span>
                     <span v-if="rule.filter.playlistTitleExcludes">zonder <b>{{
                         rule.filter.playlistTitleExcludes }}</b>
@@ -117,24 +117,29 @@ function addRule() {
                 </span>
                 <span v-else style="opacity: .5;">elke voorstelling</span>
             </a>
-            <ModalDialog v-if="showFilterDialog" @dismiss="showFilterDialog = false" class="filters">
-                <h3>Filter</h3>
-                <InputCheckbox :identifier="rule.id + 'plfOnly'" v-model="rule.filter.plfOnly">
-                    Alleen 4DX-voorstellingen
-                </InputCheckbox>
-                <InputCheckbox :identifier="rule.id + 'lastShowOnly'" v-model="rule.filter.lastShowOnly">
-                    Alleen de laatste overeenkomst
-                </InputCheckbox>
-                <InputCheckbox :identifier="rule.id + 'firstShowOnly'" v-model="rule.filter.firstShowOnly">
-                    Alleen de eerste overeenkomst
-                </InputCheckbox>
-                <InputText :identifier="rule.id + 'playlistTitleIncludes'" v-model="rule.filter.playlistTitleIncludes">
-                    Titel moet bevatten
-                </InputText>
-                <InputText :identifier="rule.id + 'playlistTitleExcludes'" v-model="rule.filter.playlistTitleExcludes">
-                    Titel mag niet bevatten
-                </InputText>
-            </ModalDialog>
+
+            <Transition>
+                <ModalDialog v-if="showFilterDialog" @dismiss="showFilterDialog = false" class="filters">
+                    <h3>Filter</h3>
+                    <InputCheckbox :identifier="rule.id + 'plfOnly'" v-model="rule.filter.plfOnly">
+                        Alleen 4DX-voorstellingen
+                    </InputCheckbox>
+                    <InputCheckbox :identifier="rule.id + 'lastShowOnly'" v-model="rule.filter.lastShowOnly">
+                        Alleen de laatste overeenkomst
+                    </InputCheckbox>
+                    <InputCheckbox :identifier="rule.id + 'firstShowOnly'" v-model="rule.filter.firstShowOnly">
+                        Alleen de eerste overeenkomst
+                    </InputCheckbox>
+                    <InputText :identifier="rule.id + 'playlistTitleIncludes'"
+                        v-model="rule.filter.playlistTitleIncludes">
+                        Titel moet bevatten
+                    </InputText>
+                    <InputText :identifier="rule.id + 'playlistTitleExcludes'"
+                        v-model="rule.filter.playlistTitleExcludes">
+                        Titel mag niet bevatten
+                    </InputText>
+                </ModalDialog>
+            </Transition>
         </li>
     </ul>
     <p v-else>
@@ -152,9 +157,16 @@ function addRule() {
     padding: 0;
     margin: 0;
 
+    &.toggle-only .rule>a>u {
+        text-decoration: none;
+    }
+
     &:not(.toggle-only) .rule>a {
         cursor: pointer;
-        text-decoration: underline;
+
+        span {
+            text-decoration: underline;
+        }
     }
 }
 

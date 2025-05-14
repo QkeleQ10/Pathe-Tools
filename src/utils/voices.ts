@@ -2,8 +2,10 @@ import voiceDefault from '@/assets/sounds/voices/rosetta.ogg';
 import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg';
 import voiceJaron from '@/assets/sounds/voices/jaron.ogg';
 import voiceDanique from '@/assets/sounds/voices/danique.ogg';
-import voiceBeau from '@/assets/sounds/voices/beau.ogg';
-import { SpriteMap } from '@vueuse/sound';
+
+interface SpriteMap {
+    [key: string]: [number, number];
+}
 
 export class Voice {
     name: string;
@@ -59,18 +61,10 @@ export const voices = {
             "auditorium01": [0, 737.9591836734694], "auditorium02": [1200, 820.340136054422], "auditorium03": [2400.0000000000005, 677.482993197279], "auditorium04": [3600.0000000000005, 822.6530612244902], "auditorium05": [4800.000000000001, 810.5442176870747], "auditorium06": [6000.000000000001, 795.4875283446717], "auditorium07": [7200.000000000001, 926.8027210884355], "auditorium08": [8400, 871.0430839002274], "auditorium09": [9600.000000000002, 941.8820861677997], "auditorium10": [10800, 689.569160997733], "credits": [12000.000000000002, 786.3718820861685], "end": [13200.000000000004, 1149.2743764172335], "start": [15400.000000000002, 520.2040816326523]
         }
     }),
-    beau: new Voice({
-        name: "Beau",
-        language: "nl",
-        file: voiceBeau,
-        sprite: {
-            "chickenhurt1": [0, 562.5170068027211], "chickenidle1": [1200.0000000000002, 514.7845804988663], "letop": [2400.0000000000005, 815.3968253968253], "zaalcontrole": [3600.0000000000005, 938.956916099773]
-        }
-    })
 };
 
 export function getSoundInfo(string) {
-    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime: "geluidje" };
+    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime: "♪" };
 
     string = string.toLowerCase().trim();
     let id = string.replace(/\?+/g, '');

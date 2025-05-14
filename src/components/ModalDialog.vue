@@ -57,9 +57,12 @@ onUnmounted(() => {
     border-radius: 10px;
     max-width: 650px;
     width: 100%;
+    max-height: 95vh;
+
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     position: relative;
     outline: none;
+    overflow-y: auto;
 }
 
 .close-button {

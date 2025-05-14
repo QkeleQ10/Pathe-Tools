@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ref, inject } from 'vue';
+import { ref, inject, useTemplateRef, onMounted } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
+import { format } from 'date-fns';
+import { Announcement, AnnouncementRule, Show } from '@/classes/classes';
 import { voices, getSoundInfo, Voice } from '@/utils/voices';
 import { assembleAudioClient } from '@/utils/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { Announcement, AnnouncementTypes, AnnouncementRule, Show } from '@/classes/classes';
-import { format } from 'date-fns';
 
 const store = useTmsScheduleStore()
+const now = inject('now') as Date
 
-const main = ref<HTMLElement>(null)
+const main = useTemplateRef('main');
+const audios = useTemplateRef('audios');
 
 const showRuleEditor = ref(false)
-
-const now = inject('now') as Date
 
 const defaultRules = useStorage<AnnouncementRule[]>('default-rules', [
     {
@@ -147,18 +147,33 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStor
 
 const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true })
 
+const customAnnouncement = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chime', offset: -800 },]);
+
 const scheduledAnnouncements = ref<Announcement[]>([])
 store.$subscribe(scheduleAnnouncements, { deep: true })
-scheduleAnnouncements()
 
+onMounted(() => {
+    scheduleAnnouncements();
+    setInterval(enqueueProximateAnnouncements, 10000);
+})
+
+/**
+ * Schedule all announcements based on the rules and the imported timetable
+ */
 function scheduleAnnouncements() {
-    let array = [];
+    audios.value.innerHTML = ''; // Clear the audio elements
 
-    store.table.forEach((show, index) => {
-        for (const rule of [...defaultRules.value, ...customRules.value]) {
-            if (rule.enabled && showMatchesFilter(show, index, rule.filter)) {
+    let array: Announcement[] = [];
+
+    for (const rule of [...defaultRules.value, ...customRules.value]) {
+        if (!rule.enabled) continue;
+
+        let arr: Announcement[] = [];
+
+        store.table.forEach((show, index) => {
+            if (showMatchesFilter(show, index, rule.filter)) {
                 const announcement = {
-                    time: new Date(show[rule.trigger.property].getTime() - (rule.trigger.preponeMinutes || 0) * 60000),
+                    time: new Date(show[rule.trigger.property].getTime() - (rule.trigger.preponeMinutes || 0) * 60000 - 5000),
                     show: show,
                     segments: rule.segments.map(segment => ({
                         ...segment,
@@ -167,36 +182,50 @@ function scheduleAnnouncements() {
                     audio: null,
                 };
                 if (announcement.time.getTime() > Date.now()) {
-                    array.push(announcement);
+                    arr.push(announcement);
                 }
             }
-        }
-    })
+        })
+
+        arr.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+        if (rule.filter.firstShowOnly)
+            arr = arr.slice(0, 1); // keep only the first element of the announcementsForRule array
+        if (rule.filter.lastShowOnly)
+            arr = arr.slice(-1); // keep only the last element of the announcementsForRule array
+
+        array.push(...arr);
+    }
 
     scheduledAnnouncements.value = array.sort((a, b) => a.time.getTime() - b.time.getTime());
 
-    queuePresentlyAnnouncements();
+    enqueueProximateAnnouncements();
 }
 
-
-function queuePresentlyAnnouncements() {
-    scheduledAnnouncements.value.forEach(async (announcement) => {
-        // Queue all announcements that are scheduled to play in the next 30 seconds
+/**
+ * Queue all announcements that are scheduled to play in the next 10 seconds
+ */
+async function enqueueProximateAnnouncements() {
+    for (const announcement of scheduledAnnouncements.value) {
         const timeUntilAnnouncement = announcement.time.getTime() - Date.now();
-        if (timeUntilAnnouncement > 0 && timeUntilAnnouncement < 30000) {
+        if (timeUntilAnnouncement > 0 && timeUntilAnnouncement < 10000 && !announcement.audio) {
             const segmentsWithVoices = selectVoices(announcement.segments, preferredVoices.value.map(s => voices[s]));
-            const audio = await assembleAudio(segmentsWithVoices);
-            announcement.audio = audio;
+            announcement.audio = await assembleAudio(segmentsWithVoices);
+            audios.value.appendChild(announcement.audio);
 
             setTimeout(() => {
-                announcement.audio?.play();
+                // Check if there is any other audio playing. If so, wait for it to finish.
+                const otherAudio = Array.from(audios.value.children).find((audio: HTMLAudioElement) => audio !== announcement.audio && !audio.paused);
+                if (otherAudio) {
+                    otherAudio.addEventListener('ended', () => {
+                        announcement.audio?.play();
+                    }, { once: true });
+                } else {
+                    announcement.audio?.play();
+                }
             }, timeUntilAnnouncement);
         }
-    })
-
-    setTimeout(() => {
-        queuePresentlyAnnouncements();
-    }, 30000);
+    }
 }
 
 function showMatchesFilter(show: Show, index: number, filter: {
@@ -209,8 +238,6 @@ function showMatchesFilter(show: Show, index: number, filter: {
     let matches = true;
 
     if (filter.plfOnly && !show.auditorium.includes('4DX')) matches = false;
-    if (filter.lastShowOnly && index !== store.table.length - 1) matches = false; // TODO: this may not be intended behaviour
-    if (filter.firstShowOnly && index !== 0) matches = false; // TODO: this may not be intended behaviour
     if (filter.playlistTitleIncludes && !show.title.toLowerCase().includes(filter.playlistTitleIncludes.toLowerCase())) matches = false;
     if (filter.playlistTitleExcludes && show.title.toLowerCase().includes(filter.playlistTitleExcludes.toLowerCase())) matches = false;
 
@@ -229,16 +256,6 @@ function formatTimeLeft(timeInMs: number) {
     }
 }
 
-function sentenceCase(string: string) {
-    return string.charAt(0).toUpperCase() + string.slice(1)
-}
-
-const { isOverDropZone } = useDropZone(main, {
-    onDrop: store.filesUploaded,
-    // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
-    multiple: false
-})
-
 function selectVoices(segments: { spriteName: string; offset: number }[], selectedVoices: Voice[]): { voice: Voice; spriteName: string; offset: number }[] {
     const preferredVoices = selectedVoices.sort(() => 0.5 - Math.random());
     const allVoices = Object.values(voices);
@@ -246,10 +263,10 @@ function selectVoices(segments: { spriteName: string; offset: number }[], select
     // Loop through the preferred voices in random order to find one that has all the required sprites
     for (const voice of preferredVoices) {
         // Check if the voice has all the required sprites
-        if (segments.every(segment => voice.sprite[segment.spriteName])) {
+        if (segments.every(segment => segment.spriteName === 'chime' || voice.sprite[segment.spriteName])) {
             return segments.map(segment => ({
                 ...segment,
-                voice: voice
+                voice: segment.spriteName === 'chime' ? voices.default : voice
             }));
         }
     }
@@ -259,7 +276,7 @@ function selectVoices(segments: { spriteName: string; offset: number }[], select
         const voice = [...preferredVoices, ...allVoices].find(v => v.sprite[segment.spriteName]);
         return {
             ...segment,
-            voice: voice || voices.default
+            voice: (segment.spriteName === 'chime' ? voices.default : voice) || voices.default
         };
     });
 }
@@ -275,15 +292,18 @@ function assembleAudio(segments: { voice: Voice; spriteName: string; offset: num
     })
 }
 
-async function assembleAndPlay(segments: { spriteName: string; offset: number }[], selectedVoices: Voice[]) {
+async function previewAnnouncement(segments: { spriteName: string; offset: number }[], selectedVoices: Voice[] = preferredVoices.value.map(s => voices[s])) {
     const segmentsWithVoices = selectVoices(segments, selectedVoices);
     const audio = await assembleAudio(segmentsWithVoices);
     audio.play();
 }
 
-const testModel = ref<{ spriteName: string; offset: number }[]>([
-    { spriteName: 'chime', offset: -800 },
-]);
+
+const { isOverDropZone } = useDropZone(main, {
+    onDrop: store.filesUploaded,
+    // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
+    multiple: false
+})
 </script>
 
 <template>
@@ -297,8 +317,8 @@ const testModel = ref<{ spriteName: string; offset: number }[]>([
                     <div id="upcoming-announcements">
                         <TransitionGroup name="list">
                             <div v-for="announcement in scheduledAnnouncements"
-                                v-show="now.getTime() - announcement.time.getTime() < 10000" class="film"
-                                :key="announcement.time.getTime()"
+                                v-show="now.getTime() < announcement.time.getTime() || (announcement.audio && !announcement.audio.paused)"
+                                class="film" :key="announcement.time.getTime()"
                                 :class="{ 'announcing': announcement.audio && !announcement.audio.paused }">
                                 <div class="room">
                                     {{ announcement.show.auditoriumNumber }}
@@ -309,12 +329,11 @@ const testModel = ref<{ spriteName: string; offset: number }[]>([
                                     {{ format(announcement.show.endTime, 'HH:mm:ss') }}</div>
                                 <div class="flex chips">
                                     <Chip v-for="extra in announcement.show.extras"
-                                        :class="{ 'translucent-white': extra !== '4DX' }">
-                                        {{ extra }}
+                                        :class="{ 'translucent-white': extra.match(/\(.+\)/) }">
+                                        {{ extra.replace(/\((.+)\)/, '$1') }}
                                     </Chip>
                                 </div>
-                                <div class="announcement"
-                                    @dblclick="assembleAndPlay(announcement.segments, preferredVoices.map(s => voices[s]))"
+                                <div class="announcement" @dblclick="previewAnnouncement(announcement.segments)"
                                     style="display: grid; grid-template-columns: 64px 130px 1fr;">
 
                                     <Icon>schedule</Icon>
@@ -323,9 +342,9 @@ const testModel = ref<{ spriteName: string; offset: number }[]>([
                                         ({{ formatTimeLeft(announcement.time.getTime() - now.getTime()) }})
                                     </div>
                                     <div>
-                                        '{{ announcement.segments
+                                        '{{announcement.segments
                                             .map(segment => getSoundInfo(segment.spriteName).name)
-                                            .join(' ') }}'
+                                            .join(' ')}}'
                                     </div>
                                 </div>
                             </div>
@@ -336,7 +355,8 @@ const testModel = ref<{ spriteName: string; offset: number }[]>([
                     </div>
                 </div>
 
-                <SidePanel style="flex-basis: 229px;">
+                <SidePanel style="flex: 30% 1 1;">
+                    <h2>Opties</h2>
                     <fieldset>
                         <legend>Stemmen</legend>
                         <VoicesSelector v-model="preferredVoices" />
@@ -344,8 +364,8 @@ const testModel = ref<{ spriteName: string; offset: number }[]>([
 
                     <fieldset style="position: relative;">
                         <legend>Handmatige omroep</legend>
-                        <AnnouncementBuilder v-model="testModel" play-button class="full"
-                            @play="assembleAndPlay(testModel, preferredVoices.map(s => voices[s]))">
+                        <AnnouncementBuilder v-model="customAnnouncement" play-button class="full"
+                            @play="previewAnnouncement(customAnnouncement)">
                             <Icon>build</Icon>
                             <span>Omroep maken</span>
                         </AnnouncementBuilder>
@@ -362,39 +382,33 @@ const testModel = ref<{ spriteName: string; offset: number }[]>([
                             </span>
                         </Button>
                     </fieldset>
-
-                    <!-- <div class="queue">
-                        <TransitionGroup name="list">
-                            <div v-for="(element, i) in soundQueue" @click="soundQueue.splice(i, 1)" :key="element.key"
-                                :class="{ 'announcing': i === 0 }">
-                                <Icon :fill="true">graphic_eq</Icon>
-                                {{ sentenceCase(getSoundInfo(element.id).name) }}
-                            </div>
-                            <p v-if="soundQueue.length < 1" key="0">Er wordt momenteel geen omroep
-                                afgespeeld.</p>
-                        </TransitionGroup>
-                    </div> -->
                 </SidePanel>
             </div>
         </section>
 
-        <ModalDialog v-if="showRuleEditor" @dismiss="showRuleEditor = false">
-            <Tabs>
-                <Tab value="Standaardregels">
-                    <RuleList v-model="defaultRules" :toggleOnly="true" />
-                </Tab>
-                <Tab value="Eigen regels">
-                    <RuleList v-model="customRules" :toggleOnly="false" />
-                </Tab>
-            </Tabs>
-            <Button class="full" @click="scheduleAnnouncements(); showRuleEditor = false" style="margin-top: 16px;">
-                <Icon>refresh</Icon>
-                <span>Omroepen klaarzetten</span>
-            </Button>
-        </ModalDialog>
+        <Transition>
+            <ModalDialog v-if="showRuleEditor" @dismiss="showRuleEditor = false">
+                <Tabs>
+                    <Tab value="Standaardregels">
+                        <RuleList v-model="defaultRules" :toggleOnly="true" />
+                    </Tab>
+                    <Tab value="Eigen regels">
+                        <RuleList v-model="customRules" :toggleOnly="false" />
+                    </Tab>
+                </Tabs>
+                <Button class="full" @click="scheduleAnnouncements(); showRuleEditor = false" style="margin-top: 16px;">
+                    <Icon>refresh</Icon>
+                    <span>Omroepen klaarzetten</span>
+                </Button>
+            </ModalDialog>
+        </Transition>
 
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
+        </div>
+
+        <div ref="audios" id="audios">
+            <!-- This is where the audio elements will reside so we can look them up later -->
         </div>
     </main>
 </template>
