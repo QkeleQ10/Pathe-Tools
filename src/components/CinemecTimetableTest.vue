@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useUrlSearchParams } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
+import * as qmln from '@/utils/qmln'
 import { format } from 'date-fns';
 import InputCheckbox from './InputCheckbox.vue';
 
@@ -16,70 +17,63 @@ const ip2 = ref("10.10.87.82");
 const port = ref("9100");
 const repeat = ref(false);
 
-function generateTimestampHex() {
-    const date = new Date();
-
-    const year = date.getFullYear() - 1900; // tm_year
-    const month = date.getMonth() + 1;      // tm_mon (1–12)
-    const mday = date.getDate();            // tm_mday
-    const wday = date.getDay();             // tm_wday (0=Sun)
-    const hour = date.getHours();           // tm_hour
-    const minute = date.getMinutes();       // tm_min
-    const second = date.getSeconds();       // tm_sec
-    const centiseconds = Math.floor(date.getMilliseconds() / 10); // extra byte
-
-    const bytes = [year, month, mday, wday, hour, minute, second, centiseconds];
-
-    return bytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
-}
-
-const input = ref(`AA BB 00 00 00 00 00 08 08 01 ${generateTimestampHex()} AA BB 00 00 00 00 00 F0 F0 00 01 03 00 03 00 00 01 "De timetable toont momenteel geen actuele   " 00 03 00 03 00 3A 01 "  " 00 03 00 03 00 00 02 "informatie. Raadpleeg uw ticket of de       " 00 03 00 03 00 3A 02 "  " 00 03 00 03 00 00 03 "schermen bij de kassa voor het zaalnummer.  " 00 03 00 03 00 3A 03 "  " 00 04 02 00 03 00 37 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 1F 6E AA BB 00 00 00 00 00 01 01 21 21`);
-
-store.$subscribe(() => {
-    updateInput();
-});
-
-setInterval(() => {
-    updateInput();
-}, 1000);
-
-function updateInput() {
-    if (!store.table.length) return;
-
-    let futureShows = store.table.filter(show => show.scheduledTime.getTime() - Date.now() > -900000);
-    let str = `AA BB 00 00 00 00 00 08 08 01 ${generateTimestampHex()} AA BB 00 00 00 00 00 F0 F0 00 01 `;
-
-    for (let i = 1; i <= 8; i++) {
-        let show = futureShows[i - 1];
-        if (!show) break; // Stop if there are no more shows
-
-        str += `03 00 03 00 00 0${i} "${format(show.scheduledTime, 'HH:mm')} ${show.playlist.substring(0, 38).padEnd(38)}" 00`;
-        str += ` 03 00 03 00 3A 0${i} "${show.auditorium.replace(/^\w+\s/, '').substring(0, 2).padStart(2)}" 00`;
+const funcs = {
+    testMessage: () => {
+        return new qmln.Packet(
+            null,
+            null,
+            new qmln.FunctionSendToInitialSegment([
+                new qmln.CommandClearBuffer(),
+                new qmln.CommandShowTextString(
+                    0x01, 0x00, 0x03, 0x00, 0x00, padCenter("Welkom bij Pathé Utrecht Leidsche Rijn!", 60)
+                ),
+                new qmln.CommandShowTextString(
+                    null, null, null, 0x00, 0x02, padCenter("De timetable toont momenteel geen actuele", 60)
+                ),
+                new qmln.CommandShowTextString(
+                    null, null, null, 0x00, 0x03, padCenter("informatie. Raadpleeg uw ticket of de", 60)
+                ),
+                new qmln.CommandShowTextString(
+                    null, null, null, 0x00, 0x04, padCenter("schermen bij de kassa voor het zaalnummer.", 60)
+                ),
+                new qmln.CommandDisplayBuffer(
+                    null, null, null
+                ),
+                new qmln.CommandEndOfSegmentData(),
+            ]))
+    },
+    setClock: () => {
+        return new qmln.Packet(
+            null,
+            null,
+            new qmln.FunctionSetClock(new Date())
+        )
+    },
+    schedule: () => {
+        return new qmln.Packet(
+            null,
+            null,
+            new qmln.FunctionSendToInitialSegment([
+                new qmln.CommandClearBuffer(),
+                new qmln.CommandShowTextString(
+                    null, 0x02, null, 0x00, 0x00, "Welkom bij Pathé Utrecht Leidsche Rijn!                 Zaal"
+                ),
+                ...(store.table.filter(show => show.scheduledTime.getTime() - Date.now() > -900000).sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime()).slice(0, 7).map((show, index) => {
+                    return new qmln.CommandShowTextString(
+                        null, null, null, 0x00, index + 1,
+                        `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 38).padEnd(38)} ${show.scheduledTime.getTime() - Date.now() < 300000 ? '~F;~C1;' : '~C0;'}${show.scheduledTime.getTime() - Date.now() < -540000 ? '   is gestart' : 'gaat beginnen'} ~N;~I;${show.auditoriumNumber.toString().substring(0, 2).padStart(2)}`
+                    )
+                })),
+                new qmln.CommandDisplayBuffer(
+                    null, null, null
+                ),
+                new qmln.CommandEndOfSegmentData(),
+            ])
+        )
     }
-
-    str += `04 02 00 03 00 37 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 07 E8 FD 00 00 1F 6E AA BB 00 00 00 00 00 01 01 21 21`;
-
-    input.value = str;
 }
 
-function parseHexTextString(input) {
-    let result = [];
-    let regex = /"([^"]*)"|(\b[0-9A-Fa-f]{2}\b)/g;
-    let match;
-
-    while ((match = regex.exec(input)) !== null) {
-        if (match[1] !== undefined) {
-            // Convert quoted text to hex
-            let textHex = [...match[1]].map(char => char.charCodeAt(0).toString(16).padStart(2, '0'));
-            result.push(...textHex);
-        } else {
-            // It's a hex byte, add directly
-            result.push(match[2]);
-        }
-    }
-
-    return result.join(" ").toUpperCase();
-}
+const input = ref(funcs.testMessage().toString());
 
 async function sendRequest() {
     if (ip.value) {
@@ -89,7 +83,7 @@ async function sendRequest() {
             body: JSON.stringify({
                 ip: ip.value,
                 port: port.value,
-                hex: parseHexTextString(input.value) // the full hex string
+                hex: input.value // the full hex string
             })
         });
         console.log(res1);
@@ -101,7 +95,7 @@ async function sendRequest() {
             body: JSON.stringify({
                 ip: ip2.value,
                 port: port.value,
-                hex: parseHexTextString(input.value) // the full hex string
+                hex: input.value // the full hex string
             })
         });
         console.log(res2);
@@ -109,17 +103,18 @@ async function sendRequest() {
 
     if (repeat.value) {
         setTimeout(() => {
+            input.value = funcs.schedule().toString();
             sendRequest();
         }, 10000);
     }
 }
 
-function hexToAscii(hexString) {
+function hexToAscii(hexString: string) {
     // Remove spaces and split into an array of hex bytes
     const hexBytes = hexString.trim().split(/\s+/);
 
     // Convert each byte to a character and join them into a single string
-    const asciiString = hexBytes.map(byte => {
+    const asciiString = hexBytes.map((byte: string) => {
         const charCode = parseInt(byte, 16);
         return String.fromCharCode(charCode);
     }).join('');
@@ -127,14 +122,23 @@ function hexToAscii(hexString) {
     return asciiString;
 }
 
+function padCenter(string: string, maxLength: number, fillString: string = ' ') {
+    const pad = Math.floor((maxLength - string.length) / 2);
+    return fillString.repeat(pad) + string + fillString.repeat(maxLength - string.length - pad);
+}
 </script>
 
 <template>
     <ModalDialog v-if="show" @dismiss="show = false">
         <textarea v-model="input" identifier="input"></textarea>
         <div class="flex">
-            <pre style="width: 48ch;">{{ parseHexTextString(input) }}</pre>
-            <pre style="width: 16ch;">{{ hexToAscii(parseHexTextString(input)).match(/.{1,16}/g).join('\n') }}</pre>
+            <Button class="secondary" v-for="key in Object.keys(funcs)" @click="input = funcs[key]().toString()">
+                {{ key }}
+            </Button>
+        </div>
+        <div class="flex">
+            <pre style="width: 48ch;">{{ input }}</pre>
+            <pre style="width: 16ch;">{{ hexToAscii(input).replace(/[\n\r\t]/g, " ").match(/.{1,16}/g).join('\n') }}</pre>
         </div>
 
         <InputText v-model="host" identifier="host">

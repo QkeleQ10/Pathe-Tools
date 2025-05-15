@@ -207,8 +207,8 @@ function scheduleAnnouncements() {
  */
 async function enqueueProximateAnnouncements() {
     for (const announcement of scheduledAnnouncements.value) {
-        const timeUntilAnnouncement = announcement.time.getTime() - Date.now();
-        if (timeUntilAnnouncement > 0 && timeUntilAnnouncement < 10000 && !announcement.audio) {
+        const timeUntilAnnouncement = announcement.time.getTime() - Date.now() - 1000;
+        if (timeUntilAnnouncement > -1000 && timeUntilAnnouncement < 10000 && !announcement.audio) {
             const segmentsWithVoices = selectVoices(announcement.segments, preferredVoices.value.map(s => voices[s]));
             announcement.audio = await assembleAudio(segmentsWithVoices);
             audios.value.appendChild(announcement.audio);
@@ -223,7 +223,7 @@ async function enqueueProximateAnnouncements() {
                 } else {
                     announcement.audio?.play();
                 }
-            }, timeUntilAnnouncement);
+            }, Math.max(0, timeUntilAnnouncement));
         }
     }
 }
@@ -317,7 +317,7 @@ const { isOverDropZone } = useDropZone(main, {
                     <div id="upcoming-announcements">
                         <TransitionGroup name="list">
                             <div v-for="announcement in scheduledAnnouncements"
-                                v-show="now.getTime() < announcement.time.getTime() || (announcement.audio && !announcement.audio.paused)"
+                                v-show="announcement.time.getTime() - now.getTime() > -5000 || (announcement.audio && !announcement.audio.paused)"
                                 class="film" :key="announcement.time.getTime()"
                                 :class="{ 'announcing': announcement.audio && !announcement.audio.paused }">
                                 <div class="room">
