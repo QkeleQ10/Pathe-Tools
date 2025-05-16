@@ -40,7 +40,7 @@ const funcs = {
                     null, 0x03, 0x00, 0x00, 0x05, padCenter("schermen bij de kassa voor het zaalnummer.", 60)
                 ),
                 new qmln.CommandDisplayBuffer(
-                    null, 0x14, 0x08
+                    null, 0x14, 0x09
                 ),
                 new qmln.CommandEndOfSegmentData(),
             ]))
@@ -74,7 +74,7 @@ const funcs = {
                     null, 0x02, 0x00, 0x00, 0x06, padCenter("Pathé Utrecht Leidsche Rijn", 60)
                 ),
                 new qmln.CommandDisplayBuffer(
-                    null, 0x14, 0x08
+                    null, 0x14, 0x09
                 ),
                 new qmln.CommandEndOfSegmentData(),
             ]))
@@ -102,7 +102,7 @@ const funcs = {
                     )
                 })),
                 new qmln.CommandDisplayBuffer(
-                    null, 0x14, 0x08
+                    null, 0x14, 0x09
                 ),
                 new qmln.CommandEndOfSegmentData(),
             ])
