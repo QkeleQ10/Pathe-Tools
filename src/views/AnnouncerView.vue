@@ -321,7 +321,8 @@ const { isOverDropZone } = useDropZone(main, {
                                 class="film" :key="announcement.time.getTime()"
                                 :class="{ 'announcing': announcement.audio && !announcement.audio.paused }">
                                 <div class="room">
-                                    {{ announcement.show.auditoriumNumber }}
+                                    {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium === 'Rooftop') ? 'RT' :
+                                        announcement.show.auditorium.replace(/^\w+\s/, '') }}
                                 </div>
                                 <div class="title">{{ announcement.show.title }}</div>
                                 <div class="time">

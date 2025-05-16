@@ -25,19 +25,22 @@ const funcs = {
             new qmln.FunctionSendToInitialSegment([
                 new qmln.CommandClearBuffer(),
                 new qmln.CommandShowTextString(
-                    0x01, 0x00, 0x03, 0x00, 0x00, padCenter("Welkom bij Pathé Utrecht Leidsche Rijn!", 60)
+                    null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
                 ),
                 new qmln.CommandShowTextString(
-                    null, null, null, 0x00, 0x02, padCenter("De timetable toont momenteel geen actuele", 60)
+                    null, 0x02, 0x00, 0x00, 0x02, padCenter("Welkom bij Pathé Utrecht Leidsche Rijn!", 60)
                 ),
                 new qmln.CommandShowTextString(
-                    null, null, null, 0x00, 0x03, padCenter("informatie. Raadpleeg uw ticket of de", 60)
+                    null, 0x03, 0x00, 0x00, 0x03, padCenter("De timetable toont momenteel geen actuele", 60)
                 ),
                 new qmln.CommandShowTextString(
-                    null, null, null, 0x00, 0x04, padCenter("schermen bij de kassa voor het zaalnummer.", 60)
+                    null, 0x03, 0x00, 0x00, 0x04, padCenter("informatie. Raadpleeg uw ticket of de", 60)
+                ),
+                new qmln.CommandShowTextString(
+                    null, 0x03, 0x00, 0x00, 0x05, padCenter("schermen bij de kassa voor het zaalnummer.", 60)
                 ),
                 new qmln.CommandDisplayBuffer(
-                    null, null, null
+                    null, 0x14, 0x05
                 ),
                 new qmln.CommandEndOfSegmentData(),
             ]))
@@ -56,16 +59,19 @@ const funcs = {
             new qmln.FunctionSendToInitialSegment([
                 new qmln.CommandClearBuffer(),
                 new qmln.CommandShowTextString(
-                    null, 0x02, null, 0x00, 0x00, "Welkom bij Pathé Utrecht Leidsche Rijn!                 Zaal"
+                    null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
+                ),
+                new qmln.CommandShowTextString(
+                    null, 0x02, 0x00, 0x00, 0x01, "Welkom bij Pathé Utrecht Leidsche Rijn!                 Zaal"
                 ),
                 ...(store.table.filter(show => show.scheduledTime.getTime() - Date.now() > -900000).sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime()).slice(0, 7).map((show, index) => {
                     return new qmln.CommandShowTextString(
-                        null, null, null, 0x00, index + 1,
-                        `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 38).padEnd(38)} ${show.scheduledTime.getTime() - Date.now() < 300000 ? '~F;~C1;' : '~C0;'}${show.scheduledTime.getTime() - Date.now() < -540000 ? '   is gestart' : 'gaat beginnen'} ~N;~I;${show.auditoriumNumber.toString().substring(0, 2).padStart(2)}`
+                        null, 0x03, 0x00, 0x00, index + 2,
+                        `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 37).padEnd(37)} ${show.scheduledTime.getTime() - Date.now() < 300000 ? '~F;~C1;' : '~C0;'}${show.scheduledTime.getTime() - Date.now() < -540000 ? '   is gestart' : 'gaat beginnen'} ~N;~I;~C3;${show.auditoriumNumber.toString().substring(0, 2).padStart(2)}`
                     )
                 })),
                 new qmln.CommandDisplayBuffer(
-                    null, null, null
+                    null, 0x14, 0x05
                 ),
                 new qmln.CommandEndOfSegmentData(),
             ])
@@ -105,7 +111,7 @@ async function sendRequest() {
         setTimeout(() => {
             input.value = funcs.schedule().toString();
             sendRequest();
-        }, 10000);
+        }, 30000);
     }
 }
 
@@ -138,7 +144,8 @@ function padCenter(string: string, maxLength: number, fillString: string = ' ') 
         </div>
         <div class="flex">
             <pre style="width: 48ch;">{{ input }}</pre>
-            <pre style="width: 16ch;">{{ hexToAscii(input).replace(/[\n\r\t]/g, " ").match(/.{1,16}/g).join('\n') }}</pre>
+            <pre
+                style="width: 16ch;">{{ hexToAscii(input).replace(/[\n\r\t]/g, " ").match(/.{1,16}/g).join('\n') }}</pre>
         </div>
 
         <InputText v-model="host" identifier="host">
