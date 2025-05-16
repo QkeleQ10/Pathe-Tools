@@ -4,7 +4,7 @@ const model = defineModel<boolean>();
 </script>
 
 <template>
-    <label class="input" :for="identifier">
+    <label class="input checkbox-input" :for="identifier">
         <div class="title">
             <slot></slot>
         </div>
@@ -20,6 +20,14 @@ label {
     gap: 16px;
     cursor: pointer;
     user-select: none;
+}
+
+label.no-label {
+    display: inline-block;
+
+    .title {
+        display: none;
+    }
 }
 
 .title {

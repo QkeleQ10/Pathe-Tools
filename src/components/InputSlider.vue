@@ -11,7 +11,7 @@ const model = defineModel<number>();
 </script>
 
 <template>
-    <label class="input" :for="identifier">
+    <label class="input slider-input" :for="identifier">
         <div class="title">
             <slot></slot>
         </div>
@@ -30,6 +30,14 @@ label {
     flex-direction: column;
     gap: 16px;
     user-select: none;
+}
+
+label.no-label {
+    display: inline-block;
+
+    .title {
+        display: none;
+    }
 }
 
 .title {

@@ -127,7 +127,7 @@ const { isOverDropZone } = useDropZone(main, {
                         Timetable.<br><br>
 
                         <span
-                            v-if="store.table[0]?.scheduledTime > new Date(new Date().setHours(0, 0, 0, 0) + 24 * 60 * 60 * 1000)">
+                            v-if="store.table.sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())[0]?.scheduledTime > new Date(new Date().setHours(0, 0, 0, 0) + 24 * 60 * 60 * 1000)">
                             Als je deze gegevens inlaadt in de Timetable, dan worden ze pas vanaf middernacht
                             weergegeven.
                             <br><br></span>
@@ -142,7 +142,7 @@ const { isOverDropZone } = useDropZone(main, {
                         <pre
                             class="matrix-clock">{{ format(store.table?.[0]?.scheduledTime.getTime() + 840000 || new Date(), 'HH:mm') }}</pre>
                         <pre class="matrix-row green">        Welkom bij Pathé Utrecht Leidsche Rijn!         Zaal</pre>
-                        <pre class="matrix-row" v-for="(show, i) in store.table"
+                        <pre class="matrix-row" v-for="(show, i) in store.table.sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())"
                             :class="{
                                 overflowing: show.playlist.length > 37
                             }"><div class="col">{{ format(show.scheduledTime, 'HH:mm') }}</div> <div class="col">{{ show.playlist }}</div> <div class="col" :class="{ blink: i === 1 }">{{ i === 0 ? 'is gestart' : i === 1 ? 'gaat beginnen' : '' }}</div> <div class="col">{{ show.auditoriumNumber || '?' }}</div></pre>

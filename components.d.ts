@@ -8,6 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AnnouncementBuilder: typeof import('./src/components/AnnouncementBuilder.vue')['default']
     Button: typeof import('./src/components/Button.vue')['default']
     ButtonText: typeof import('./src/components/ButtonText.vue')['default']
     Chip: typeof import('./src/components/Chip.vue')['default']
@@ -28,11 +29,13 @@ declare module 'vue' {
     InputAnnouncement: typeof import('./src/components/InputAnnouncement.vue')['default']
     InputCheckbox: typeof import('./src/components/InputCheckbox.vue')['default']
     InputNumber: typeof import('./src/components/InputNumber.vue')['default']
+    InputSelect: typeof import('./src/components/InputSelect.vue')['default']
     InputSlider: typeof import('./src/components/InputSlider.vue')['default']
     InputText: typeof import('./src/components/InputText.vue')['default']
     ModalDialog: typeof import('./src/components/ModalDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    RuleList: typeof import('./src/components/RuleList.vue')['default']
     SidePanel: typeof import('./src/components/SidePanel.vue')['default']
     SlideshowUploadSection: typeof import('./src/components/sections/SlideshowUploadSection.vue')['default']
     Tab: typeof import('./src/components/Tab.vue')['default']
