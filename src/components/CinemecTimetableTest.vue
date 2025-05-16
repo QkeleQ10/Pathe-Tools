@@ -24,9 +24,12 @@ const funcs = {
             null,
             new qmln.FunctionSendToInitialSegment([
                 new qmln.CommandClearBuffer(),
-                new qmln.CommandShowTextString(
-                    null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
+                new qmln.CommandShowCurrentTime(
+                    0x02, null, 0x03, null, 0x37, 0x00
                 ),
+                // new qmln.CommandShowTextString(
+                //     null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
+                // ),
                 new qmln.CommandShowTextString(
                     null, 0x02, 0x00, 0x00, 0x02, padCenter("Welkom bij Pathé Utrecht Leidsche Rijn!", 60)
                 ),
@@ -40,7 +43,10 @@ const funcs = {
                     null, 0x03, 0x00, 0x00, 0x05, padCenter("schermen bij de kassa voor het zaalnummer.", 60)
                 ),
                 new qmln.CommandDisplayBuffer(
-                    null, 0x14, 0x09
+                    null, 0x04, 0x09
+                ),
+                new qmln.CommandShowTextImmediately(
+                    "De Rooftop is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.", 0x06, 0x07, null, 0x01, null, 0x00, 0x08
                 ),
                 new qmln.CommandEndOfSegmentData(),
             ]))
@@ -58,9 +64,12 @@ const funcs = {
             null,
             new qmln.FunctionSendToInitialSegment([
                 new qmln.CommandClearBuffer(),
-                new qmln.CommandShowTextString(
-                    null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
+                new qmln.CommandShowCurrentTime(
+                    0x02, null, 0x03, null, 0x37, 0x00
                 ),
+                // new qmln.CommandShowTextString(
+                //     null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
+                // ),
                 new qmln.CommandShowTextString(
                     null, 0x03, 0x00, 0x00, 0x03, padCenter("Hartelijk dank voor je filmbezoek!", 60)
                 ),
@@ -74,35 +83,44 @@ const funcs = {
                     null, 0x02, 0x00, 0x00, 0x06, padCenter("Pathé Utrecht Leidsche Rijn", 60)
                 ),
                 new qmln.CommandDisplayBuffer(
-                    null, 0x14, 0x09
+                    null, 0x04, 0x09
+                ),
+                new qmln.CommandShowTextImmediately(
+                    "De Rooftop is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.", 0x06, 0x07, null, 0x01, null, 0x00, 0x08
                 ),
                 new qmln.CommandEndOfSegmentData(),
             ]))
     },
     schedule: () => {
-        const next7Shows = store.table.filter(show => show.scheduledTime.getTime() - Date.now() > -900000).sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime()).slice(0, 7)
+        const nextShows = store.table.filter(show => show.scheduledTime.getTime() - Date.now() > -900000).sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime()).slice(0, 6)
 
-        if (!next7Shows.length) return funcs.thankYou()
+        if (!nextShows.length) return funcs.thankYou()
 
         return new qmln.Packet(
             null,
             null,
             new qmln.FunctionSendToInitialSegment([
                 new qmln.CommandClearBuffer(),
-                new qmln.CommandShowTextString(
-                    null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
+                new qmln.CommandShowCurrentTime(
+                    0x02, null, 0x03, null, 0x37, 0x00
                 ),
+                // new qmln.CommandShowTextString(
+                //     null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
+                // ),
                 new qmln.CommandShowTextString(
                     null, 0x02, 0x00, 0x00, 0x01, "Welkom bij Pathé Utrecht Leidsche Rijn!                 Zaal"
                 ),
-                ...(next7Shows.map((show, index) => {
+                ...(nextShows.map((show, index) => {
                     return new qmln.CommandShowTextString(
                         null, 0x03, 0x00, 0x00, index + 2,
                         `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 38).padEnd(38)} ${show.scheduledTime.getTime() - Date.now() < 300000 ? '~F;~C1;' : '~C0;'}${show.scheduledTime.getTime() - Date.now() < -540000 ? '  is gestart' : 'gaat starten'} ~N;~I;~C3;${show.auditoriumNumber.toString().substring(0, 2).padStart(2)}`
                     )
                 })),
                 new qmln.CommandDisplayBuffer(
-                    null, 0x14, 0x09
+                    null, 0x04, 0x09
+                ),
+                new qmln.CommandShowTextImmediately(
+                    "De Rooftop is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.", 0x06, 0x07, null, 0x01, null, 0x00, 0x08
                 ),
                 new qmln.CommandEndOfSegmentData(),
             ])
@@ -142,7 +160,7 @@ async function sendRequest() {
         setTimeout(() => {
             input.value = funcs.schedule().toString();
             sendRequest();
-        }, 30000);
+        }, 60000);
     }
 }
 
