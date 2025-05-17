@@ -215,11 +215,11 @@ export class CommandShowCurrentTime extends Command {
     static commandCode = 0x04;
 
     constructor(
-        type: number = 0x01,
+        type: number = 0x02,
         font: number = 0x00,
         fcolor: number = 0x03,
         bcolor: number = 0x00,
-        x: number = 0x00,
+        x: number = 0x37,
         y: number = 0x00,
     ) {
         super();
@@ -314,7 +314,6 @@ export class CommandShowTextImmediately extends Command {
     static commandCode = 0x08;
 
     constructor(
-        textString: string,
         mode: number = 0x00,
         speed: number = 0x04,
         font: number = 0x00,
@@ -322,6 +321,7 @@ export class CommandShowTextImmediately extends Command {
         bcolor: number = 0x00,
         x: number = 0x00,
         y: number = 0x00,
+        textString: string,
     ) {
         super();
 

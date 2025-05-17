@@ -10,7 +10,7 @@ aside.side-panel {
     flex-grow: 1;
     flex-shrink: 1;
 
-    display: flex;
+    /* display: flex; */
     flex-direction: column;
     gap: 16px;
 }

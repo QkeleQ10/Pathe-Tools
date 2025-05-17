@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{ identifier: string }>();
+const props = defineProps<{ identifier: string, disabled?: boolean, spellcheck?: boolean, autocomplete?: string }>();
 const model = defineModel<string>();
 </script>
 
@@ -8,7 +8,8 @@ const model = defineModel<string>();
         <div class="title">
             <slot></slot>
         </div>
-        <input type="text" :id="identifier" :list="identifier + '-list'" v-model="model">
+        <input type="text" :id="identifier" :list="identifier + '-list'" v-model="model" :disabled="disabled"
+            :spellcheck="spellcheck" :autocomplete="autocomplete" />
         <datalist :id="identifier + '-list'">
             <slot name="datalist"></slot>
         </datalist>

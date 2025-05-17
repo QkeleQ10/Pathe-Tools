@@ -154,8 +154,7 @@ const { isOverDropZone } = useDropZone(main, {
                                 :class="{ targeting: showMenu && targetI === i, italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18' }"
                                 @contextmenu.prevent="showContextMenu($event, show, i)">
                                 <td nowrap contenteditable>
-                                    {{ (show.auditorium === 'PULR 8' || show.auditorium === 'Rooftop') ? 'RT' :
-                                        show.auditorium.replace(/^\w+\s/, '') }}
+                                    {{ show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '') }}
                                 </td>
                                 <td nowrap contenteditable>
                                     {{ format(show.scheduledTime, 'HH:mm') }}
