@@ -23,7 +23,7 @@ import Button from '@/components/Button.vue';
                     </RouterLink>
                     <RouterLink to="/narrowcasting" style="text-decoration: none;">
                         <Button class="secondary">
-                            <Icon>dvr</Icon>Timetable vullen
+                            <Icon>dvr</Icon>Timetable bedienen
                         </Button>
                     </RouterLink>
                     <RouterLink to="/slideshow" style="text-decoration: none;">

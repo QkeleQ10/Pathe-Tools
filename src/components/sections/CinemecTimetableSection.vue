@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useLocalStorage, useUrlSearchParams } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import * as qmln from '@/utils/qmln'
@@ -22,38 +22,42 @@ const store = useTmsScheduleStore();
 
 const walkInsEditorVisible = ref(false);
 const syncFilmTitles = ref(true);
-const input = ref("");
+const packet = ref("");
 
-const tickerText = 'De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.'
-
-const modalVisible = ref(params.prototype ? true : false);
-const host = ref("http://localhost:5000/send-bytes");
-const ip = ref("10.10.87.81");
-const ip2 = ref("10.10.87.82");
+const theatreName = useLocalStorage('theatre-name', 'Pathé Utrecht Leidsche Rijn');
+const tickerText = useLocalStorage('ticker-text', 'De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.');
 const autoSend = ref(true);
 const autoConfigure = ref(true);
+const autoBlack = ref(true);
+
+const debuggerVisible = ref(params.prototype ? true : false);
+const ip1 = ref("10.10.87.81");
+const ip2 = ref("10.10.87.82");
 
 const walkIns = ref<{ scheduledTime: Date, title: string, auditorium: string, i: number }[]>([]);
 
-const presetConfigurations: { [key: string]: { name: string, lines: DisplayLine[] } } = {
-    "default": {
-        name: "Standaard met lichtkrant",
-        lines: [
+const lines: { [key: string]: (...arg: any[]) => DisplayLine } = {
+    empty: () => ({ fcolor: 3, bcolor: 0, textString: "", enabled: false, align: 'left', speed: 0x07 }),
+    black: () => ({ fcolor: 3, bcolor: 0, textString: "", enabled: true, align: 'left', speed: 0x07 }),
+    ticker: (fallback = lines.black()) => (tickerText.value.length ? { fcolor: 1, bcolor: 0, textString: tickerText.value, enabled: true, align: 'marquee', speed: 0x07 } : fallback)
+}
+
+const presetConfigurations: { [key: string]: { name: string, lines: () => DisplayLine[] } } = {
+    "walkin": {
+        name: "Voorstellingen",
+        lines: () => [
             {
-                textString: "Welkom bij Pathé Utrecht Leidsche Rijn!                 Zaal",
+                textString: `Welkom bij ${theatreName.value}!`.padEnd(56) + "Zaal",
                 fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07
             },
             ...repeatDisplayLine(6),
-            {
-                textString: tickerText,
-                fcolor: 0x01, bcolor: 0x00, enabled: true, align: 'marquee', speed: 0x07
-            }
+            lines.ticker(lines.empty())
         ]
     },
     "walkout": {
-        name: "Uitloop met lichtkrant",
-        lines: [
-            ...repeatDisplayLine(2, { fcolor: 0x03, bcolor: 0x00, textString: "", enabled: true, align: 'left', speed: 0x07 }),
+        name: "Uitloop",
+        lines: () => [
+            ...repeatDisplayLine(2, lines.black()),
             {
                 textString: "Hartelijk dank voor je filmbezoek!",
                 fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
@@ -67,22 +71,18 @@ const presetConfigurations: { [key: string]: { name: string, lines: DisplayLine[
                 fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
             {
-                textString: "Pathé Utrecht Leidsche Rijn",
+                textString: `${theatreName.value}`,
                 fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
-            { fcolor: 0x03, bcolor: 0x00, textString: "", enabled: true, align: 'left', speed: 0x07 },
-            {
-                textString: tickerText,
-                fcolor: 0x01, bcolor: 0x00, enabled: true, align: 'marquee', speed: 0x07
-            }
+            lines.black(), lines.ticker()
         ]
     },
-    "test": {
-        name: "Test",
-        lines: [
-            ...repeatDisplayLine(2, { fcolor: 0x03, bcolor: 0x00, textString: "", enabled: true, align: 'left', speed: 0x07 }),
+    "noinfo": {
+        name: "Geen info",
+        lines: () => [
+            ...repeatDisplayLine(2, lines.black()),
             {
-                textString: "Welkom bij Pathé Utrecht Leidsche Rijn!",
+                textString: `Welkom bij ${theatreName.value}!`,
                 fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
             {
@@ -90,29 +90,45 @@ const presetConfigurations: { [key: string]: { name: string, lines: DisplayLine[
                 fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
             {
-                textString: "informatie. Raadpleeg uw ticket of de",
+                textString: "informatie. Raadpleeg je ticket, de schermen bij",
                 fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
             {
-                textString: "schermen bij de kassa voor het zaalnummer.",
+                textString: "de kassa of een medewerker voor het zaalnummer.",
                 fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
-            ...repeatDisplayLine(2, { fcolor: 0x03, bcolor: 0x00, textString: "", enabled: true, align: 'left', speed: 0x07 }),
+            lines.black(), lines.ticker()
         ]
     }
 }
 
-const currentConfiguration = ref<DisplayLine[]>(presetConfigurations['default'].lines);
+const showsSoon = computed(() => {
+    return [...walkIns.value]
+        .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
+        .filter(show => show.scheduledTime.getTime() - Date.now() > -900000); // shows starting up to -15 minutes from now
+});
+
+const autoConfiguration = computed(() => {
+    if (showsSoon.value.length) return presetConfigurations['walkin'].lines();
+    if (walkIns.value.some(walkIn => walkIn.scheduledTime.getTime() - Date.now() > -21600000)) return presetConfigurations['walkout'].lines();
+    return presetConfigurations['noinfo'].lines();
+});
+const manualConfiguration = ref<DisplayLine[]>(presetConfigurations['noinfo'].lines());
+const currentConfiguration = computed(() => autoConfigure.value ? autoConfiguration.value : manualConfiguration.value);
 
 store.$subscribe(() => {
     if (!store.table.length) return;
-    autoConfigureAndSend();
+    if (autoSend.value) {
+        nextTick(() => {
+            sendData();
+        });
+    }
 
     walkIns.value = [...store.table]
         .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
         .map((show, i) => ({
             scheduledTime: show.scheduledTime,
-            title: show.title,
+            title: show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join(''),
             auditorium: show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '').split(' ')[0],
             i
         }));
@@ -148,22 +164,17 @@ function getFormattedText(line: DisplayLine): { textString: string, fcolor: numb
     return result;
 }
 
-function repeatDisplayLine(length: number, line: DisplayLine = { fcolor: 0x03, bcolor: 0x00, textString: "", enabled: false, align: 'left', speed: 0x07 }): DisplayLine[] {
+function repeatDisplayLine(length: number, line: DisplayLine = lines.empty()): DisplayLine[] {
     return Array.from({ length }, () => ({ ...line }));
 }
 
-function fillDisabledLinesWithShows(displayLines: DisplayLine[], now?: Date): DisplayLine[] {
+function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): DisplayLine[] {
     let result: DisplayLine[] = [];
-
-    const nextShows = [...walkIns.value]
-        .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
-        .filter(show => show.scheduledTime.getTime() - Date.now() > -900000);
-    // TODO: if !nextShows.length, show walk-out message
 
     let showIndex = 0;
     for (let lineNumber = 0; lineNumber < displayLines.length; lineNumber++) {
         if (!displayLines[lineNumber].enabled) {
-            let show = nextShows[showIndex++];
+            let show = showsSoon.value[showIndex++];
             if (!show) {
                 result.push({
                     textString: "", enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
@@ -188,14 +199,28 @@ function fillDisabledLinesWithShows(displayLines: DisplayLine[], now?: Date): Di
 }
 
 function generatePacket(displayLines: DisplayLine[]) {
-    const displayLinesWithShows = fillDisabledLinesWithShows(displayLines);
-    console.log(displayLinesWithShows);
+    if (
+        autoBlack.value &&
+        walkIns.value.every(show =>
+            show.scheduledTime.getTime() - Date.now() < -10800000 || show.scheduledTime.getTime() - Date.now() > 3600000 // No show has started in the last 3 hours or will start in the next hour
+        )
+    ) {
+        return new qmln.Packet(
+            null,
+            null,
+            new qmln.FunctionSendToInitialSegment([
+                new qmln.CommandClearBuffer(),
+                new qmln.CommandDisplayBuffer(null, 0x04, 0x09),
+                new qmln.CommandEndOfSegmentData(),
+            ])
+        );
+    }
 
     let stillTextCommands: qmln.CommandShowTextString[] = [];
     let marqueeTextCommands: qmln.CommandShowTextImmediately[] = [];
 
-    for (let i = 0; i < displayLinesWithShows.length; i++) {
-        const line = displayLinesWithShows[i];
+    for (let i = 0; i < displayLines.length; i++) {
+        const line = displayLines[i];
         if (!line.enabled) continue;
         if (line.align === 'marquee' || line.align === 'marquee-reverse') {
             marqueeTextCommands.push(new qmln.CommandShowTextImmediately(
@@ -226,121 +251,23 @@ function generatePacket(displayLines: DisplayLine[]) {
     );
 }
 
-const funcs = {
-    testMessage: () => {
-        return new qmln.Packet(
-            null,
-            null,
-            new qmln.FunctionSendToInitialSegment([
-                new qmln.CommandClearBuffer(),
-                new qmln.CommandShowCurrentTime(
-                    0x02, null, 0x03, null, 0x37, 0x00
-                ),
-                // new qmln.CommandShowTextString(
-                //     null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
-                // ),
-                new qmln.CommandShowTextString(
-                    null, 0x02, 0x00, 0x00, 0x02, padCenter("Welkom bij Pathé Utrecht Leidsche Rijn!", 60)
-                ),
-                new qmln.CommandShowTextString(
-                    null, 0x03, 0x00, 0x00, 0x03, padCenter("De timetable toont momenteel geen actuele", 60)
-                ),
-                new qmln.CommandShowTextString(
-                    null, 0x03, 0x00, 0x00, 0x04, padCenter("informatie. Raadpleeg uw ticket of de", 60)
-                ),
-                new qmln.CommandShowTextString(
-                    null, 0x03, 0x00, 0x00, 0x05, padCenter("schermen bij de kassa voor het zaalnummer.", 60)
-                ),
-                new qmln.CommandDisplayBuffer(
-                    null, 0x04, 0x09
-                ),
-                new qmln.CommandShowTextImmediately(
-                    0x06, 0x07, null, 0x01, null, 0x00, 0x08, "De Rooftop is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen."
-                ),
-                new qmln.CommandEndOfSegmentData(),
-            ]))
-    },
-    setClock: () => {
-        return new qmln.Packet(
-            null,
-            null,
-            new qmln.FunctionSetClock(new Date())
-        )
-    },
-    thankYou: () => {
-        return new qmln.Packet(
-            null,
-            null,
-            new qmln.FunctionSendToInitialSegment([
-                new qmln.CommandClearBuffer(),
-                new qmln.CommandShowCurrentTime(
-                    0x02, null, 0x03, null, 0x37, 0x00
-                ),
-                // new qmln.CommandShowTextString(
-                //     null, 0x03, 0x00, 0x37, 0x00, format(new Date(), 'HH:mm')
-                // ),
-                new qmln.CommandShowTextString(
-                    null, 0x03, 0x00, 0x00, 0x03, padCenter("Hartelijk dank voor je filmbezoek!", 60)
-                ),
-                new qmln.CommandShowTextString(
-                    null, 0x03, 0x00, 0x00, 0x04, padCenter("Wij hopen dat je genoten hebt.", 60)
-                ),
-                new qmln.CommandShowTextString(
-                    null, 0x03, 0x00, 0x00, 0x05, padCenter("Graag tot ziens bij", 60)
-                ),
-                new qmln.CommandShowTextString(
-                    null, 0x02, 0x00, 0x00, 0x06, padCenter("Pathé Utrecht Leidsche Rijn", 60)
-                ),
-                new qmln.CommandDisplayBuffer(
-                    null, 0x04, 0x09
-                ),
-                new qmln.CommandShowTextImmediately(
-                    0x06, 0x07, null, 0x01, null, 0x00, 0x08, "De Rooftop is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen."
-                ),
-                new qmln.CommandEndOfSegmentData(),
-            ]))
-    },
-    schedule: () => {
-        const nextShows = [...store.table].filter(show => show.scheduledTime.getTime() - Date.now() > -900000).sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime()).slice(0, 6)
-
-        if (!nextShows.length) return funcs.thankYou()
-
-        return generatePacket(fillDisabledLinesWithShows(presetConfigurations['default'].lines))
+async function sendData(hex: string = generatePacket(fillEmptyLinesWithShows(currentConfiguration.value)).toString()) {
+    for (const ip of [ip1.value, ip2.value]) {
+        if (ip.length) {
+            const res = await fetch("http://localhost:5000/send-bytes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ip,
+                    port: "9100",
+                    hex
+                })
+            });
+            console.log(res);
+        }
     }
-}
 
-function sendLines(lines: DisplayLine[]) {
-    const packet = generatePacket(fillDisabledLinesWithShows(lines));
-    input.value = packet.toString();
-
-    sendInput();
-}
-
-async function sendInput() {
-    if (ip.value) {
-        let res1 = await fetch(host.value, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ip: ip.value,
-                port: "9100",
-                hex: input.value // the full hex string
-            })
-        });
-        console.log(res1);
-    }
-    if (ip2.value) {
-        let res2 = await fetch(host.value, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ip: ip2.value,
-                port: "9100",
-                hex: input.value // the full hex string
-            })
-        });
-        console.log(res2);
-    }
+    packet.value = hex.toString();
 }
 
 function hexToAscii(hexString: string) {
@@ -361,24 +288,22 @@ function padCenter(string: string, maxLength: number, fillString: string = ' ') 
     return fillString.repeat(pad) + string + fillString.repeat(maxLength - string.length - pad);
 }
 
-// every full minute (with seconds 00), send the current configuration
-setTimeout(() => {
-    autoConfigureAndSend();
-    setInterval(() => {
-        autoConfigureAndSend();
-    }, 60000);
-}, 60000 - Date.now() % 60000);
+let intervalId: ReturnType<typeof setInterval> | null = null;
+let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-function autoConfigureAndSend(send = autoSend.value) {
-    if (autoConfigure.value) {
-        const nextShows = [...walkIns.value]
-            .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
-            .filter(show => show.scheduledTime.getTime() - Date.now() > -900000);
-        if (nextShows.length) currentConfiguration.value = presetConfigurations['default'].lines;
-        else currentConfiguration.value = presetConfigurations['walkout'].lines;
-    }
-    if (send) sendLines(fillDisabledLinesWithShows(currentConfiguration.value));
-}
+onMounted(() => {
+    timeoutId = setTimeout(() => {
+        if (autoSend.value) sendData();
+        intervalId = setInterval(() => {
+            if (autoSend.value) sendData();
+        }, 60000);
+    }, 60000 - Date.now() % 60000);
+});
+
+onBeforeUnmount(() => {
+    if (intervalId) clearInterval(intervalId);
+    if (timeoutId) clearTimeout(timeoutId);
+});
 </script>
 
 <template>
@@ -392,26 +317,46 @@ function autoConfigureAndSend(send = autoSend.value) {
                 <div class="flex" style="flex-direction: column;">
                     <InputCheckbox identifier="autoWalkOut" v-model="autoConfigure">
                         Automatisch de beste configuratie kiezen
+                        <small>De uitloopconfiguratie wordt automatisch weergegeven als er geen inlopen meer
+                            zijn.</small>
                     </InputCheckbox>
-                    <InputCheckbox identifier="autoSend" v-model="autoSend">
+                    <InputCheckbox identifier="autoBlack" v-model="autoBlack">
+                        Verlichting 's nachts automatisch uitschakelen
+                        <small>Tussen 3 uur na de laatste inloop en 1 uur voor de eerste inloop is het bord
+                            zwart.</small>
+                    </InputCheckbox>
+                    <!-- <InputCheckbox identifier="autoSend" v-model="autoSend">
                         Elke minuut automatisch verzenden
-                    </InputCheckbox>
+                    </InputCheckbox> -->
+                    <InputText identifier="theatreName" v-model="theatreName">
+                        Naam theater
+                    </InputText>
+                    <InputText identifier="tickerText" v-model="tickerText">
+                        Lichtkrant
+                        <template #datalist>
+                            <option
+                                value="De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.">
+                                Rooftop open</option>
+                        </template>
+                    </InputText>
                     <Button class="full" @click="walkInsEditorVisible = true">
                         <Icon>edit</Icon>
                         <span>Voorstellingen bewerken</span>
                     </Button>
                 </div>
 
-                <h2>Configuratie</h2>
-                <div id="configurations" :class="{ disabled: autoConfigure }">
+                <h2 v-if="!autoConfigure">Configuratie</h2>
+                <div id="configurations" v-if="!autoConfigure">
+                    <div class="flex" style="flex-direction: column;">
+                    </div>
                     <div class="flex buttons">
                         <Button class="secondary" v-for="(preset, key) in presetConfigurations" :key="key"
-                            @click="currentConfiguration = [...preset.lines]">
+                            @click="manualConfiguration = preset.lines()">
                             {{ preset.name }}
                         </Button>
                     </div>
                     <div id="display-lines">
-                        <div class="display-line" v-for="(line, i) in currentConfiguration" :key="i">
+                        <div class="display-line" v-for="(line, i) in manualConfiguration" :key="i">
                             <div class="flex">
                                 <InputCheckbox class="no-label" :identifier="`line-${i}-enabled`"
                                     v-model="line.enabled" />
@@ -464,8 +409,7 @@ function autoConfigureAndSend(send = autoSend.value) {
                     <div class="block" id="matrix-display">
                         <span id="matrix-display-title">Pathé Timetable</span>
                         <pre class="matrix-clock">{{ format(now, 'HH:mm') }}</pre>
-                        <div v-for="(line, i) in fillDisabledLinesWithShows(currentConfiguration, now)"
-                            class="matrix-row"
+                        <div v-for="(line, i) in fillEmptyLinesWithShows(currentConfiguration, now)" class="matrix-row"
                             :style="{ '--marquee-duration': ((0.02 * Math.max(60, line.textString.replace(/~[CB]\d;|~[FNRI];/g, '').length) + 0.08) * (-1 * line.speed + 13)) + 's' }"
                             :class="`align${line.align || 'left'}`">
                             <div>
@@ -478,16 +422,24 @@ function autoConfigureAndSend(send = autoSend.value) {
                     </div>
                 </div>
                 <div class="flex buttons">
-                    <Button class="secondary" @click="autoConfigureAndSend(true)">
+                    <Button class="secondary" @click="sendData()">
                         <Icon>send</Icon>
                         <span>Nu verzenden</span>
                     </Button>
-                    <Button class="secondary" @click="modalVisible = true" style="opacity: 0.2;">
+                    <Button class="secondary" @click="sendData(new qmln.Packet(
+                        null, null, new qmln.FunctionSetClock(new Date())
+                    ).toString())">
+                        <Icon>update</Icon>
+                        <span>Klok bijwerken</span>
+                    </Button>
+                    <Button class="secondary" @click="debuggerVisible = true" style="opacity: 0.2;">
                         <Icon>code</Icon>
                         <span>Foutopsporing</span>
                     </Button>
                 </div>
                 <p>
+                    Dit voorbeeld is slechts indicatief.
+                    <br><br>
                     <b>Tip:</b> In invoervelden kunnen de volgende codes worden gebruikt:<br>
                     <code>~Cn;</code>&emsp; tekstkleur (waarbij n = 0, 1, 2 of 3)<br>
                     <code>~Bn;</code>&emsp; achtergrondkleur (waarbij n = 0, 1, 2 of 3)<br>
@@ -501,8 +453,9 @@ function autoConfigureAndSend(send = autoSend.value) {
 
         <ModalDialog v-if="walkInsEditorVisible" @dismiss="walkInsEditorVisible = false">
             <h3>Voorstellingen</h3>
+            <p><b>Let op:</b> roodgekleurde filmtitels zijn te lang en worden mogelijk afgekapt.</p>
             <InputCheckbox identifier="syncFilmTitles" v-model="syncFilmTitles">
-                Filmtitel synchroniseren met andere voorstellingen
+                Alle identieke filmtitels tegelijk bewerken
             </InputCheckbox>
             <div>
                 <TransitionGroup name="list">
@@ -534,49 +487,38 @@ function autoConfigureAndSend(send = autoSend.value) {
             </Button>
         </ModalDialog>
 
-        <ModalDialog v-if="modalVisible" @dismiss="modalVisible = false">
-            <textarea v-model="input" identifier="input"></textarea>
+        <ModalDialog v-if="debuggerVisible" @dismiss="debuggerVisible = false">
             <div class="flex">
-                <Button class="secondary" v-for="key in Object.keys(funcs)" @click="input = funcs[key]().toString()">
-                    {{ key }}
-                </Button>
-            </div>
-            <div class="flex">
-                <pre style="width: 48ch;">{{ input }}</pre>
+                <pre style="width: 48ch;">{{ packet }}</pre>
                 <pre
-                    style="width: 16ch;">{{ hexToAscii(input).replace(/[\n\r\t]/g, " ").match(/.{1,16}/g).join('\n') }}</pre>
+                    style="width: 16ch;">{{ hexToAscii(packet).replace(/[\n\r\t]/g, " ").match(/.{1,16}/g).join('\n') }}</pre>
             </div>
 
-            <InputText v-model="host" identifier="host">
-                <span>host</span>
-            </InputText>
-            <InputText v-model="ip" identifier="ip">
-                <span>ip</span>
+            <InputText v-model="ip1" identifier="ip">
+                <span>ip1</span>
             </InputText>
             <InputText v-model="ip2" identifier="ip2">
                 <span>ip2</span>
             </InputText>
 
-            <InputCheckbox v-model="autoSend" identifier="repeat">
-                <span>repeat</span>
+            <InputCheckbox v-model="autoSend" identifier="autoSend">
+                <span>autoSend</span>
             </InputCheckbox>
-
-            <Button @click="sendInput">sendRequest</Button>
         </ModalDialog>
     </section>
 </template>
 
 <style scoped>
-textarea {
-    width: 100%;
-    min-height: 200px;
-}
-
-textarea,
 pre {
     height: auto;
     white-space: break-spaces;
     overflow-wrap: anywhere;
+}
+
+:deep(#tickerText) {
+    width: 75%;
+    max-width: none;
+    font-family: monospace;
 }
 
 #configurations.disabled {
@@ -732,7 +674,7 @@ pre {
 
 .alignmarquee-reverse>div {
     position: absolute;
-    animation: marquee-reverse 10s linear infinite;
+    animation: marquee-reverse 10s steps(12) infinite;
     animation-duration: var(--marquee-duration);
 }
 

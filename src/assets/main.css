@@ -183,7 +183,7 @@ em.label {
 }
 
 .side-panel fieldset+fieldset {
-    margin-top: -8px;
+    margin-top: 8px;
 }
 
 .side-panel fieldset>legend {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, useTemplateRef, onMounted } from 'vue';
+import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { Announcement, AnnouncementRule, Show } from '@/classes/classes';
@@ -152,9 +152,15 @@ const customAnnouncement = ref<{ spriteName: string; offset: number }[]>([{ spri
 const scheduledAnnouncements = ref<Announcement[]>([])
 store.$subscribe(scheduleAnnouncements, { deep: true })
 
+let intervalId: ReturnType<typeof setInterval> | null = null;
+
 onMounted(() => {
     scheduleAnnouncements();
-    setInterval(enqueueProximateAnnouncements, 10000);
+    intervalId = setInterval(enqueueProximateAnnouncements, 10000);
+})
+
+onBeforeUnmount(() => {
+    if (intervalId) clearInterval(intervalId);
 })
 
 /**
@@ -321,7 +327,8 @@ const { isOverDropZone } = useDropZone(main, {
                                 class="film" :key="announcement.time.getTime()"
                                 :class="{ 'announcing': announcement.audio && !announcement.audio.paused }">
                                 <div class="room">
-                                    {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium === 'Rooftop') ? 'RT' :
+                                    {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium ===
+                                        'Rooftop') ? 'RT' :
                                         announcement.show.auditorium.replace(/^\w+\s/, '') }}
                                 </div>
                                 <div class="title">{{ announcement.show.title }}</div>

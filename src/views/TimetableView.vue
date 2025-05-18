@@ -28,8 +28,6 @@ const columns = {
 }
 const optionalColumns = Object.fromEntries(Object.entries(columns).filter(([, value]) => value.optional))
 
-const minecraftTimestamp = useStorage('minecraft-timestamp', 65) // 1h 05min
-
 const splitExtra = ref(true)
 const optionalColumnsSetting = useStorage('optional-columns', {
     mainTime: false,
@@ -158,11 +156,6 @@ const { isOverDropZone } = useDropZone(main, {
                                 </td>
                                 <td nowrap contenteditable>
                                     {{ format(show.scheduledTime, 'HH:mm') }}
-                                    <span v-if="minecraftTimestamp > 0 && show.playlist.includes('Minecraft')"
-                                        class="minecraft-timestamp">
-                                        {{ format(show.mainShowTime.getTime() + (minecraftTimestamp * 60000), 'HH:mm')
-                                        }}
-                                    </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
                                     {{ format(show.mainShowTime, 'HH:mm:ss') }}
@@ -235,20 +228,6 @@ const { isOverDropZone } = useDropZone(main, {
                     <Tabs>
                         <Tab value="Opties">
                             <fieldset
-                                v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.title?.includes('Minecraft')))">
-                                <legend>A Minecraft Movie</legend>
-                                <InputNumber v-model.number="minecraftTimestamp" identifier="minecraftTimestamp"
-                                    min="20" max="80" unit="min">Tijdstip zaalcontrole
-                                    <small v-if="minecraftTimestamp > 0">
-                                        Het tijdstip {{ minecraftTimestamp }} minuten na start hoofdfilm wordt
-                                        gemarkeerd.
-                                    </small>
-                                    <small v-else>Er wordt geen extra tijdstip gemarkeerd bij A Minecraft Movie.</small>
-                                    <small>Standaardwaarde: 65 min. De chickenjockey-scène speelt zich af op ongeveer 69
-                                        min.</small>
-                                </InputNumber>
-                            </fieldset>
-                            <fieldset
                                 v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX')))">
                                 <legend>4DX-inloop</legend>
                                 <small>Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
@@ -305,7 +284,7 @@ const { isOverDropZone } = useDropZone(main, {
                         </Tab>
                     </Tabs>
                     <div class="buttons"
-                        style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 16px; padding-left: 16px; padding-right: 16px;">
+                        style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 0; padding: 16px;">
                         <Button class="primary full" @click="handlePrint" v-if="transformedTable.length > 0">
                             Afdrukken</Button>
                     </div>
@@ -495,11 +474,6 @@ table.timetable {
         &.bold {
             font-weight: bold;
         }
-    }
-
-    .minecraft-timestamp {
-        margin-left: 8px;
-        font-weight: bold;
     }
 
     tr:first-of-type>td .plf-icon {

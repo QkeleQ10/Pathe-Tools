@@ -626,6 +626,9 @@ export const characterSet = {
  * @returns The encoded Uint8Array
  */
 export function encodeText(text: string): Uint8Array {
-    const arr = text.split('').map(c => characterSet[c] ?? 0x00);
-    return new Uint8Array(arr);
+    const charCodes: number[] = text.split('').reduce((acc, c) => {
+        if (characterSet.hasOwnProperty(c)) acc.push(characterSet[c]);
+        return acc;
+    }, [] as number[]);
+    return new Uint8Array(charCodes);
 }
