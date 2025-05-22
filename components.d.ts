@@ -28,6 +28,7 @@ declare module 'vue' {
     IconNicamAL: typeof import('./src/components/symbols/IconNicamAL.vue')['default']
     InputAnnouncement: typeof import('./src/components/InputAnnouncement.vue')['default']
     InputCheckbox: typeof import('./src/components/InputCheckbox.vue')['default']
+    InputDate: typeof import('./src/components/InputDate.vue')['default']
     InputNumber: typeof import('./src/components/InputNumber.vue')['default']
     InputSelect: typeof import('./src/components/InputSelect.vue')['default']
     InputSlider: typeof import('./src/components/InputSlider.vue')['default']

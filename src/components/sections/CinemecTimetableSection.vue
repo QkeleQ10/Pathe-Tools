@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 import { useLocalStorage, useUrlSearchParams } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import * as qmln from '@/utils/qmln'
@@ -21,6 +21,7 @@ const params = useUrlSearchParams('history');
 const store = useTmsScheduleStore();
 
 const walkInsEditorVisible = ref(false);
+const configurationEditorVisible = ref(false);
 const syncFilmTitles = ref(true);
 const packet = ref("");
 
@@ -109,11 +110,14 @@ const showsSoon = computed(() => {
 });
 
 const autoConfiguration = computed(() => {
-    if (showsSoon.value.length) return presetConfigurations['walkin'].lines();
-    if (walkIns.value.some(walkIn => walkIn.scheduledTime.getTime() - Date.now() > -21600000)) return presetConfigurations['walkout'].lines();
-    return presetConfigurations['noinfo'].lines();
+    if (showsSoon.value.some(show => show.scheduledTime.getTime() - Date.now() < 10800000))
+        return presetConfigurations['walkin'].lines(); // if there's a show starting in the next 3 hours
+    else if (new Date().getHours() >= 21 || new Date().getHours() < 1)
+        return presetConfigurations['walkout'].lines(); // else if it's between 21:00 and 00:59
+    else
+        return presetConfigurations['noinfo'].lines(); // else if it's between 01:00 and 20:59
 });
-const manualConfiguration = ref<DisplayLine[]>(presetConfigurations['noinfo'].lines());
+const manualConfiguration = ref<DisplayLine[]>(presetConfigurations['walkin'].lines());
 const currentConfiguration = computed(() => autoConfigure.value ? autoConfiguration.value : manualConfiguration.value);
 
 store.$subscribe(() => {
@@ -200,9 +204,9 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
 
 function generatePacket(displayLines: DisplayLine[]) {
     if (
-        autoBlack.value &&
-        walkIns.value.every(show =>
-            show.scheduledTime.getTime() - Date.now() < -10800000 || show.scheduledTime.getTime() - Date.now() > 3600000 // No show has started in the last 3 hours or will start in the next hour
+        autoBlack.value && (
+            (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
+            (new Date().getHours() === 9 && new Date().getMinutes() < 30)
         )
     ) {
         return new qmln.Packet(
@@ -315,14 +319,13 @@ onBeforeUnmount(() => {
                 <h2>Opties</h2>
 
                 <div class="flex" style="flex-direction: column;">
-                    <InputCheckbox identifier="autoWalkOut" v-model="autoConfigure">
+                    <InputCheckbox identifier="autoConfigure" v-model="autoConfigure">
                         Automatisch de beste configuratie kiezen
-                        <small>De uitloopconfiguratie wordt automatisch weergegeven als er geen inlopen meer
-                            zijn.</small>
+                        <small>Een gepaste configuratie wordt weergegeven als er geen inlopen zijn.</small>
                     </InputCheckbox>
                     <InputCheckbox identifier="autoBlack" v-model="autoBlack">
                         Verlichting 's nachts automatisch uitschakelen
-                        <small>Tussen 3 uur na de laatste inloop en 1 uur voor de eerste inloop is het bord
+                        <small>Tussen 01:00 en 09:30 is het bord
                             zwart.</small>
                     </InputCheckbox>
                     <!-- <InputCheckbox identifier="autoSend" v-model="autoSend">
@@ -339,66 +342,15 @@ onBeforeUnmount(() => {
                                 Rooftop open</option>
                         </template>
                     </InputText>
-                    <Button class="full" @click="walkInsEditorVisible = true">
-                        <Icon>edit</Icon>
-                        <span>Voorstellingen bewerken</span>
-                    </Button>
-                </div>
-
-                <h2 v-if="!autoConfigure">Configuratie</h2>
-                <div id="configurations" v-if="!autoConfigure">
-                    <div class="flex" style="flex-direction: column;">
-                    </div>
                     <div class="flex buttons">
-                        <Button class="secondary" v-for="(preset, key) in presetConfigurations" :key="key"
-                            @click="manualConfiguration = preset.lines()">
-                            {{ preset.name }}
+                        <Button class="full" @click="walkInsEditorVisible = true">
+                            <Icon>edit</Icon>
+                            <span>Voorstellingen bewerken</span>
                         </Button>
-                    </div>
-                    <div id="display-lines">
-                        <div class="display-line" v-for="(line, i) in manualConfiguration" :key="i">
-                            <div class="flex">
-                                <InputCheckbox class="no-label" :identifier="`line-${i}-enabled`"
-                                    v-model="line.enabled" />
-                                <InputText class="no-label" :identifier="`line-${i}-text`" v-model="line.textString"
-                                    :class="{ 'too-long': line.textString.length > 60 }">
-                                </InputText>
-                            </div>
-                            <div class="flex" style="padding-left: 32px;" v-if="line.textString.length">
-                                <div class="flex select-icons">
-                                    <a v-for="(alignment, key) in {
-                                        left: ['Links uitlijnen', 'format_align_left'], center: ['Centreren', 'format_align_center'], right: ['Rechts uitlijnen', 'format_align_right'], marquee: ['Lichtkrant', 'keyboard_double_arrow_left'], 'marquee-reverse': ['Omgekeerde lichtkrant', 'keyboard_double_arrow_right']
-                                    }" @click="line.align = key" :class="{ selected: line.align === key }"
-                                        :title="alignment[0]">
-                                        <Icon>{{ alignment[1] }}</Icon>
-                                    </a>
-                                </div>
-                                <div class="flex select-icons">
-                                    <a v-for="(color, _, key) in { 0: ['Zwarte tekst', '#000'], 1: ['Rode tekst', 'rgb(227, 46, 46)'], 2: ['Groene tekst', 'rgb(35, 160, 35)'], 3: ['Oranje tekst', 'rgb(255, 178, 36)'] }"
-                                        @click="line.fcolor = key as 0 | 1 | 2 | 3"
-                                        :class="{ selected: line.fcolor === key }" :title="color[0]">
-                                        <Icon :style="{ color: color[1] }">format_color_text</Icon>
-                                    </a>
-                                </div>
-                                <div class="flex select-icons">
-                                    <a v-for="(color, _, key) in { 0: ['Zwarte tekst', '#000'], 1: ['Rode tekst', 'rgb(227, 46, 46)'], 2: ['Groene tekst', 'rgb(35, 160, 35)'], 3: ['Oranje tekst', 'rgb(255, 178, 36)'] }"
-                                        @click="line.bcolor = key as 0 | 1 | 2 | 3"
-                                        :class="{ selected: line.bcolor === key }" :title="color[0]">
-                                        <Icon :style="{ color: color[1] }">format_color_fill</Icon>
-                                    </a>
-                                </div>
-                                <div class="flex select-icons"
-                                    v-if="line.align === 'marquee' || line.align === 'marquee-reverse'">
-                                    <a @click="line.speed = Math.max(0, line.speed - 1)" title="Langzamer">
-                                        <Icon>remove</Icon>
-                                    </a>
-                                    <span>{{ line.speed }}</span>
-                                    <a @click="line.speed = Math.min(9, line.speed + 1)" title="Sneller">
-                                        <Icon>add</Icon>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+                        <Button class="secondary full" @click="configurationEditorVisible = true" v-if="!autoConfigure">
+                            <Icon>edit</Icon>
+                            <span>Configuratie bewerken</span>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -406,7 +358,12 @@ onBeforeUnmount(() => {
             <SidePanel style="flex: 585px 0 0; display: flex;">
                 <div>
                     <h2>Voorbeeld</h2>
-                    <div class="block" id="matrix-display">
+                    <div class="block" id="matrix-display" :class="{
+                        blackout: autoBlack && (
+                            (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
+                            (new Date().getHours() === 9 && new Date().getMinutes() < 30)
+                        )
+                    }">
                         <span id="matrix-display-title">Pathé Timetable</span>
                         <pre class="matrix-clock">{{ format(now, 'HH:mm') }}</pre>
                         <div v-for="(line, i) in fillEmptyLinesWithShows(currentConfiguration, now)" class="matrix-row"
@@ -451,21 +408,24 @@ onBeforeUnmount(() => {
             </SidePanel>
         </div>
 
-        <ModalDialog v-if="walkInsEditorVisible" @dismiss="walkInsEditorVisible = false">
+        <ModalDialog v-if="walkInsEditorVisible" @dismiss="walkInsEditorVisible = false" id="walkin-editor">
             <h3>Voorstellingen</h3>
-            <p><b>Let op:</b> roodgekleurde filmtitels zijn te lang en worden mogelijk afgekapt.</p>
+            <p v-if="walkIns.some(walkIn => walkIn.title.length > 38)"><b>Let op:</b> roodgekleurde filmtitels zijn te
+                lang en
+                worden mogelijk afgekapt.</p>
             <InputCheckbox identifier="syncFilmTitles" v-model="syncFilmTitles">
                 Alle identieke filmtitels tegelijk bewerken
             </InputCheckbox>
-            <div>
+            <div style="overflow-y: auto; max-height: 70vh;">
                 <TransitionGroup name="list">
                     <div v-for="(walkIn) in [...walkIns].sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())"
-                        class="flex walkin" :key="walkIn.i">
-                        <InputTime class="no-label walkin-time" :identifier="`walkin-${walkIn.i}-time`"
+                        class="flex walkin" :key="walkIn.i" :id="`walkin-${walkIn.i}`"
+                        :style="{ opacity: walkIn.scheduledTime.getTime() - Date.now() < -540000 ? 0.5 : 1 }">
+                        <InputDate class="no-label walkin-time" :identifier="`walkin-${walkIn.i}-time`"
                             v-model="walkIn.scheduledTime">
-                        </InputTime>
+                        </InputDate>
                         <InputText class="no-label walkin-title" :spellcheck="false" autocomplete="off"
-                            :identifier="`walkin-${walkIn.i}`" :model-value="walkIn.title" @update:model-value="(value) => {
+                            :identifier="`walkin-${walkIn.i}-title`" :model-value="walkIn.title" @update:model-value="(value) => {
                                 if (syncFilmTitles) {
                                     walkIns.filter(walkIn2 => walkIn2.title === walkIn.title).forEach(walkIn2 => walkIn2.title = value);
                                 } else {
@@ -476,15 +436,76 @@ onBeforeUnmount(() => {
                         <InputText class="no-label walkin-auditorium" :spellcheck="false" autocomplete="off"
                             :identifier="`walkin-${walkIn.i}-auditorium`" v-model="walkIn.auditorium">
                         </InputText>
-                        <Icon style="float: right; cursor: pointer; padding: 2px;" @click="walkIns.splice(walkIn.i, 1)">
+                        <Icon style="float: right; cursor: pointer; padding: 2px;"
+                            @click="walkIns.splice(walkIns.findIndex(w => w.scheduledTime === walkIn.scheduledTime && w.title === walkIn.title && w.auditorium === walkIn.auditorium), 1)">
                             delete</Icon>
                     </div>
                 </TransitionGroup>
+                <p v-if="!walkIns.length">Geen voorstellingen gepland.</p>
             </div>
             <Button class="secondary"
                 @click="walkIns.push({ scheduledTime: new Date(), title: '', auditorium: '', i: walkIns.length })">
-                Nieuwe voorstelling
+                <Icon>add</Icon>
+                <span>Nieuwe voorstelling</span>
             </Button>
+        </ModalDialog>
+
+        <ModalDialog v-if="configurationEditorVisible" @dismiss="configurationEditorVisible = false">
+            <h3>Configuratie</h3>
+            <div id="configurations">
+                <div class="flex" style="flex-direction: column;">
+                </div>
+                <div class="flex buttons">
+                    <Button class="secondary" v-for="(preset, key) in presetConfigurations" :key="key"
+                        @click="manualConfiguration = preset.lines()">
+                        {{ preset.name }}
+                    </Button>
+                </div>
+                <div id="display-lines">
+                    <div class="display-line" v-for="(line, i) in manualConfiguration" :key="i">
+                        <div class="flex">
+                            <InputCheckbox class="no-label" :identifier="`line-${i}-enabled`" v-model="line.enabled" />
+                            <InputText class="no-label" :identifier="`line-${i}-text`" v-model="line.textString"
+                                :class="{ 'too-long': line.textString.length > 60 }">
+                            </InputText>
+                        </div>
+                        <div class="flex" style="padding-left: 32px;" v-if="line.textString.length">
+                            <div class="flex select-icons">
+                                <a v-for="(alignment, key) in {
+                                    left: ['Links uitlijnen', 'format_align_left'], center: ['Centreren', 'format_align_center'], right: ['Rechts uitlijnen', 'format_align_right'], marquee: ['Lichtkrant', 'keyboard_double_arrow_left'], 'marquee-reverse': ['Omgekeerde lichtkrant', 'keyboard_double_arrow_right']
+                                }" @click="line.align = key" :class="{ selected: line.align === key }"
+                                    :title="alignment[0]">
+                                    <Icon>{{ alignment[1] }}</Icon>
+                                </a>
+                            </div>
+                            <div class="flex select-icons">
+                                <a v-for="(color, _, key) in { 0: ['Zwarte tekst', '#000'], 1: ['Rode tekst', 'rgb(227, 46, 46)'], 2: ['Groene tekst', 'rgb(35, 160, 35)'], 3: ['Oranje tekst', 'rgb(255, 178, 36)'] }"
+                                    @click="line.fcolor = key as 0 | 1 | 2 | 3"
+                                    :class="{ selected: line.fcolor === key }" :title="color[0]">
+                                    <Icon :style="{ color: color[1] }">format_color_text</Icon>
+                                </a>
+                            </div>
+                            <div class="flex select-icons">
+                                <a v-for="(color, _, key) in { 0: ['Zwarte tekst', '#000'], 1: ['Rode tekst', 'rgb(227, 46, 46)'], 2: ['Groene tekst', 'rgb(35, 160, 35)'], 3: ['Oranje tekst', 'rgb(255, 178, 36)'] }"
+                                    @click="line.bcolor = key as 0 | 1 | 2 | 3"
+                                    :class="{ selected: line.bcolor === key }" :title="color[0]">
+                                    <Icon :style="{ color: color[1] }">format_color_fill</Icon>
+                                </a>
+                            </div>
+                            <div class="flex select-icons"
+                                v-if="line.align === 'marquee' || line.align === 'marquee-reverse'">
+                                <a @click="line.speed = Math.max(0, line.speed - 1)" title="Langzamer">
+                                    <Icon>remove</Icon>
+                                </a>
+                                <span>{{ line.speed }}</span>
+                                <a @click="line.speed = Math.min(9, line.speed + 1)" title="Sneller">
+                                    <Icon>add</Icon>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </ModalDialog>
 
         <ModalDialog v-if="debuggerVisible" @dismiss="debuggerVisible = false">
@@ -519,6 +540,14 @@ pre {
     width: 75%;
     max-width: none;
     font-family: monospace;
+}
+
+:deep(.modal-content) {
+    max-width: max-content;
+}
+
+#walkin-editor :deep(.modal-content) {
+    overflow: hidden;
 }
 
 #configurations.disabled {
@@ -597,6 +626,16 @@ pre {
     position: relative;
     font-family: monospace;
     width: calc(60ch + 56px);
+
+    &.blackout {
+        .matrix-clock {
+            color: #000 !important;
+        }
+
+        .matrix-row>div>span {
+            color: #000 !important;
+        }
+    }
 }
 
 #matrix-display-title {

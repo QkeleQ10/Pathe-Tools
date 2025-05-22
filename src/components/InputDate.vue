@@ -1,6 +1,20 @@
 <script setup lang="ts">
+import { format } from 'date-fns';
+import { computed } from 'vue';
+
 const props = defineProps<{ identifier: string; disabled?: boolean }>();
-const model = defineModel<string>();
+const model = defineModel<Date>();
+
+const transformedModel = computed<string>({
+    get() {
+        return model.value ? format(model.value, 'yyyy-MM-dd\'T\'HH:mm') : '';
+    },
+    set(value: string) {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return;
+        model.value = date;
+    }
+})
 </script>
 
 <template>
@@ -9,7 +23,8 @@ const model = defineModel<string>();
             <slot></slot>
         </div>
         <div class="input">
-            <input type="time" :id="identifier" :disabled="disabled" v-model="model" />
+            <input type="datetime-local" :id="identifier" :disabled="disabled" :value="transformedModel"
+                @blur="transformedModel = ($event.target as HTMLInputElement).value" />
         </div>
     </label>
 </template>
@@ -41,7 +56,7 @@ label.no-label {
 div.input {
     position: relative;
     height: 34px;
-    width: 86px;
+    width: 175px;
     flex-shrink: 0;
     font: 15px Arial, Helvetica, sans-serif;
     color: #000;
