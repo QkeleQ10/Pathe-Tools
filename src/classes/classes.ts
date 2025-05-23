@@ -17,7 +17,8 @@ export type Show = {
     auditoriumNumber: number;
     scheduledTime: Date;
     showTime: Date;
-    mainShowTime: Date;
+    mainShowTime?: Date;
+    intermissionTime?: Date;
     creditsTime: Date;
     endTime: Date;
     duration: string;
@@ -45,7 +46,7 @@ export type AnnouncementRule = {
     enabled: boolean;
     segments: { spriteName: string; offset: number }[];
     trigger: {
-        property: "scheduledTime" | "showTime" | "mainShowTime" | "creditsTime" | "endTime";
+        property: "scheduledTime" | "showTime" | "mainShowTime" | "intermissionTime" | "creditsTime" | "endTime";
         preponeMinutes: number;
     };
     filter: {

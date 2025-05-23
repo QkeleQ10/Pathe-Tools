@@ -267,7 +267,7 @@ async function sendData(hex: string = generatePacket(fillEmptyLinesWithShows(cur
                     hex
                 })
             });
-            console.log(res);
+            console.info(res);
         }
     }
 

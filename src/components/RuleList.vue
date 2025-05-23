@@ -18,6 +18,7 @@ const properties = {
     scheduledTime: 'inloop',
     showTime: 'start',
     mainShowTime: 'start hoofdfilm',
+    intermissionTime: 'pauze',
     creditsTime: 'aftiteling',
     endTime: 'einde voorstelling'
 }

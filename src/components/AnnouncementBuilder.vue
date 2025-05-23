@@ -44,7 +44,7 @@ function sentenceCase(string: string) {
             <ul v-if="model.length" class="segment-list">
                 <li class="segment" v-for="(segment, i) in model" :key="i">
                     <InputText class="no-label" :identifier="'spriteName' + i" v-model="segment.spriteName"
-                        spellcheck="false" autocomplete="off" autocapitalize="off">
+                        :spellcheck="false" autocomplete="off" autocapitalize="off">
                         <template #datalist>
                             <option v-for="(key) in allSounds" :key="key" :value="key">
                                 {{ sentenceCase(getSoundInfo(key).name) }}

@@ -2,6 +2,7 @@ import voiceDefault from '@/assets/sounds/voices/rosetta.ogg';
 import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg';
 import voiceJaron from '@/assets/sounds/voices/jaron.ogg';
 import voiceDanique from '@/assets/sounds/voices/danique.ogg';
+import voiceQuinten from '@/assets/sounds/voices/quinten.ogg';
 
 interface SpriteMap {
     [key: string]: [number, number];
@@ -61,6 +62,14 @@ export const voices = {
             "auditorium01": [0, 737.9591836734694], "auditorium02": [1200, 820.340136054422], "auditorium03": [2400.0000000000005, 677.482993197279], "auditorium04": [3600.0000000000005, 822.6530612244902], "auditorium05": [4800.000000000001, 810.5442176870747], "auditorium06": [6000.000000000001, 795.4875283446717], "auditorium07": [7200.000000000001, 926.8027210884355], "auditorium08": [8400, 871.0430839002274], "auditorium09": [9600.000000000002, 941.8820861677997], "auditorium10": [10800, 689.569160997733], "credits": [12000.000000000002, 786.3718820861685], "end": [13200.000000000004, 1149.2743764172335], "start": [15400.000000000002, 520.2040816326523]
         }
     }),
+    quinten: new Voice({
+        name: "Quinten",
+        language: "nl",
+        file: voiceQuinten,
+        sprite: {
+            "auditorium01": [0, 743.7414965986394], "auditorium02": [1200, 756.5759637188207], "auditorium03": [2400, 732.0861678004537], "auditorium04": [3600, 725.6235827664397], "auditorium05": [4800, 846.485260770975], "auditorium06": [6000, 790.9297052154196], "auditorium07": [7200, 939.3877551020404], "auditorium08": [8400, 841.7006802721083], "auditorium09": [9600, 1026.190476190477], "auditorium10": [11800, 711.0204081632645], "auditorium11": [13000, 863.2653061224485], "auditorium12": [14200, 1008.8208616780037], "auditorium13": [16400, 869.6371882086175], "auditorium14": [17599.999999999996, 961.0430839002255], "auditorium15": [18799.999999999996, 1017.5283446712023], "auditorium16": [20999.999999999996, 1057.664399092971], "auditorium17": [23199.999999999996, 1032.1315192743762], "auditorium18": [25399.999999999996, 958.7074829931978], "auditorium19": [26599.999999999993, 1050.8616780045336], "auditorium20": [28799.999999999993, 1045.6462585033996], "credits": [30999.999999999993, 690.6122448979595], "end": [32199.999999999996, 1004.1723356009059], "intermission": [34399.99999999999, 568.7301587301619], "mainshow": [35599.99999999999, 1155.2607709750546], "preshow": [37799.99999999999, 1171.224489795918], "start": [39999.99999999999, 547.0068027210857]
+        }
+    })
 };
 
 export function getSoundInfo(string) {

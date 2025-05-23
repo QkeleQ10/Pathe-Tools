@@ -68,9 +68,9 @@ function closeContextMenu() {
 const transformedTable = computed(() => {
     let arr = store.table?.slice().map((show: Show, i: number) => {
         let timetableShow = show as TimetableShow
-        timetableShow.overlapWithPlf = store.table.filter(testRow => testRow.auditorium?.includes('4DX')).some(testRow =>
+        timetableShow.overlapWithPlf = store.table.filter(show2 => show2.auditorium?.includes('4DX')).some(testRow =>
             timetableShow.creditsTime.getTime() - testRow.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&
-            timetableShow.creditsTime.getTime() - testRow.mainShowTime.getTime() <= 0
+            timetableShow.creditsTime.getTime() - (testRow.mainShowTime ? testRow.mainShowTime.getTime() : (testRow.showTime.getTime() + 900000)) <= 0
         )
         timetableShow.hasPostCredits = postCreditsFilms.value.has(timetableShow.title?.trim())
         timetableShow.timeToNextUsherout = store.table[i + 1]?.creditsTime.getTime() - (timetableShow.hasPostCredits ? timetableShow.endTime : timetableShow.creditsTime).getTime()
@@ -158,7 +158,7 @@ const { isOverDropZone } = useDropZone(main, {
                                     {{ format(show.scheduledTime, 'HH:mm') }}
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
-                                    {{ format(show.mainShowTime, 'HH:mm:ss') }}
+                                    {{ format(show.mainShowTime || show.intermissionTime || 0, 'HH:mm:ss') }}
                                 </td>
                                 <td nowrap>
                                     <Icon4dx class="plf-icon" src="@/assets/symbols/icon-4dx.svg"

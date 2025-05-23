@@ -16,7 +16,7 @@ fac.getColorAsync(imageUrl, {
         color.value = result.hex;
         fac.destroy();
     })
-    .catch(console.log);
+    .catch(console.error);
 
 </script>
 

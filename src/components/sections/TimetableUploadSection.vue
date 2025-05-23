@@ -32,6 +32,7 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                 <br>
                 <small>
                     {{ store.table.length }} voorstellingen
+                    {{store.table.some(show => show.intermissionTime) ? 'met pauzes' : ''}}
                     <span v-if="store.metadata.flags.includes('times-only')">zonder datum</span>
                     <span v-else>op {{ format(store.table[0].scheduledTime, 'PP', { locale: nl }) }}</span>
                     •

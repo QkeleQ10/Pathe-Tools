@@ -18,15 +18,6 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     onMounted(connect);
 
-    // const now = new Date();
-    // const target = new Date();
-    // target.setHours(5, 0, 0, 0);
-    // if (now > target) target.setDate(target.getDate() + 1);
-    // setTimeout(() => {
-    //     connect();
-    //     setInterval(connect, 24 * 60 * 60 * 1000); // Call connect every 24 hours
-    // }, target.getTime() - now.getTime());
-
     async function connect() {
         if (serverStore.username.length > 0) {
             try {
@@ -117,11 +108,12 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
             const parsedTable = json.timetable.map(obj => ({
                 ...obj,
-                scheduledTime: new Date(obj.scheduledTime),
-                showTime: new Date(obj.showTime),
-                mainShowTime: new Date(obj.mainShowTime),
-                creditsTime: new Date(obj.creditsTime),
-                endTime: new Date(obj.endTime)
+                scheduledTime: obj.scheduledTime && new Date(obj.scheduledTime),
+                showTime: obj.showTime && new Date(obj.showTime),
+                mainShowTime: obj.mainShowTime && new Date(obj.mainShowTime),
+                intermissionTime: obj.intermissionTime && new Date(obj.intermissionTime),
+                creditsTime: obj.creditsTime && new Date(obj.creditsTime),
+                endTime: obj.endTime && new Date(obj.endTime)
             }));
 
             table.value = parsedTable;
@@ -151,21 +143,30 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     }, {} as Record<string, string>);
                 })
                 .filter(obj => !obj.PLAYLIST.includes('TMS-BLACK'))
-                .map(obj => ({
-                    title: extractExtras(obj.PLAYLIST).title,
-                    extras: extractExtras(obj.PLAYLIST).extras,
-                    playlist: obj.PLAYLIST,
-                    feature: obj.FEATURE,
-                    featureRating: obj.FEATURE_RATING,
-                    auditorium: obj.AUDITORIUM,
-                    auditoriumNumber: parseInt(obj.AUDITORIUM?.replace("Rooftop", "10").replace(/^\w+\s/, '')?.split(' ')[0]) || 0,
-                    scheduledTime: timeStringToDate(obj.SCHEDULED_TIME),
-                    showTime: timeStringToDate(obj.SHOW_TIME),
-                    mainShowTime: timeStringToDate(obj.FEATURE_TIME),
-                    creditsTime: timeStringToDate(obj.CREDITS_TIME),
-                    endTime: timeStringToDate(obj.END_TIME),
-                    duration: obj.DURATION
-                }));
+                .map(obj => {
+                    const show: Show = {
+                        title: extractExtras(obj.PLAYLIST).title,
+                        extras: extractExtras(obj.PLAYLIST).extras,
+                        playlist: obj.PLAYLIST,
+                        feature: obj.FEATURE,
+                        featureRating: obj.FEATURE_RATING,
+                        auditorium: obj.AUDITORIUM,
+                        auditoriumNumber: parseInt(obj.AUDITORIUM?.replace("Rooftop", "10").replace(/^\w+\s/, '')?.split(' ')[0]) || 0,
+                        scheduledTime: timeStringToDate(obj.SCHEDULED_TIME),
+                        showTime: timeStringToDate(obj.SHOW_TIME),
+                        creditsTime: timeStringToDate(obj.CREDITS_TIME),
+                        endTime: timeStringToDate(obj.END_TIME),
+                        duration: obj.DURATION
+                    };
+                    const featureTime = timeStringToDate(obj.FEATURE_TIME);
+
+                    // If the difference between SCHEDULED_TIME and FEATURE_TIME is more than 30 minutes, then FEATURE_TIME is probably the end of the intermission (so subtract 10 minutes for the intermission time). Otherwise, it's probably the main show time.
+                    if (featureTime.getTime() - show.scheduledTime.getTime() > 1800000)
+                        show.intermissionTime = new Date(featureTime.getTime() - 600000);
+                    else show.mainShowTime = featureTime;
+
+                    return show;
+                });
 
             resolve({
                 timetable: parsedTable,
@@ -257,7 +258,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
         let extraString = transformedString
             .match(/(\s((4DX)|(ATMOS)|(IMAX)|(IMX)|(SCREENX)|(3D)|(Music)|(KLEUTER)|(ROOFTOP)|(Pride)|(PrideNight)|(Ladies)|(Premiere)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
-        
+
         return {
             extras: extraString.length > 0 ? extraString.split(' ') : [],
             title: transformedString.replace(extraString, '').trim()

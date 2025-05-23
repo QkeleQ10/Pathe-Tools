@@ -15,7 +15,7 @@ const audios = useTemplateRef('audios');
 
 const showRuleEditor = ref(false)
 
-const defaultRules = useStorage<AnnouncementRule[]>('default-rules', [
+const presetRulesDefault: AnnouncementRule[] = [
     {
         id: 'plfStart',
         name: '4DX-inloop',
@@ -70,6 +70,27 @@ const defaultRules = useStorage<AnnouncementRule[]>('default-rules', [
         trigger: {
             property: 'mainShowTime',
             preponeMinutes: 0,
+        },
+        filter: {
+            plfOnly: false,
+            lastShowOnly: false,
+            firstShowOnly: false,
+            playlistTitleIncludes: '',
+            playlistTitleExcludes: '',
+        }
+    },
+    {
+        id: 'intermission',
+        name: 'Pauze',
+        segments: [
+            { spriteName: 'chime', offset: -800 },
+            { spriteName: 'intermission', offset: 0 },
+            { spriteName: 'auditorium#', offset: 0 }
+        ],
+        enabled: true,
+        trigger: {
+            property: 'intermissionTime',
+            preponeMinutes: 1,
         },
         filter: {
             plfOnly: false,
@@ -141,7 +162,17 @@ const defaultRules = useStorage<AnnouncementRule[]>('default-rules', [
             playlistTitleExcludes: '',
         }
     },
-], localStorage, { mergeDefaults: true });
+]
+
+const presetRules = useStorage<AnnouncementRule[]>('default-rules', presetRulesDefault, localStorage, { mergeDefaults: true });
+
+for (let i = 0; i < presetRulesDefault.length; i++) {
+    const rule = presetRulesDefault[i];
+    const existingIndex = presetRules.value.findIndex(r => r.id === rule.id);
+    if (existingIndex === -1) {
+        presetRules.value.splice(i, 0, rule);
+    }
+}
 
 const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true })
 
@@ -171,13 +202,13 @@ function scheduleAnnouncements() {
 
     let array: Announcement[] = [];
 
-    for (const rule of [...defaultRules.value, ...customRules.value]) {
+    for (const rule of [...presetRules.value, ...customRules.value]) {
         if (!rule.enabled) continue;
 
         let arr: Announcement[] = [];
 
         store.table.forEach((show, index) => {
-            if (showMatchesFilter(show, index, rule.filter)) {
+            if (showMatchesFilter(show, index, rule)) {
                 const announcement = {
                     time: new Date(show[rule.trigger.property].getTime() - (rule.trigger.preponeMinutes || 0) * 60000 - 5000),
                     show: show,
@@ -234,18 +265,14 @@ async function enqueueProximateAnnouncements() {
     }
 }
 
-function showMatchesFilter(show: Show, index: number, filter: {
-    plfOnly: boolean;
-    lastShowOnly: boolean;
-    firstShowOnly: boolean;
-    playlistTitleIncludes: string;
-    playlistTitleExcludes: string;
-}) {
+function showMatchesFilter(show: Show, index: number, rule: AnnouncementRule) {
     let matches = true;
 
-    if (filter.plfOnly && !show.auditorium.includes('4DX')) matches = false;
-    if (filter.playlistTitleIncludes && !show.title.toLowerCase().includes(filter.playlistTitleIncludes.toLowerCase())) matches = false;
-    if (filter.playlistTitleExcludes && show.title.toLowerCase().includes(filter.playlistTitleExcludes.toLowerCase())) matches = false;
+    if (!show[rule.trigger.property] || !show[rule.trigger.property].getTime()) return false;
+
+    if (rule.filter.plfOnly && !show.auditorium.includes('4DX')) matches = false;
+    if (rule.filter.playlistTitleIncludes && !show.title.toLowerCase().includes(rule.filter.playlistTitleIncludes.toLowerCase())) matches = false;
+    if (rule.filter.playlistTitleExcludes && show.title.toLowerCase().includes(rule.filter.playlistTitleExcludes.toLowerCase())) matches = false;
 
     return matches;
 }
@@ -398,7 +425,7 @@ const { isOverDropZone } = useDropZone(main, {
             <ModalDialog v-if="showRuleEditor" @dismiss="showRuleEditor = false">
                 <Tabs>
                     <Tab value="Standaardregels">
-                        <RuleList v-model="defaultRules" :toggleOnly="true" />
+                        <RuleList v-model="presetRules" :toggleOnly="true" />
                     </Tab>
                     <Tab value="Eigen regels">
                         <RuleList v-model="customRules" :toggleOnly="false" />
