@@ -404,6 +404,20 @@ const { isOverDropZone } = useDropZone(main, {
                             <Icon>build</Icon>
                             <span>Omroep maken</span>
                         </AnnouncementBuilder>
+                        <div class="manual-sounds-list" v-for="ids in [
+                            voices.default.sounds.filter(id => !id.startsWith('auditorium')),
+                            voices.default.sounds.filter(id => id.startsWith('auditorium')),
+                            ...preferredVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
+                        ]" v-show="ids?.length > 0">
+                            <button v-for="id of ids" @click="previewAnnouncement([{ spriteName: id, offset: 0 }])"
+                                :class="{ translucent: id !== 'chime' && !preferredVoices.some(e => voices[e].sounds.includes(id)) }">
+                                <Icon v-if="id === 'chime'" :fill="true" style="--size: 14px; vertical-align: middle;">
+                                    music_note</Icon>
+                                <span v-else>
+                                    {{ getSoundInfo(id).name }}
+                                </span>
+                            </button>
+                        </div>
                     </fieldset>
 
                     <fieldset>

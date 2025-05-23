@@ -73,7 +73,7 @@ export const voices = {
 };
 
 export function getSoundInfo(string) {
-    const soundNames = { start: "start", mainshow: "start hoofdfilm", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime: "♪" };
+    const soundNames = { start: "start", mainshow: "start hoofdfilm", intermission: "pauze", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime: "♪" };
 
     string = string.toLowerCase().trim();
     let id = string.replace(/\?+/g, '');
