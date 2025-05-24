@@ -106,7 +106,7 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
 const showsSoon = computed(() => {
     return [...walkIns.value]
         .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
-        .filter(show => show.scheduledTime.getTime() - Date.now() > -900000); // shows starting up to -15 minutes from now
+        .filter(show => show.scheduledTime.getTime() - Date.now() > -1020000); // shows starting up to -17 minutes from now
 });
 
 const autoConfiguration = computed(() => {
@@ -178,7 +178,7 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
     let showIndex = 0;
     for (let lineNumber = 0; lineNumber < displayLines.length; lineNumber++) {
         if (!displayLines[lineNumber].enabled) {
-            let show = showsSoon.value[showIndex++];
+            let show = showsSoon.value.filter(show => show.scheduledTime.getTime() - Date.now() > -1020000)[showIndex++];
             if (!show) {
                 result.push({
                     textString: "", enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
@@ -214,7 +214,7 @@ function generatePacket(displayLines: DisplayLine[]) {
             null,
             new qmln.FunctionSendToInitialSegment([
                 new qmln.CommandClearBuffer(),
-                new qmln.CommandDisplayBuffer(null, 0x04, 0x09),
+                new qmln.CommandDisplayBuffer(null, null, 0x09),
                 new qmln.CommandEndOfSegmentData(),
             ])
         );
@@ -248,7 +248,7 @@ function generatePacket(displayLines: DisplayLine[]) {
             new qmln.CommandClearBuffer(),
             new qmln.CommandShowCurrentTime(),
             ...stillTextCommands,
-            new qmln.CommandDisplayBuffer(null, 0x04, 0x09),
+            new qmln.CommandDisplayBuffer(null, null, 0x09),
             ...marqueeTextCommands,
             new qmln.CommandEndOfSegmentData(),
         ])
