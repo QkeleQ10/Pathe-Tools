@@ -23,7 +23,11 @@ const store = useTmsScheduleStore();
 const walkInsEditorVisible = ref(false);
 const configurationEditorVisible = ref(false);
 const syncFilmTitles = ref(true);
-const packet = ref("");
+
+const sending = ref(false);
+const lastSentPacket = ref<string | null>(null);
+const lastSentTime = ref<Date | null>(null);
+const lastSentStatus = ref<[string | null, string | null]>([null, null]);
 
 const theatreName = useLocalStorage('theatre-name', 'Pathé Utrecht Leidsche Rijn');
 const tickerText = useLocalStorage('ticker-text', 'De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.');
@@ -31,7 +35,7 @@ const autoSend = ref(true);
 const autoConfigure = ref(true);
 const autoBlack = ref(true);
 
-const debuggerVisible = ref(params.prototype ? true : false);
+const advancedOptionsVisible = ref(params.prototype ? true : false);
 const ip1 = ref("10.10.87.81");
 const ip2 = ref("10.10.87.82");
 
@@ -103,15 +107,15 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
     }
 }
 
-const showsSoon = computed(() => {
+const showsSoon = () => {
     return [...walkIns.value]
         .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
         .filter(show => show.scheduledTime.getTime() - Date.now() > -1020000); // shows starting up to -17 minutes from now
-});
+}
 
 const autoConfiguration = computed(() => {
-    if (showsSoon.value.some(show => show.scheduledTime.getTime() - Date.now() < 10800000))
-        return presetConfigurations['walkin'].lines(); // if there's a show starting in the next 3 hours
+    if (walkIns.value.length && showsSoon().length)
+        return presetConfigurations['walkin'].lines(); // if there's a show starting within -17 minutes and 3 hours from now
     else if (new Date().getHours() >= 21 || new Date().getHours() < 1)
         return presetConfigurations['walkout'].lines(); // else if it's between 21:00 and 00:59
     else
@@ -178,7 +182,7 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
     let showIndex = 0;
     for (let lineNumber = 0; lineNumber < displayLines.length; lineNumber++) {
         if (!displayLines[lineNumber].enabled) {
-            let show = showsSoon.value.filter(show => show.scheduledTime.getTime() - Date.now() > -1020000)[showIndex++];
+            let show = showsSoon()[showIndex++];
             if (!show) {
                 result.push({
                     textString: "", enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
@@ -187,7 +191,7 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
             }
 
             const isStarted = show.scheduledTime.getTime() - Date.now() < -540000;
-            const aboutToStart = show.scheduledTime.getTime() - Date.now() < 300000 && !isStarted;
+            const aboutToStart = show.scheduledTime.getTime() - Date.now() < 0 && !isStarted;
 
             let str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 51).padEnd(51)}${show.auditorium.toString().substring(0, 3).padStart(3)}`;
             if (isStarted) str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 40).padEnd(40)} ~C1;is gestart~C3;${show.auditorium.toString().substring(0, 3).padStart(3)}`;
@@ -202,9 +206,9 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
     return result;
 }
 
-function generatePacket(displayLines: DisplayLine[]) {
+function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(currentConfiguration.value)): qmln.Packet {
     if (
-        autoBlack.value && (
+        autoBlack.value && !showsSoon().length && (
             (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
             (new Date().getHours() === 9 && new Date().getMinutes() < 30)
         )
@@ -255,23 +259,45 @@ function generatePacket(displayLines: DisplayLine[]) {
     );
 }
 
-async function sendData(hex: string = generatePacket(fillEmptyLinesWithShows(currentConfiguration.value)).toString()) {
-    for (const ip of [ip1.value, ip2.value]) {
-        if (ip.length) {
-            const res = await fetch("http://localhost:5000/send-bytes", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ip,
-                    port: "9100",
-                    hex
-                })
-            });
-            console.info(res);
-        }
+async function sendData(hex: string = generatePacket().toString(), force = false) {
+    const ips = [ip1.value, ip2.value].filter(ip => ip.length);
+
+    while (sending.value) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    packet.value = hex.toString();
+    if (!force && hex === lastSentPacket.value && ips.every((ip, i) => lastSentStatus.value[i] === "ok")) {
+        console.info("No changes detected, skipping send.");
+        return;
+    }
+
+    sending.value = true;
+
+    await Promise.allSettled(
+        ips.map(async (ip, i) => {
+            try {
+                const res = await fetch("http://localhost:5000/send-bytes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        ip,
+                        port: "9100",
+                        hex
+                    })
+                });
+                if (res.ok) lastSentStatus.value[i] = "ok";
+                else throw new Error(`HTTP error! status: ${res.status}`);
+            } catch (err) {
+                console.error(`Failed to send to ${ip}:`, err);
+                lastSentStatus.value[i] = "error";
+            }
+        })
+    );
+
+    lastSentTime.value = new Date();
+    lastSentPacket.value = hex.toString();
+
+    sending.value = false;
 }
 
 function hexToAscii(hexString: string) {
@@ -296,12 +322,21 @@ let intervalId: ReturnType<typeof setInterval> | null = null;
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
 onMounted(() => {
+    walkIns.value = [...store.table]
+        .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
+        .map((show, i) => ({
+            scheduledTime: show.scheduledTime,
+            title: show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join(''),
+            auditorium: show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '').split(' ')[0],
+            i
+        }));
+
     timeoutId = setTimeout(() => {
         if (autoSend.value) sendData();
         intervalId = setInterval(() => {
             if (autoSend.value) sendData();
-        }, 60000);
-    }, 60000 - Date.now() % 60000);
+        }, 10000);
+    }, 10000 - Date.now() % 10000);
 });
 
 onBeforeUnmount(() => {
@@ -328,9 +363,6 @@ onBeforeUnmount(() => {
                         <small>Tussen 01:00 en 09:30 is het bord
                             zwart.</small>
                     </InputCheckbox>
-                    <!-- <InputCheckbox identifier="autoSend" v-model="autoSend">
-                        Elke minuut automatisch verzenden
-                    </InputCheckbox> -->
                     <InputText identifier="theatreName" v-model="theatreName">
                         Naam theater
                     </InputText>
@@ -342,14 +374,19 @@ onBeforeUnmount(() => {
                                 Rooftop open</option>
                         </template>
                     </InputText>
-                    <div class="flex buttons">
-                        <Button class="full" @click="walkInsEditorVisible = true">
+                    <div class="flex buttons" style="flex-wrap: wrap">
+                        <Button @click="walkInsEditorVisible = true">
                             <Icon>edit</Icon>
-                            <span>Voorstellingen bewerken</span>
+                            <span>Voorstellingen</span>
                         </Button>
-                        <Button class="secondary full" @click="configurationEditorVisible = true" v-if="!autoConfigure">
+                        <Button class="secondary" @click="configurationEditorVisible = true"
+                            :style="autoConfigure ? 'opacity: 0.2; pointer-events: none;' : ''">
                             <Icon>edit</Icon>
-                            <span>Configuratie bewerken</span>
+                            <span>Configuratie</span>
+                        </Button>
+                        <Button class="secondary" @click="advancedOptionsVisible = true">
+                            <Icon>construction</Icon>
+                            <span>Geavanceerd</span>
                         </Button>
                     </div>
                 </div>
@@ -358,8 +395,9 @@ onBeforeUnmount(() => {
             <SidePanel style="flex: 585px 0 0; display: flex;">
                 <div>
                     <h2>Voorbeeld</h2>
+
                     <div class="block" id="matrix-display" :class="{
-                        blackout: autoBlack && (
+                        blackout: autoBlack && !showsSoon().length && (
                             (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
                             (new Date().getHours() === 9 && new Date().getMinutes() < 30)
                         )
@@ -378,21 +416,19 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
                 </div>
-                <div class="flex buttons">
-                    <Button class="secondary" @click="sendData()">
-                        <Icon>send</Icon>
-                        <span>Nu verzenden</span>
-                    </Button>
-                    <Button class="secondary" @click="sendData(new qmln.Packet(
-                        null, null, new qmln.FunctionSetClock(new Date())
-                    ).toString())">
-                        <Icon>update</Icon>
-                        <span>Klok bijwerken</span>
-                    </Button>
-                    <Button class="secondary" @click="debuggerVisible = true" style="opacity: 0.2;">
-                        <Icon>code</Icon>
-                        <span>Foutopsporing</span>
-                    </Button>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+                    <small>Laatst verzonden om
+                        {{ lastSentTime ? format(lastSentTime, 'HH:mm:ss') : 'onbekend' }}</small>
+                    <small>{{ sending ? "Verzenden..." : "" }}</small>
+                    <small v-for="(status, i) in lastSentStatus" :key="i">
+                        Scherm {{ i + 1 }}: {{
+                            !status ? "Niets verzonden" :
+                                status === 'ok' ? "OK" :
+                                    status === 'error' ? "Fout" :
+                                        status
+                        }}
+                    </small>
                 </div>
                 <p>
                     Dit voorbeeld is slechts indicatief.
@@ -508,23 +544,52 @@ onBeforeUnmount(() => {
             </div>
         </ModalDialog>
 
-        <ModalDialog v-if="debuggerVisible" @dismiss="debuggerVisible = false">
-            <div class="flex">
-                <pre style="width: 48ch;">{{ packet }}</pre>
-                <pre
-                    style="width: 16ch;">{{ hexToAscii(packet).replace(/[\n\r\t]/g, " ").match(/.{1,16}/g).join('\n') }}</pre>
+        <ModalDialog v-if="advancedOptionsVisible" @dismiss="advancedOptionsVisible = false">
+            <h3>Geavanceerde opties</h3>
+            <div class="flex" style="flex-direction: column;">
+                <InputText v-model="ip1" identifier="ip">
+                    <span>IP-adres scherm 1</span>
+                </InputText>
+                <InputText v-model="ip2" identifier="ip2">
+                    <span>IP-adres scherm 2</span>
+                </InputText>
+                <InputCheckbox v-model="autoSend" identifier="autoSend">
+                    <span>Automatisch verzenden</span>
+                </InputCheckbox>
+
+                <div class="flex buttons">
+                    <Button class="secondary" @click="sendData(new qmln.Packet(
+                        null, null, new qmln.FunctionSetClock(new Date())
+                    ).toString())">
+                        <Icon>update</Icon>
+                        <span>Klok bijwerken</span>
+                    </Button>
+                    <Button class="secondary" @click="sendData()">
+                        <Icon>send</Icon>
+                        <span>Nu verzenden</span>
+                    </Button>
+                </div>
             </div>
 
-            <InputText v-model="ip1" identifier="ip">
-                <span>ip1</span>
-            </InputText>
-            <InputText v-model="ip2" identifier="ip2">
-                <span>ip2</span>
-            </InputText>
-
-            <InputCheckbox v-model="autoSend" identifier="autoSend">
-                <span>autoSend</span>
-            </InputCheckbox>
+            <h3>Laatst verzonden pakket</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+                <small>Laatst verzonden om
+                    {{ lastSentTime ? format(lastSentTime, 'HH:mm:ss') : 'onbekend' }}</small>
+                <small>{{ sending ? "Verzenden..." : "" }}</small>
+                <small v-for="(status, i) in lastSentStatus" :key="i">
+                    Scherm {{ i + 1 }}: {{
+                        !status ? "Niets verzonden" :
+                            status === 'ok' ? "OK" :
+                                status === 'error' ? "Fout" :
+                                    status
+                    }}
+                </small>
+            </div>
+            <div class="flex">
+                <pre style="width: 48ch;">{{ lastSentPacket }}</pre>
+                <pre style="width: 16ch;">{{ hexToAscii(lastSentPacket).replace(/[\n\r\t]/g, " ").match(/.{1,16}/g).join('\n')
+                }}</pre>
+            </div>
         </ModalDialog>
     </section>
 </template>

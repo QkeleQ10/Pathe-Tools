@@ -4,10 +4,8 @@ import { useDropZone, useUrlSearchParams } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show } from '@/classes/classes';
 import { format } from 'date-fns';
-import { useServerStore } from '@/stores/server';
 
 const store = useTmsScheduleStore();
-const serverStore = useServerStore();
 
 const params = useUrlSearchParams('history');
 
