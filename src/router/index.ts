@@ -3,6 +3,12 @@
 
 import { createRouter, createWebHistory, RouteRecordRaw, RouterScrollBehavior } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
+import TimetableView from '../views/TimetableView.vue';
+import AnnouncerView from '../views/AnnouncerView.vue';
+import NarrowcastingView from '../views/NarrowcastingView.vue';
+import SlideshowView from '../views/SlideshowView.vue';
+import IntermissionFinderView from '../views/IntermissionFinderView.vue';
+import SplitscreenView from '../views/SplitscreenView.vue';
 
 const routes: RouteRecordRaw[] = [
     {
@@ -13,7 +19,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/timetable',
         name: 'timetable',
-        component: () => import('../views/TimetableView.vue'),
+        component: TimetableView,
         meta: {
             title: 'Tijdenlijstje',
         }
@@ -21,7 +27,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/announcer',
         name: 'announcer',
-        component: () => import('../views/AnnouncerView.vue'),
+        component: AnnouncerView,
         meta: {
             title: 'Omroepen',
         }
@@ -29,7 +35,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/narrowcasting',
         name: 'narrowcasting',
-        component: () => import('../views/NarrowcastingView.vue'),
+        component: NarrowcastingView,
         meta: {
             title: 'Timetable',
         }
@@ -37,7 +43,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/slideshow',
         name: 'slideshow',
-        component: () => import('../views/SlideshowView.vue'),
+        component: SlideshowView,
         meta: {
             title: 'Diavoorstelling',
         }
@@ -45,9 +51,20 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/intermission-finder',
         name: 'intermission-finder',
-        component: () => import('../views/IntermissionFinderView.vue'),
+        component: IntermissionFinderView,
         meta: {
             title: 'Filmpauze',
+        }
+    },
+    {
+        path: '/splitscreen',
+        name: 'splitscreen',
+        component: SplitscreenView,
+        meta: {
+            title: 'Filmpauze',
+            showNavigation: false, // Hide header for splitscreen view
+            // overlayHeader: true, // Show overlay header for splitscreen view
+            showFooter: false, // Hide footer for splitscreen view
         }
     }
 ];
@@ -77,3 +94,5 @@ router.beforeEach((to, from) => {
 });
 
 export default router;
+
+export { routes }; // Export routes for use in other parts of the application

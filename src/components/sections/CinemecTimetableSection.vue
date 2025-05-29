@@ -114,7 +114,7 @@ const showsSoon = () => {
 }
 
 const autoConfiguration = computed(() => {
-    if (walkIns.value.length && showsSoon().length)
+    if (walkIns.value.length && showsSoon().length && now)
         return presetConfigurations['walkin'].lines(); // if there's a show starting within -17 minutes and 3 hours from now
     else if (new Date().getHours() >= 21 || new Date().getHours() < 1)
         return presetConfigurations['walkout'].lines(); // else if it's between 21:00 and 00:59

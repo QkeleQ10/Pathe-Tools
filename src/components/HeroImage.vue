@@ -31,6 +31,7 @@ fac.getColorAsync(imageUrl, {
 <style scoped>
 .hero {
     height: 70px;
+    pointer-events: none;
 
     .image {
         position: absolute;

@@ -3,6 +3,8 @@ import { provide, ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { format } from 'date-fns';
 
+import router from '@/router/index';
+
 const now = ref(new Date())
 setInterval(updateNowValue, 1000)
 updateNowValue()
@@ -14,18 +16,26 @@ provide('now', now)
 </script>
 
 <template>
-    <header ref="header">
+    <header ref="header" v-if="$route.meta.showHeader ?? true">
         <div class="wrapper">
-            <RouterLink to="/" class="logo-wrapper">
+            <RouterLink to="/" id="logo-wrapper">
                 <img alt="Pathé logo" class="logo" src="@/assets/logo-international-white.svg" height="46" />
             </RouterLink>
 
-            <nav>
+            <nav v-if="$route.meta.showNavigation ?? true">
                 <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
                 <RouterLink to="/announcer">Omroepen</RouterLink>
                 <RouterLink to="/narrowcasting">Timetable</RouterLink>
                 <RouterLink to="/slideshow">Diavoorstelling</RouterLink>
                 <RouterLink to="/intermission-finder">Filmpauze</RouterLink>
+                <RouterLink to="/splitscreen" id="splitscreen-link">
+                    <Icon>split_scene</Icon>
+                </RouterLink>
+            </nav>
+            <nav v-else>
+                <RouterLink to="/" id="splitscreen-link" class="active">
+                    <Icon>split_scene</Icon>
+                </RouterLink>
             </nav>
 
             <div id="clock">{{ format(now, 'HH:mm:ss') }}</div>
@@ -34,7 +44,7 @@ provide('now', now)
 
     <RouterView />
 
-    <footer>
+    <footer v-if="$route.meta.showFooter ?? true">
 
         <div class="block" id="faq">
             <div class="svg-icon">
@@ -64,7 +74,7 @@ provide('now', now)
     </footer>
 </template>
 
-<style scoped>
+<style>
 header {
     top: 0;
     left: 0;
@@ -77,8 +87,7 @@ header {
 
     background: linear-gradient(180deg, rgba(28, 29, 31, .5) 26.11%, rgba(28, 29, 31, 0) 100%);
 
-    z-index: 10;
-    transition: background 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+    /* transition: background 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 
     &.is-sticky {
         position: sticky;
@@ -92,26 +101,27 @@ header {
     &.is-visible {
         transform: translateY(0);
         pointer-events: all;
+    } */
+
+    div.wrapper {
+        width: 100%;
+        /* max-width: 1180px; */
+        padding-inline: 32px;
+        padding-block: 12px;
+
+        display: grid;
+        grid-template-columns: 80px 1fr auto;
+        align-items: center;
     }
 }
 
-div.wrapper {
-    width: 100%;
-    /* max-width: 1180px; */
-    padding-inline: 32px;
-    padding-block: 12px;
-
-    display: grid;
-    grid-template-columns: 80px 1fr auto;
-    align-items: center;
-}
-
-.logo-wrapper {
+#logo-wrapper {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
+    z-index: 10;
 
     &::after {
         position: absolute;
@@ -129,16 +139,32 @@ nav {
 }
 
 nav a {
-    margin-right: 32px;
+    margin-right: 2em;
     color: #ffffffb3;
     font-weight: 500;
     text-decoration: none;
+    cursor: pointer;
+    z-index: 10;
+
+    &#splitscreen-link {
+        margin-left: auto;
+        margin-right: 16px;
+
+        .icon {
+            vertical-align: middle;
+        }
+    }
 }
 
 nav a:hover,
-nav a.router-link-active {
+nav a.router-link-active,
+nav a.active {
     color: #fff;
     text-shadow: 0px 0px 1px #fff;
+
+    .icon {
+        font-variation-settings: "FILL" 1;
+    }
 }
 
 footer {
