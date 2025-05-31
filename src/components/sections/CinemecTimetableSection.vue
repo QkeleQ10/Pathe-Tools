@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
+import { ref, computed, inject, nextTick, onBeforeUnmount, onMounted, Ref } from 'vue';
 import { useLocalStorage, useUrlSearchParams } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import * as qmln from '@/utils/qmln'
@@ -14,7 +14,7 @@ interface DisplayLine {
     speed: number;
 }
 
-const now: Date = inject('now');
+const now = inject<Ref<Date>>('now');
 
 const params = useUrlSearchParams('history');
 
@@ -107,16 +107,16 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
     }
 }
 
-const showsSoon = () => {
+const showsSoon = computed(() => {
     return [...walkIns.value]
         .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
-        .filter(show => show.scheduledTime.getTime() - Date.now() > -1020000); // shows starting up to -17 minutes from now
-}
+        .filter(show => show.scheduledTime.getTime() - now.value.getTime() > -1020000); // shows starting up to -17 minutes from now
+});
 
 const autoConfiguration = computed(() => {
-    if (walkIns.value.length && showsSoon().length && now)
+    if (walkIns.value.length && showsSoon.value.length)
         return presetConfigurations['walkin'].lines(); // if there's a show starting within -17 minutes and 3 hours from now
-    else if (new Date().getHours() >= 21 || new Date().getHours() < 1)
+    else if (now.value.getHours() >= 21 || now.value.getHours() < 1)
         return presetConfigurations['walkout'].lines(); // else if it's between 21:00 and 00:59
     else
         return presetConfigurations['noinfo'].lines(); // else if it's between 01:00 and 20:59
@@ -182,7 +182,7 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
     let showIndex = 0;
     for (let lineNumber = 0; lineNumber < displayLines.length; lineNumber++) {
         if (!displayLines[lineNumber].enabled) {
-            let show = showsSoon()[showIndex++];
+            let show = showsSoon.value[showIndex++];
             if (!show) {
                 result.push({
                     textString: "", enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
@@ -208,7 +208,7 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
 
 function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(currentConfiguration.value)): qmln.Packet {
     if (
-        autoBlack.value && !showsSoon().length && (
+        autoBlack.value && !showsSoon.value.length && (
             (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
             (new Date().getHours() === 9 && new Date().getMinutes() < 30)
         )
@@ -262,9 +262,7 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
 async function sendData(hex: string = generatePacket().toString(), force = false) {
     const ips = [ip1.value, ip2.value].filter(ip => ip.length);
 
-    while (sending.value) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    if (sending.value) return;
 
     if (!force && hex === lastSentPacket.value && ips.every((ip, i) => lastSentStatus.value[i] === "ok")) {
         console.info("No changes detected, skipping send.");
@@ -379,8 +377,7 @@ onBeforeUnmount(() => {
                             <Icon>edit</Icon>
                             <span>Voorstellingen</span>
                         </Button>
-                        <Button class="secondary" @click="configurationEditorVisible = true"
-                            :style="autoConfigure ? 'opacity: 0.2; pointer-events: none;' : ''">
+                        <Button class="secondary" @click="configurationEditorVisible = true" :disabled="autoConfigure">
                             <Icon>edit</Icon>
                             <span>Configuratie</span>
                         </Button>
@@ -397,7 +394,7 @@ onBeforeUnmount(() => {
                     <h2>Voorbeeld</h2>
 
                     <div class="block" id="matrix-display" :class="{
-                        blackout: autoBlack && !showsSoon().length && (
+                        blackout: autoBlack && !showsSoon.length && (
                             (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
                             (new Date().getHours() === 9 && new Date().getMinutes() < 30)
                         )
@@ -558,13 +555,13 @@ onBeforeUnmount(() => {
                 </InputCheckbox>
 
                 <div class="flex buttons">
-                    <Button class="secondary" @click="sendData(new qmln.Packet(
+                    <Button class="" @click="sendData(new qmln.Packet(
                         null, null, new qmln.FunctionSetClock(new Date())
-                    ).toString())">
+                    ).toString())" :disabled="sending">
                         <Icon>update</Icon>
                         <span>Klok bijwerken</span>
                     </Button>
-                    <Button class="secondary" @click="sendData()">
+                    <Button class="secondary" @click="sendData()" :disabled="sending">
                         <Icon>send</Icon>
                         <span>Nu verzenden</span>
                     </Button>
@@ -613,11 +610,6 @@ pre {
 
 #walkin-editor :deep(.modal-content) {
     overflow: hidden;
-}
-
-#configurations.disabled {
-    opacity: 0.5;
-    pointer-events: none;
 }
 
 #display-lines {

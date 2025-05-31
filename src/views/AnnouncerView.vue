@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount } from 'vue';
+import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { Announcement, AnnouncementRule, Show } from '@/classes/classes';
@@ -8,7 +8,7 @@ import { assembleAudioClient } from '@/utils/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 
 const store = useTmsScheduleStore()
-const now = inject('now') as Date
+const now = inject<Ref<Date>>('now');
 
 const main = useTemplateRef('main');
 const audios = useTemplateRef('audios');
@@ -179,6 +179,7 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStor
 const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true })
 
 const customAnnouncement = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chime', offset: -800 },]);
+const customAnnouncementDate = ref<Date>(new Date());
 
 const scheduledAnnouncements = ref<Announcement[]>([])
 store.$subscribe(scheduleAnnouncements, { deep: true })
@@ -234,7 +235,7 @@ function scheduleAnnouncements() {
         array.push(...arr);
     }
 
-    scheduledAnnouncements.value = array.sort((a, b) => a.time.getTime() - b.time.getTime());
+    scheduledAnnouncements.value = array;
 
     enqueueProximateAnnouncements();
 }
@@ -251,16 +252,20 @@ async function enqueueProximateAnnouncements() {
             audios.value.appendChild(announcement.audio);
 
             setTimeout(() => {
+                waitForOtherAudiosToFinish(() => announcement.audio?.play());
+            }, Math.max(0, timeUntilAnnouncement));
+
+            function waitForOtherAudiosToFinish(callback: () => void) {
                 // Check if there is any other audio playing. If so, wait for it to finish.
                 const otherAudio = Array.from(audios.value.children).find((audio: HTMLAudioElement) => audio !== announcement.audio && !audio.paused);
                 if (otherAudio) {
                     otherAudio.addEventListener('ended', () => {
-                        announcement.audio?.play();
+                        waitForOtherAudiosToFinish(callback);
                     }, { once: true });
                 } else {
-                    announcement.audio?.play();
+                    callback();
                 }
-            }, Math.max(0, timeUntilAnnouncement));
+            }
         }
     }
 }
@@ -331,7 +336,6 @@ async function previewAnnouncement(segments: { spriteName: string; offset: numbe
     audio.play();
 }
 
-
 const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
@@ -349,20 +353,20 @@ const { isOverDropZone } = useDropZone(main, {
                     <h2>Geplande omroepen</h2>
                     <div id="upcoming-announcements">
                         <TransitionGroup name="list">
-                            <div v-for="announcement in scheduledAnnouncements"
-                                v-show="announcement.time.getTime() - now.getTime() > -5000 || (announcement.audio && !announcement.audio.paused)"
+                            <div v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
+                                v-show="announcement.time.getTime() - now.getTime() > -5000 || (announcement.audio?.parentElement)"
                                 class="film" :key="announcement.time.getTime()"
                                 :class="{ 'announcing': announcement.audio && !announcement.audio.paused }">
-                                <div class="room">
+                                <div class="room" v-if="announcement.show">
                                     {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium ===
                                         'Rooftop') ? 'RT' :
                                         announcement.show.auditorium.replace(/^\w+\s/, '') }}
                                 </div>
-                                <div class="title">{{ announcement.show.title }}</div>
-                                <div class="time">
+                                <div class="title" v-if="announcement.show">{{ announcement.show.title }}</div>
+                                <div class="time" v-if="announcement.show">
                                     {{ format(announcement.show.scheduledTime, 'HH:mm') }} –
                                     {{ format(announcement.show.endTime, 'HH:mm:ss') }}</div>
-                                <div class="flex chips">
+                                <div class="flex chips" v-if="announcement.show">
                                     <Chip v-for="extra in announcement.show.extras"
                                         :class="{ 'translucent-white': extra.match(/\(.+\)/) }">
                                         {{ extra.replace(/\((.+)\)/, '$1') }}
@@ -399,10 +403,25 @@ const { isOverDropZone } = useDropZone(main, {
 
                     <fieldset style="position: relative;">
                         <legend>Handmatige omroep</legend>
-                        <AnnouncementBuilder v-model="customAnnouncement" play-button class="full"
-                            @play="previewAnnouncement(customAnnouncement)">
+                        <AnnouncementBuilder v-model="customAnnouncement" class="full">
                             <Icon>build</Icon>
                             <span>Omroep maken</span>
+                            <template #footer>
+                                <h3>Afspeelopties</h3>
+                                <InputDate identifier="customAnnouncementDate" v-model="customAnnouncementDate">
+                                    Inplannen voor</InputDate>
+                                <div class="flex buttons">
+                                    <Button class="secondary add-rule" @click="previewAnnouncement(customAnnouncement)">
+                                        <Icon>play_arrow</Icon>
+                                        Nu afspelen
+                                    </Button>
+                                    <Button
+                                        @click="scheduledAnnouncements.push({ time: customAnnouncementDate, segments: customAnnouncement, audio: null })">
+                                        <Icon>timer</Icon>
+                                        Later afspelen
+                                    </Button>
+                                </div>
+                            </template>
                         </AnnouncementBuilder>
                         <div class="manual-sounds-list" v-for="ids in [
                             voices.default.sounds.filter(id => !id.startsWith('auditorium')),

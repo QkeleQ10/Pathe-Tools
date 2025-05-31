@@ -3,13 +3,8 @@ import { getSoundInfo, voices } from '@/utils/voices';
 
 const model = defineModel<{ spriteName: string; offset: number }[]>();
 const showAnnouncementBuilder = defineModel<boolean>('show', { default: false });
-const emit = defineEmits(['play']);
 const props = defineProps({
     noButton: {
-        type: Boolean,
-        default: false
-    },
-    playButton: {
         type: Boolean,
         default: false
     },
@@ -65,11 +60,11 @@ function sentenceCase(string: string) {
                     <Icon>add</Icon>
                     Nieuw onderdeel
                 </Button>
-                <Button v-if="playButton" class="secondary add-rule" @click="emit('play')">
-                    <Icon>play_arrow</Icon>
-                    Afspelen
-                </Button>
+                <slot name="buttons">
+                </slot>
             </div>
+            <slot name="footer">
+            </slot>
         </ModalDialog>
     </Transition>
 </template>

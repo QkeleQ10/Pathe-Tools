@@ -34,6 +34,12 @@ button {
         box-shadow: 0 0 0 8px #ffffff0d;
         background: #1f252e;
     }
+
+    &:disabled {
+        pointer-events: none;
+        opacity: 0.2;
+        filter: grayscale(1);
+    }
 }
 
 button.center {

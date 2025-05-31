@@ -286,7 +286,9 @@ const { isOverDropZone } = useDropZone(main, {
                     <div class="buttons"
                         style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 0; padding: 16px;">
                         <Button class="primary full" @click="handlePrint" v-if="transformedTable.length > 0">
-                            Afdrukken</Button>
+                            <Icon>print</Icon>
+                            Afdrukken
+                        </Button>
                     </div>
                 </SidePanel>
             </div>

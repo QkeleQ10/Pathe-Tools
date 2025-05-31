@@ -35,9 +35,9 @@ export type TimetableShow = Show & {
 
 export type Announcement = {
     time: Date;
-    show: Show;
     segments: { spriteName: string; offset: number }[];
     audio: HTMLAudioElement | null;
+    show?: Show;
 };
 
 export type AnnouncementRule = {
