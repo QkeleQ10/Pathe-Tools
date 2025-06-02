@@ -17,6 +17,7 @@ label {
     position: relative;
     display: flex;
     justify-content: space-between;
+    align-items: first baseline;
     gap: 16px;
     cursor: pointer;
     user-select: none;
@@ -27,6 +28,14 @@ label.no-label {
 
     .title {
         display: none;
+    }
+}
+
+label.label-end {
+    justify-content: start;
+
+    &>input {
+        order: -1;
     }
 }
 

@@ -225,64 +225,62 @@ const { isOverDropZone } = useDropZone(main, {
                     <p id="upload-hint" v-else>Upload eerst een bestand.</p>
                 </div>
                 <SidePanel style="flex-basis: 355px;">
-                    <Tabs>
-                        <Tab value="Opties">
-                            <fieldset
-                                v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX')))">
-                                <legend>4DX-inloop</legend>
-                                <small>Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
-                                    streeplijntje.</small>
+                    <h2>Opties</h2>
+                    <fieldset
+                        v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX')))">
+                        <legend>4DX-inloop</legend>
+                        <small>Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
+                            streeplijntje.</small>
 
-                                <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30"
-                                    unit="min">
-                                    Tijd voor aanvang
-                                    <small v-if="plfTimeBefore > 0">De 4DX-inloop begint {{ plfTimeBefore }} minuten
-                                        voor de aanvangstijd en eindigt wanneer de hoofdfilm begint.</small>
-                                </InputNumber>
-                            </fieldset>
-                            <fieldset>
-                                <legend>Uitloop</legend>
-                                <InputNumber v-model.number="shortGapInterval" identifier="shortGapInterval" min="0"
-                                    max="20" unit="min">Interval
-                                    voor dubbele
-                                    uitloop
-                                    <small v-if="shortGapInterval > 0">
-                                        Uitlopen met minder dan {{ shortGapInterval }} minuten ertussen krijgen een
-                                        boogje
-                                    </small>
-                                    <small v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</small>
-                                </InputNumber>
-                                <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20"
-                                    max="80" unit="min">Interval
-                                    voor gat tussen
-                                    uitlopen
-                                    <small v-if="longGapInterval > 0">Gaten van meer dan {{ longGapInterval }}
-                                        minuten
-                                        krijgen een stippellijntje
-                                    </small>
-                                    <small v-else>Uitlopen met veel tijd ertussen worden niet gemarkeerd</small>
-                                </InputNumber>
-                                <small>
-                                    Bij uitlopen met post-credits-scènes wordt de tijd 'Einde voorstelling' gebruikt
-                                    voor het
-                                    berekenen van de tijd tot de volgende uitloop.
-                                </small>
-                            </fieldset>
-                            <fieldset>
-                                <legend>Overig</legend>
-                                <InputCheckbox v-model="splitExtra" identifier="splitExtra">
-                                    Extra informatie scheiden van filmtitel
-                                </InputCheckbox>
-                            </fieldset>
-                            <fieldset>
-                                <legend>Extra kolommen</legend>
-                                <InputCheckbox v-for="(value, colId) in optionalColumns"
-                                    v-model="optionalColumnsSetting[colId]" :identifier="String(colId)">
-                                    {{ columns[colId].title }}
-                                </InputCheckbox>
-                            </fieldset>
-                        </Tab>
-                    </Tabs>
+                        <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30"
+                            unit="min">
+                            Tijd voor aanvang
+                            <small v-if="plfTimeBefore > 0">De 4DX-inloop begint {{ plfTimeBefore }} minuten
+                                voor de aanvangstijd en eindigt wanneer de hoofdfilm begint.</small>
+                        </InputNumber>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Uitloop</legend>
+                        <InputNumber v-model.number="shortGapInterval" identifier="shortGapInterval" min="0" max="20"
+                            unit="min">Interval
+                            voor dubbele
+                            uitloop
+                            <small v-if="shortGapInterval > 0">
+                                Uitlopen met minder dan {{ shortGapInterval }} minuten ertussen krijgen een
+                                boogje
+                            </small>
+                            <small v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</small>
+                        </InputNumber>
+                        <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20" max="80"
+                            unit="min">Interval
+                            voor gat tussen
+                            uitlopen
+                            <small v-if="longGapInterval > 0">Gaten van meer dan {{ longGapInterval }}
+                                minuten
+                                krijgen een stippellijntje
+                            </small>
+                            <small v-else>Uitlopen met veel tijd ertussen worden niet gemarkeerd</small>
+                        </InputNumber>
+                        <small>
+                            Bij uitlopen met post-credits-scènes wordt de tijd 'Einde voorstelling' gebruikt
+                            voor het
+                            berekenen van de tijd tot de volgende uitloop.
+                        </small>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Overig</legend>
+                        <InputCheckbox v-model="splitExtra" identifier="splitExtra">
+                            Extra informatie scheiden van filmtitel
+                        </InputCheckbox>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Extra kolommen</legend>
+                        <InputCheckbox v-for="(value, colId) in optionalColumns" v-model="optionalColumnsSetting[colId]"
+                            :identifier="String(colId)">
+                            {{ columns[colId].title }}
+                        </InputCheckbox>
+                    </fieldset>
+
                     <div class="buttons"
                         style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 0; padding: 16px;">
                         <Button class="primary full" @click="handlePrint" v-if="transformedTable.length > 0">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{ identifier: string }>();
-const model = defineModel<string>();
+const model = defineModel<any>();
 </script>
 
 <template>

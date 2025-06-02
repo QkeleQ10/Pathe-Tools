@@ -164,12 +164,6 @@ em.label {
     opacity: 0;
 }
 
-.side-panel .tab-content>div {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
 .side-panel fieldset {
     border: 1px solid #4a4b4d;
     border-radius: 5px;
@@ -180,6 +174,10 @@ em.label {
     display: flex;
     flex-direction: column;
     gap: 20px;
+}
+
+.side-panel>fieldset:first-of-type {
+    margin-top: -11px;
 }
 
 .side-panel fieldset+fieldset {
