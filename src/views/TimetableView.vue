@@ -29,6 +29,8 @@ const columns = {
 const optionalColumns = Object.fromEntries(Object.entries(columns).filter(([, value]) => value.optional))
 
 const splitExtra = ref(true)
+const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
+const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
 const optionalColumnsSetting = useStorage('optional-columns', {
     mainTime: false,
     endTime: false,
@@ -156,6 +158,11 @@ const { isOverDropZone } = useDropZone(main, {
                                 </td>
                                 <td nowrap contenteditable>
                                     {{ format(show.scheduledTime, 'HH:mm') }}
+                                    <span class="preshow-duration"
+                                        v-if="(show.scheduledTime && show.mainShowTime) && ((displayPreshowDuration === 1 && show.auditorium?.includes('4DX')) || displayPreshowDuration === 2)">
+                                        +{{ Math.round((show.mainShowTime.getTime() - show.scheduledTime.getTime()) /
+                                            60000) }}
+                                    </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
                                     {{ format(show.mainShowTime || show.intermissionTime || 0, 'HH:mm:ss') }}
@@ -172,10 +179,11 @@ const { isOverDropZone } = useDropZone(main, {
                                     <div class="plf-overlap" v-if="show.overlapWithPlf"></div>
                                     <span contenteditable class="credits-time">
                                         {{ format(show.creditsTime, 'HH:mm:ss') }}
-                                        <span v-if="show.hasPostCredits" class="post-credits">+{{
-                                            Math.round((show.endTime.getTime() - show.creditsTime.getTime()) /
-                                                60000)
-                                        }}</span>
+                                        <span class="credits-duration"
+                                            v-if="(show.creditsTime && show.endTime) && ((displayCreditsDuration === 1 && show.hasPostCredits) || displayCreditsDuration === 2)">
+                                            +{{ Math.round((show.endTime.getTime() - show.creditsTime.getTime()) /
+                                                60000) }}
+                                        </span>
                                     </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.endTime" class="translucent">
@@ -266,12 +274,28 @@ const { isOverDropZone } = useDropZone(main, {
                             voor het
                             berekenen van de tijd tot de volgende uitloop.
                         </small>
+                        <InputSelect v-model="displayCreditsDuration" identifier="showCreditsDuration">
+                            Tijd tussen aftiteling en einde voorstelling tonen
+                            <template #options>
+                                <option :value="0">Nooit tonen</option>
+                                <option :value="1">Alleen bij post-credits-scènes</option>
+                                <option :value="2">Altijd tonen</option>
+                            </template>
+                        </InputSelect>
                     </fieldset>
                     <fieldset>
                         <legend>Overig</legend>
                         <InputCheckbox v-model="splitExtra" identifier="splitExtra">
                             Extra informatie scheiden van filmtitel
                         </InputCheckbox>
+                        <InputSelect v-model="displayPreshowDuration" identifier="showPreshowDuration">
+                            Tijd tussen inloop en start hoofdfilm tonen
+                            <template #options>
+                                <option :value="0">Nooit tonen</option>
+                                <option :value="1">Alleen bij 4DX-inloop</option>
+                                <option :value="2">Altijd tonen</option>
+                            </template>
+                        </InputSelect>
                     </fieldset>
                     <fieldset>
                         <legend>Extra kolommen</legend>
@@ -534,7 +558,8 @@ table.timetable {
             align-items: center;
         }
 
-        .post-credits {
+        .credits-duration,
+        .preshow-duration {
             opacity: .35;
             font-weight: normal;
             font-style: normal;
