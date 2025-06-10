@@ -16,8 +16,8 @@ function voiceToggled(value: boolean, voiceId: string): void {
 </script>
 
 <template>
-	<InputCheckbox v-for="(voice, voiceId) in voices" :key="voiceId" :modelValue="model.includes(voiceId)"
-		@update:modelValue="e => voiceToggled(e, voiceId)" :identifier="voiceId">
+	<InputCheckbox v-for="[id, voice] in Object.entries(voices).filter(([id, voice]) => voice.name)" :key="id"
+		:modelValue="model.includes(id)" @update:modelValue="event => voiceToggled(event, id)" :identifier="id">
 		{{ voice.name }}
 	</InputCheckbox>
 </template>

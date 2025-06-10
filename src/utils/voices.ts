@@ -1,3 +1,4 @@
+import chimes from '@/assets/sounds/chimes.ogg';
 import voiceDefault from '@/assets/sounds/voices/rosetta.ogg';
 import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg';
 import voiceJaron from '@/assets/sounds/voices/jaron.ogg';
@@ -9,11 +10,11 @@ interface SpriteMap {
 }
 
 export class Voice {
-    name: string;
-    language: string;
+    name?: string;
+    language?: string;
     file: any;
     sprite: SpriteMap;
-    constructor(voice: { name: string; language: string; file: any; sprite: SpriteMap; }) {
+    constructor(voice: { name?: string; language?: string; file: any; sprite: SpriteMap; }) {
         this.name = voice.name;
         this.language = voice.language;
         this.file = voice.file;
@@ -30,6 +31,12 @@ export class Voice {
 }
 
 export const voices = {
+    chimes: new Voice({
+        file: chimes,
+        sprite: {
+            'chime1': [0, 3300], 'chime2': [3520, 3300]
+        }
+    }),
     default: new Voice({
         name: "Rosetta",
         language: "nl",
@@ -73,7 +80,7 @@ export const voices = {
 };
 
 export function getSoundInfo(string) {
-    const soundNames = { start: "start", mainshow: "start hoofdfilm", intermission: "pauze", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime: "♪" };
+    const soundNames = { start: "start", mainshow: "start hoofdfilm", intermission: "pauze", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime1: "🎝", chime2: "🎜", chime: "♪" };
 
     string = string.toLowerCase().trim();
     let id = string.replace(/\?+/g, '');

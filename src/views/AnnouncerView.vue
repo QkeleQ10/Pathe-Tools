@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref } from 'vue';
+import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { Announcement, AnnouncementRule, Show } from '@/classes/classes';
@@ -20,7 +20,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'plfStart',
         name: '4DX-inloop',
         segments: [
-            { spriteName: 'chime', offset: -800 },
+            { spriteName: 'chime1', offset: -1600 },
             { spriteName: 'start', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -41,7 +41,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'start',
         name: 'Start',
         segments: [
-            { spriteName: 'chime', offset: -800 },
+            { spriteName: 'chime1', offset: -1600 },
             { spriteName: 'start', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -62,7 +62,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'mainShow',
         name: 'Start hoofdfilm',
         segments: [
-            { spriteName: 'chime', offset: -800 },
+            { spriteName: 'chime1', offset: -1600 },
             { spriteName: 'mainshow', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -83,7 +83,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'intermission',
         name: 'Pauze',
         segments: [
-            { spriteName: 'chime', offset: -800 },
+            { spriteName: 'chime1', offset: -1600 },
             { spriteName: 'intermission', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -104,7 +104,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'credits',
         name: 'Aftiteling',
         segments: [
-            { spriteName: 'chime', offset: -800 },
+            { spriteName: 'chime2', offset: -1600 },
             { spriteName: 'credits', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -125,7 +125,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'end',
         name: 'Einde voorstelling',
         segments: [
-            { spriteName: 'chime', offset: -800 },
+            { spriteName: 'chime1', offset: -1600 },
             { spriteName: 'end', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -146,7 +146,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'finalMainShowStart',
         name: 'Start laatste hoofdfilm',
         segments: [
-            { spriteName: 'chime', offset: -800 },
+            { spriteName: 'chime1', offset: -1600 },
             { spriteName: 'finalshow', offset: 0 }
         ],
         enabled: false,
@@ -162,23 +162,30 @@ const presetRulesDefault: AnnouncementRule[] = [
             playlistTitleExcludes: '',
         }
     },
-]
+] as const;
 
-const presetRules = useStorage<AnnouncementRule[]>('default-rules', presetRulesDefault, localStorage, { mergeDefaults: true });
+const presetRulesOverrides = useStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {}, localStorage, { mergeDefaults: true });
+const presetRules = ref<AnnouncementRule[]>(
+    presetRulesDefault.map(rule => ({
+        ...rule,
+        enabled: presetRulesOverrides.value[rule.id] ?? rule.enabled,
+    }))
+);
+watch(presetRules, () => {
+    presetRulesOverrides.value = Object.fromEntries(
+        presetRules.value
+            .filter(rule => rule.enabled !== presetRulesDefault.find(r => r.id === rule.id)?.enabled)
+            .map(rule => [rule.id, rule.enabled])
+    );
+}, { deep: true });
 
-for (let i = 0; i < presetRulesDefault.length; i++) {
-    const rule = presetRulesDefault[i];
-    const existingIndex = presetRules.value.findIndex(r => r.id === rule.id);
-    if (existingIndex === -1) {
-        presetRules.value.splice(i, 0, rule);
-    }
-}
+const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true });
 
-const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true })
+const useOldChime = useStorage('use-old-chime', false);
 
-const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true })
+const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true });
 
-const customAnnouncement = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chime', offset: -800 },]);
+const customAnnouncement = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chime1', offset: -1600 },]);
 const customAnnouncementDate = ref<Date>(new Date());
 
 const scheduledAnnouncements = ref<Announcement[]>([])
@@ -320,6 +327,13 @@ function selectVoices(segments: { spriteName: string; offset: number }[], select
 }
 
 function assembleAudio(segments: { voice: Voice; spriteName: string; offset: number }[]) {
+    if (useOldChime.value)
+        segments = segments.map(segment => {
+            if (segment.spriteName.startsWith('chime')) {
+                return { voice: voices.default, offset: segment.offset + 800, spriteName: 'chime' };
+            }
+            return segment;
+        });
     return new Promise<HTMLAudioElement>(async (resolve) => {
         const url = await assembleAudioClient(segments);
         const audio = new Audio(url);
@@ -394,8 +408,9 @@ const { isOverDropZone } = useDropZone(main, {
                     </div>
                 </div>
 
-                <SidePanel style="flex: 30% 1 1;">
+                <SidePanel style="flex: 35% 1 1;">
                     <h2>Opties</h2>
+
                     <fieldset>
                         <legend>Stemmen</legend>
                         <VoicesSelector v-model="preferredVoices" />
@@ -424,15 +439,13 @@ const { isOverDropZone } = useDropZone(main, {
                             </template>
                         </AnnouncementBuilder>
                         <div class="manual-sounds-list" v-for="ids in [
-                            voices.default.sounds.filter(id => !id.startsWith('auditorium')),
+                            [...voices.chimes.sounds, ...voices.default.sounds.filter(id => !id.startsWith('auditorium'))],
                             voices.default.sounds.filter(id => id.startsWith('auditorium')),
                             ...preferredVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
                         ]" v-show="ids?.length > 0">
                             <button v-for="id of ids" @click="previewAnnouncement([{ spriteName: id, offset: 0 }])"
-                                :class="{ translucent: id !== 'chime' && !preferredVoices.some(e => voices[e].sounds.includes(id)) }">
-                                <Icon v-if="id === 'chime'" :fill="true" style="--size: 14px; vertical-align: middle;">
-                                    music_note</Icon>
-                                <span v-else>
+                                :class="{ translucent: !id.startsWith('chime') && !preferredVoices.some(e => voices[e].sounds.includes(id)) }">
+                                <span>
                                     {{ getSoundInfo(id).name }}
                                 </span>
                             </button>
@@ -441,6 +454,9 @@ const { isOverDropZone } = useDropZone(main, {
 
                     <fieldset>
                         <legend>Regels</legend>
+                        <InputCheckbox identifier="useOldChime" v-model="useOldChime">
+                            Oud geluidje gebruiken
+                        </InputCheckbox>
                         <Button class="secondary full" @click="showRuleEditor = true">
                             <Icon>edit</Icon>
                             <span>Regels bewerken
