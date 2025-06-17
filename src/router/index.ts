@@ -3,12 +3,12 @@
 
 import { createRouter, createWebHistory, RouteRecordRaw, RouterScrollBehavior } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
-import TimetableView from '../views/TimetableView.vue';
-import AnnouncerView from '../views/AnnouncerView.vue';
-import NarrowcastingView from '../views/NarrowcastingView.vue';
-import SlideshowView from '../views/SlideshowView.vue';
-import IntermissionFinderView from '../views/IntermissionFinderView.vue';
 import SplitscreenView from '../views/SplitscreenView.vue';
+import UsheringScheduleView from '../views/ushering/ScheduleView.vue';
+import UsheringAnnouncerView from '../views/ushering/AnnouncerView.vue';
+import NarrowcastingTimetableView from '../views/narrowcasting/TimetableView.vue';
+import NarrowcastingSlideshowView from '../views/narrowcasting/SlideshowView.vue';
+import PocIntermissionView from '../views/poc/IntermissionView.vue';
 
 const routes: RouteRecordRaw[] = [
     {
@@ -26,7 +26,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/ushering/schedule',
         name: 'ushering-schedule',
-        component: TimetableView,
+        component: UsheringScheduleView,
         meta: {
             title: 'Tijdenlijstje',
         }
@@ -38,7 +38,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/ushering/announcer',
         name: 'ushering-announcer',
-        component: AnnouncerView,
+        component: UsheringAnnouncerView,
         meta: {
             title: 'Omroepen',
         }
@@ -50,7 +50,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/narrowcasting/timetable',
         name: 'narrowcasting-timetable',
-        component: NarrowcastingView,
+        component: NarrowcastingTimetableView,
         meta: {
             title: 'Timetable',
         }
@@ -62,7 +62,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/narrowcasting/slideshow',
         name: 'narrowcasting-slideshow',
-        component: SlideshowView,
+        component: NarrowcastingSlideshowView,
         meta: {
             title: 'Diavoorstelling',
         }
@@ -74,7 +74,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/poc/intermission',
         name: 'poc-intermission',
-        component: IntermissionFinderView,
+        component: PocIntermissionView,
         meta: {
             title: 'Filmpauze',
         }
