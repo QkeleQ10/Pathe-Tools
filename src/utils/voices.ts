@@ -34,7 +34,7 @@ export const voices = {
     chimes: new Voice({
         file: chimes,
         sprite: {
-            'chime1': [0, 3300], 'chime2': [3520, 3300]
+            "chime1": [0, 3372.5170068027214], "chime2": [4200, 3372.5623582766443], "chime3": [8400, 3282.1541950113387], "chime4": [12600.000000000002, 3265.578231292517], "chime5": [16800, 3362.6303854875273], "chime6": [21000, 3355.2380952380963], "chime7": [25200.000000000004, 3356.235827664399], "chime8": [29400.000000000004, 3317.414965986398]
         }
     }),
     default: new Voice({
@@ -42,7 +42,7 @@ export const voices = {
         language: "nl",
         file: voiceDefault,
         sprite: {
-            "auditorium01": [0, 937.0294784580499], "auditorium02": [1200, 982.9931972789117], "auditorium03": [2400, 863.6281179138323], "auditorium04": [3600, 1022.8571428571427], "auditorium05": [5800, 1023.1065759637188], "auditorium06": [8000, 1016.2585034013603], "auditorium07": [10200, 1187.2335600907036], "auditorium08": [12400, 1109.2290249433106], "auditorium09": [14600, 1185.2154195011337], "auditorium10": [16800, 959.9773242630398], "auditorium11": [18000.000000000004, 1122.6077097505681], "auditorium12": [20200.000000000004, 1185.8049886621309], "auditorium13": [22400.000000000004, 1159.6825396825388], "auditorium14": [24600, 1169.5918367346926], "auditorium15": [26800, 1240.1360544217682], "auditorium16": [29000, 1161.0884353741503], "auditorium17": [31200, 1213.2426303854907], "auditorium18": [33400.00000000001, 1123.990929705215], "auditorium19": [35600.00000000001, 1342.7664399092976], "auditorium20": [37800.000000000015, 1263.8321995464848], "chime": [40000.000000000015, 3084.51247165533], "credits": [44200.000000000015, 924.7165532879791], "end": [45400.000000000015, 1289.478458049885], "mainshow": [47600.00000000001, 1445.963718820863], "preshow": [49800.000000000015, 1364.3990929705226], "start": [52000.000000000015, 686.9841269841288]
+            "auditorium01": [0, 937.0294784580499], "auditorium02": [1200, 982.9931972789117], "auditorium03": [2400, 863.6281179138323], "auditorium04": [3600, 1022.8571428571427], "auditorium05": [5800, 1023.1065759637188], "auditorium06": [8000, 1016.2585034013603], "auditorium07": [10200, 1187.2335600907036], "auditorium08": [12400, 1109.2290249433106], "auditorium09": [14600, 1185.2154195011337], "auditorium10": [16800, 959.9773242630398], "auditorium11": [18000.000000000004, 1122.6077097505681], "auditorium12": [20200.000000000004, 1185.8049886621309], "auditorium13": [22400.000000000004, 1159.6825396825388], "auditorium14": [24600, 1169.5918367346926], "auditorium15": [26800, 1240.1360544217682], "auditorium16": [29000, 1161.0884353741503], "auditorium17": [31200, 1213.2426303854907], "auditorium18": [33400.00000000001, 1123.990929705215], "auditorium19": [35600.00000000001, 1342.7664399092976], "auditorium20": [37800.000000000015, 1263.8321995464848], "chime0": [40000.000000000015, 3084.51247165533], "credits": [44200.000000000015, 924.7165532879791], "end": [45400.000000000015, 1289.478458049885], "mainshow": [47600.00000000001, 1445.963718820863], "preshow": [49800.000000000015, 1364.3990929705226], "start": [52000.000000000015, 686.9841269841288]
         }
     }),
     gerwim: new Voice({
@@ -80,7 +80,7 @@ export const voices = {
 };
 
 export function getSoundInfo(string) {
-    const soundNames = { start: "start", mainshow: "start hoofdfilm", intermission: "pauze", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime1: "🎝", chime2: "🎜", chime: "♪" };
+    const soundNames = { start: "start", mainshow: "start hoofdfilm", intermission: "pauze", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime0: '♪ oud', chime1: '♪ 1a', chime2: '♪ 1b', chime3: '♪ 2a', chime4: '♪ 2b', chime5: '♪ 3a', chime6: '♪ 3b', chime7: '♪ 4', chime8: '♪ 5', chimea: '♪', chimeb: '♪' };
 
     string = string.toLowerCase().trim();
     let id = string.replace(/\?+/g, '');

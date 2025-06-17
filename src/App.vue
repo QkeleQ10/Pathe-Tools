@@ -23,11 +23,11 @@ provide('now', now)
             </RouterLink>
 
             <nav v-if="$route.meta.showNavigation ?? true">
-                <RouterLink to="/timetable">Tijdenlijstje</RouterLink>
-                <RouterLink to="/announcer">Omroepen</RouterLink>
-                <RouterLink to="/narrowcasting">Timetable</RouterLink>
-                <RouterLink to="/slideshow">Diavoorstelling</RouterLink>
-                <RouterLink to="/intermission-finder">Filmpauze</RouterLink>
+                <RouterLink to="/ushering/schedule">Tijdenlijstje</RouterLink>
+                <RouterLink to="/ushering/announcer">Omroepen</RouterLink>
+                <RouterLink to="/narrowcasting/timetable">Timetable</RouterLink>
+                <RouterLink to="/narrowcasting/slideshow">Diavoorstelling</RouterLink>
+                <RouterLink to="/poc/intermission">Filmpauze</RouterLink>
                 <RouterLink to="/splitscreen" id="splitscreen-link">
                     <Icon>split_scene</Icon>
                 </RouterLink>
