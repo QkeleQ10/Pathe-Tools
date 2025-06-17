@@ -18,7 +18,7 @@ button {
     font-family: Heebo, arial, sans-serif;
     font-size: 16px;
     font-weight: 500;
-    transition: all .15s ease-out;
+    transition: box-shadow .15s ease-out, background-color .15s ease-out;
     cursor: pointer;
     color: #fff;
     padding: 0 20px;
@@ -33,6 +33,11 @@ button {
     &[data-drag-active=true] {
         box-shadow: 0 0 0 8px #ffffff0d;
         background: #1f252e;
+    }
+
+    &:focus-visible {
+        outline: 2px solid #feb91e;
+        outline-offset: 2px;
     }
 
     &:disabled {

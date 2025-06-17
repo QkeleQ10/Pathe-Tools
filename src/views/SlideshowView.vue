@@ -114,7 +114,6 @@ const { isOverDropZone } = useDropZone(main, {
 
 <template>
     <main ref="main">
-        <HeroImage />
         <SlideshowUploadSection />
         <section id="pictures">
             <div class="grid">

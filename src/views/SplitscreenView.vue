@@ -4,7 +4,7 @@ import { useUrlSearchParams } from '@vueuse/core';
 
 import { routes } from '@/router/index'
 
-const allowedRoutes = ['timetable', 'announcer', 'narrowcasting', 'slideshow', 'intermission-finder'];
+const allowedRoutes = ['ushering-schedule', 'ushering-announcer', 'narrowcasting-timetable', 'narrowcasting-slideshow', 'poc-intermission'];
 
 const params = useUrlSearchParams();
 

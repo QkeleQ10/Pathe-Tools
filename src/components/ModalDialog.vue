@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 
-const props = defineProps<{ visible?: boolean }>();
 const emit = defineEmits(['dismiss']);
 const modalContentRef = ref<HTMLElement>(null);
 
@@ -27,7 +26,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="modal-overlay" role="dialog" v-show="visible" aria-modal="true" aria-labelledby="modal-title" @click.self="closeModal">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" @click.self="closeModal">
         <div class="modal-content" ref="modalContentRef" tabindex="-1">
             <slot></slot>
             <button class="close-button" @click="closeModal">

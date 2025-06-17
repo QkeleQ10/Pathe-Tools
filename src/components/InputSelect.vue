@@ -53,6 +53,6 @@ select {
 }
 
 select:focus-visible {
-    outline: 1px solid #ffc426;
+    outline: 2px solid #ffc426;
 }
 </style>

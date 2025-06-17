@@ -42,6 +42,8 @@ provide('now', now)
         </div>
     </header>
 
+    <HeroImage v-if="$route.meta.showHero !== false" :class="{ large: $route.meta.largeHero, small: $route.meta.smallHero, 'zero-height': $route.meta.heroZeroHeight }" />
+
     <RouterView />
 
     <footer v-if="$route.meta.showFooter ?? true">

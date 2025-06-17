@@ -4,7 +4,7 @@ const model = defineModel<boolean>();
 </script>
 
 <template>
-    <label class="input checkbox-input" :for="identifier">
+    <label class="input switch-input" :for="identifier">
         <div class="title">
             <slot></slot>
         </div>
@@ -17,7 +17,7 @@ label {
     position: relative;
     display: flex;
     justify-content: space-between;
-    align-items: first baseline;
+    align-items: start;
     gap: 16px;
     cursor: pointer;
     user-select: none;
@@ -55,10 +55,10 @@ input[type="checkbox"] {
     margin: 0;
     font: inherit;
     color: currentColor;
-    width: 16px;
-    height: 16px;
+    width: 42px;
+    height: 24px;
     border: 2px solid currentColor;
-    border-radius: 4px;
+    border-radius: 16px;
 }
 
 input[type="checkbox"]::before {
@@ -68,7 +68,7 @@ input[type="checkbox"]::before {
     left: -3px;
     right: -3px;
     content: '';
-    border-radius: 4px;
+    border-radius: 16px;
 
     background-color: #303030;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
@@ -94,36 +94,25 @@ input[type="checkbox"]:focus-visible::before {
 }
 
 input[type="checkbox"]::after {
-    content: 'check_small';
+    content: '';
     position: absolute;
-    top: 50%;
-    left: 50%;
-    translate: -50% -50%;
+    top: 1.5px;
+    left: 1.5px;
+    height: 18px;
+    width: 18px;
+    border-radius: 12px;
 
-    opacity: 0;
-    scale: 0;
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 
-    font-size: 24px;
-    font-family: 'Material Symbols Outlined';
-    font-weight: 700;
-    font-variation-settings:
-        'FILL' 0,
-        'wght' 700,
-        'GRAD' 0,
-        'opsz' 20;
-
-    color: #000;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-
-    transition: opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), scale 100ms;
+    transition: left 300ms cubic-bezier(0.34, 1.56, 0.64, 1), scale 100ms;
 }
 
 input[type="checkbox"]:checked::after {
-    opacity: 1;
-    scale: 1;
+    left: calc(100% - 19.5px);
 }
 
-label:hover input[type="checkbox"]:checked:after {
+label:hover input[type="checkbox"]::after {
     scale: 1.2;
 }
 </style>

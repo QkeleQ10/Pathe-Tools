@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, nextTick, onBeforeUnmount, onMounted, Ref } from 'vue';
-import { useLocalStorage, useUrlSearchParams } from '@vueuse/core';
+import { useLocalStorage } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import * as qmln from '@/utils/qmln'
 import { format } from 'date-fns';
@@ -15,8 +15,6 @@ interface DisplayLine {
 }
 
 const now = inject<Ref<Date>>('now');
-
-const params = useUrlSearchParams('history');
 
 const store = useTmsScheduleStore();
 
@@ -37,12 +35,13 @@ const animationSpeed = useLocalStorage('animation-speed', 0x07);
 const theatreName = useLocalStorage('theatre-name', 'Pathé Utrecht Leidsche Rijn');
 const tickerText = useLocalStorage('ticker-text', 'De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.');
 
-const autoSend = ref(true);
-const autoConfigure = ref(true);
-const autoBlack = ref(true);
+const receiveBeta = useLocalStorage('receive-beta', false);
+const autoSend = useLocalStorage('auto-send', true);
+const autoConfigure = useLocalStorage('auto-configure', true);
+const autoBlack = useLocalStorage('auto-black', true);
 
-const ip1 = ref("10.10.87.81");
-const ip2 = ref("10.10.87.82");
+const ip1 = useLocalStorage('ip1', "10.10.87.81");
+const ip2 = useLocalStorage('ip2', "10.10.87.82");
 
 const walkIns = ref<{ scheduledTime: Date, title: string, auditorium: string, i: number }[]>([]);
 
@@ -268,6 +267,7 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
 }
 
 async function sendData(hex: string = generatePacket().toString(), force = false) {
+
     const ips = [ip1.value, ip2.value].filter(ip => ip.length);
 
     if (sending.value) return;
@@ -277,12 +277,14 @@ async function sendData(hex: string = generatePacket().toString(), force = false
         return;
     }
 
+    console.info("Sending data...");
+
     sending.value = true;
 
     await Promise.allSettled(
         ips.map(async (ip, i) => {
             try {
-                const res = await fetch("http://localhost:5000/send-bytes", {
+                const res = await fetch(receiveBeta.value ? "http://localhost:5000/send-and-receive" : "http://localhost:5000/send-bytes", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -291,8 +293,20 @@ async function sendData(hex: string = generatePacket().toString(), force = false
                         hex
                     })
                 });
-                if (res.ok) lastSentStatus.value[i] = "ok";
-                else throw new Error(`HTTP error! status: ${res.status}`);
+
+                if (res.ok) {
+                    lastSentStatus.value[i] = "ok"
+                    if (receiveBeta.value) {
+                        console.log(`Response from ${ip}:`, res);
+                        const json = await res.json();
+                        console.log(`Response from ${ip} as JSON:`, json);
+                    } else {
+                        console.log(`Successfully sent to ${ip}`);
+                    }
+                } else {
+                    const json = await res.json();
+                    throw new Error(`HTTP error: ${res.status} ${res.statusText} ${json.message}`);
+                }
             } catch (err) {
                 console.error(`Failed to send to ${ip}:`, err);
                 lastSentStatus.value[i] = "error";
@@ -307,6 +321,8 @@ async function sendData(hex: string = generatePacket().toString(), force = false
 }
 
 function hexToAscii(hexString: string) {
+    if (!hexString) return '';
+
     // Remove spaces and split into an array of hex bytes
     const hexBytes = hexString.trim().split(/\s+/);
 
@@ -386,10 +402,10 @@ onBeforeUnmount(() => {
                     <small>{{ sending ? "Verzenden..." : "" }}</small>
                     <small v-for="(status, i) in lastSentStatus" :key="i">
                         Scherm {{ i + 1 }}: {{
-                        !status ? "Niets verzonden" :
-                        status === 'ok' ? "OK" :
-                        status === 'error' ? "Fout" :
-                        status
+                            !status ? "Niets verzonden" :
+                                status === 'ok' ? "OK" :
+                                    status === 'error' ? "Fout" :
+                                        status
                         }}
                     </small>
                 </div>
@@ -450,7 +466,7 @@ onBeforeUnmount(() => {
 
                         <fieldset>
                             <legend>Automatisering</legend>
-                            <InputCheckbox identifier="autoConfigure" v-model="autoConfigure">
+                            <InputSwitch identifier="autoConfigure" v-model="autoConfigure">
                                 Best passende weergave gebruiken
                                 <small>
                                     Als er inlopen zijn in de komende 3 uur, dan wordt de configuratie
@@ -458,14 +474,14 @@ onBeforeUnmount(() => {
                                     Anders wordt tussen 21:00 en 01:00 de configuratie <i>Uitloop</i> getoond.<br>
                                     Anders wordt de configuratie <i>Geen info</i> getoond.
                                 </small>
-                            </InputCheckbox>
-                            <InputCheckbox identifier="autoBlack" v-model="autoBlack">
+                            </InputSwitch>
+                            <InputSwitch identifier="autoBlack" v-model="autoBlack">
                                 Verlichting 's nachts uitschakelen
                                 <small>
                                     Tussen 01:00 en 09:30 is het bord zwart als er in de komende 3 uur geen inlopen
                                     zijn.
                                 </small>
-                            </InputCheckbox>
+                            </InputSwitch>
                         </fieldset>
 
                         <fieldset>
@@ -508,10 +524,10 @@ onBeforeUnmount(() => {
                             filmtitels zijn te
                             lang en
                             worden mogelijk afgekapt.</p>
-                        <InputCheckbox class="label-end" v-if="walkIns.length" identifier="syncFilmTitles"
+                        <InputSwitch v-if="walkIns.length" identifier="syncFilmTitles" style="max-width: 650px; margin-bottom: 16px;"
                             v-model="syncFilmTitles">
                             Alle identieke filmtitels tegelijk bewerken
-                        </InputCheckbox>
+                        </InputSwitch>
                         <div>
                             <TransitionGroup name="list">
                                 <div v-for="(walkIn) in [...walkIns].sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())"
@@ -550,7 +566,7 @@ onBeforeUnmount(() => {
                     <Tab value="Weergave">
                         <fieldset>
                             <legend>Automatisering</legend>
-                            <InputCheckbox identifier="autoConfigure" v-model="autoConfigure">
+                            <InputSwitch identifier="autoConfigure" v-model="autoConfigure">
                                 Best passende weergave gebruiken
                                 <small>
                                     Als er inlopen zijn in de komende 3 uur, dan wordt de configuratie
@@ -558,14 +574,14 @@ onBeforeUnmount(() => {
                                     Anders wordt tussen 21:00 en 01:00 de configuratie <i>Uitloop</i> getoond.<br>
                                     Anders wordt de configuratie <i>Geen info</i> getoond.
                                 </small>
-                            </InputCheckbox>
-                            <InputCheckbox identifier="autoBlack" v-model="autoBlack">
+                            </InputSwitch>
+                            <InputSwitch identifier="autoBlack" v-model="autoBlack">
                                 Verlichting 's nachts uitschakelen
                                 <small>
                                     Tussen 01:00 en 09:30 is het bord zwart als er in de komende 3 uur geen inlopen
                                     zijn.
                                 </small>
-                            </InputCheckbox>
+                            </InputSwitch>
                         </fieldset>
 
                         <fieldset v-if="!autoConfigure">
@@ -648,9 +664,13 @@ onBeforeUnmount(() => {
                                 <InputText v-model="ip2" identifier="ip2">
                                     <span>IP-adres scherm 2</span>
                                 </InputText>
-                                <InputCheckbox v-model="autoSend" identifier="autoSend">
+                                <InputSwitch v-model="autoSend" identifier="autoSend">
                                     <span>Automatisch verzenden</span>
-                                </InputCheckbox>
+                                </InputSwitch>
+                                <InputSwitch v-model="receiveBeta" identifier="receiveBeta">
+                                    <span><code>receive</code> gebruiken</span>
+                                    <small>Bèta</small>
+                                </InputSwitch>
 
                                 <div class="flex buttons">
                                     <Button class="" @click="sendData(new qmln.Packet(
@@ -675,10 +695,10 @@ onBeforeUnmount(() => {
                                 <small>{{ sending ? "Verzenden..." : "" }}</small>
                                 <small v-for="(status, i) in lastSentStatus" :key="i">
                                     Scherm {{ i + 1 }}: {{
-                                    !status ? "Niets verzonden" :
-                                    status === 'ok' ? "OK" :
-                                    status === 'error' ? "Fout" :
-                                    status
+                                        !status ? "Niets verzonden" :
+                                            status === 'ok' ? "OK" :
+                                                status === 'error' ? "Fout" :
+                                                    status
                                     }}
                                 </small>
                             </div>
@@ -688,7 +708,7 @@ onBeforeUnmount(() => {
                                     hexToAscii(lastSentPacket)
                                         .replace(/[\n\r\t]/g, " ")
                                         .match(/.{1,16}/g)
-                                        .join('\n')
+                                        ?.join('\n')
                                 }}</pre>
                             </div>
                         </fieldset>

@@ -55,7 +55,7 @@ input {
 }
 
 input:focus-visible {
-    outline: 1px solid #ffc426;
+    outline: 2px solid #feb91e;
 }
 
 div.input.has-unit {

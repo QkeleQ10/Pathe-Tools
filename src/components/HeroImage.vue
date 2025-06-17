@@ -21,7 +21,7 @@ fac.getColorAsync(imageUrl, {
 </script>
 
 <template>
-    <div class="hero">
+    <div id="hero">
         <div class="color-bleed" :style="{ backgroundColor: color }">{{ color }}</div>
         <div class="image" :style="`background-image: url(${imageUrl})`">
         </div>
@@ -29,7 +29,7 @@ fac.getColorAsync(imageUrl, {
 </template>
 
 <style scoped>
-.hero {
+#hero {
     height: 70px;
     pointer-events: none;
 
@@ -45,6 +45,8 @@ fac.getColorAsync(imageUrl, {
         background-size: cover;
         background-position: center;
         mask-image: linear-gradient(to bottom, #000, #00000041 60%, transparent);
+
+        transition: height  0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
     }
 
     .color-bleed {
@@ -67,13 +69,29 @@ fac.getColorAsync(imageUrl, {
         }
 
         .color-bleed {
-            height: 850px;
+            height: 900px;
         }
+    }
+
+    &.small {
+        height: 50px;
+
+        .image {
+            height: 250px;
+        }
+
+        .color-bleed {
+            height: 550px;
+        }
+    }
+
+    &.zero-height {
+        height: 0;
     }
 }
 
 /* @media (prefers-reduced-motion) {
-    .hero {
+    #hero {
         display: none;
     }
 } */

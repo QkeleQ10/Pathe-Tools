@@ -46,6 +46,13 @@ onMounted((): void => {
     padding-bottom: 12px;
     cursor: pointer;
     position: relative;
+
+    transition: color 150ms;
+
+    &:focus-visible {
+        outline: 2px solid #feb91e;
+        outline-offset: 2px;
+    }
 }
 
 .tabs button.active {
@@ -57,16 +64,22 @@ onMounted((): void => {
     position: absolute;
     bottom: 0;
     left: 50%;
-    right: 50%;
-    background: #ffc426;
+    width: 0;
+    translate: -50%;
+    background: currentColor;
     height: 3px;
     border-radius: 50vmax;
-    transition: left 200ms, right 200ms;
+    transition: width 150ms;
+}
+
+.tabs button:hover:after {
+    left: 50%;
+    right: auto;
+    width: 16px;
 }
 
 .tabs button.active:after {
-    right: 8px;
-    left: 8px;
+    width: calc(100% - 16px);
 }
 
 .tab-content {

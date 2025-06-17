@@ -129,7 +129,6 @@ const { isOverDropZone } = useDropZone(main, {
 </script>
 
 <template>
-    <HeroImage />
     <main ref="main">
         <TmsXmlUploadSection />
         <section>

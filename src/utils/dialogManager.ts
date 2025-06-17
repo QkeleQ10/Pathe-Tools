@@ -13,19 +13,9 @@ export function showDialog(content: DialogContent) {
     const container = document.createElement('div');
     document.body.appendChild(container);
 
-    const isVisible = ref(true);
-
     const destroy = () => {
         render(null, container);
         document.body.removeChild(container);
-    };
-
-    const hide = () => {
-        isVisible.value = false;
-    };
-
-    const show = () => {
-        isVisible.value = true;
     };
 
     const onDismiss = () => {
@@ -42,7 +32,6 @@ export function showDialog(content: DialogContent) {
 
     const vnode = h(ModalDialog, {
         onDismiss,
-        visible: isVisible.value, // pass visibility prop
     }, {
         default: () => normalize(content),
     });
@@ -50,12 +39,8 @@ export function showDialog(content: DialogContent) {
     // Reactive re-render on isVisible change
     const reactiveRender = () => render(h(() => vnode), container);
     reactiveRender();
-    watch(isVisible, reactiveRender);
 
     return {
-        hide,
-        show,
         destroy,
-        isVisible,
     };
 }

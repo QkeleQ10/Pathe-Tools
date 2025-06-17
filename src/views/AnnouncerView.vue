@@ -359,7 +359,6 @@ const { isOverDropZone } = useDropZone(main, {
 
 <template>
     <main ref="main">
-        <HeroImage />
         <TimetableUploadSection />
         <section>
             <div class="flex" style="flex-wrap: wrap-reverse;">
@@ -454,9 +453,9 @@ const { isOverDropZone } = useDropZone(main, {
 
                     <fieldset>
                         <legend>Regels</legend>
-                        <InputCheckbox identifier="useOldChime" v-model="useOldChime">
+                        <InputSwitch identifier="useOldChime" v-model="useOldChime">
                             Oud geluidje gebruiken
-                        </InputCheckbox>
+                        </InputSwitch>
                         <Button class="secondary full" @click="showRuleEditor = true">
                             <Icon>edit</Icon>
                             <span>Regels bewerken

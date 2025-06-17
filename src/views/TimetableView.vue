@@ -110,7 +110,6 @@ const { isOverDropZone } = useDropZone(main, {
 
 <template>
     <main ref="main">
-        <HeroImage />
         <TimetableUploadSection />
         <section id="edit">
             <div class="flex" style="flex-wrap: wrap-reverse;">
@@ -285,9 +284,9 @@ const { isOverDropZone } = useDropZone(main, {
                     </fieldset>
                     <fieldset>
                         <legend>Overig</legend>
-                        <InputCheckbox v-model="splitExtra" identifier="splitExtra">
+                        <InputSwitch v-model="splitExtra" identifier="splitExtra">
                             Extra informatie scheiden van filmtitel
-                        </InputCheckbox>
+                        </InputSwitch>
                         <InputSelect v-model="displayPreshowDuration" identifier="showPreshowDuration">
                             Tijd tussen inloop en start hoofdfilm tonen
                             <template #options>

@@ -14,11 +14,18 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/',
         name: 'home',
-        component: HomeView
+        component: HomeView,
+        meta: {
+            largeHero: true,
+        }
     },
     {
         path: '/timetable',
-        name: 'timetable',
+        redirect: '/ushering/schedule'
+    },
+    {
+        path: '/ushering/schedule',
+        name: 'ushering-schedule',
         component: TimetableView,
         meta: {
             title: 'Tijdenlijstje',
@@ -26,7 +33,11 @@ const routes: RouteRecordRaw[] = [
     },
     {
         path: '/announcer',
-        name: 'announcer',
+        redirect: '/ushering/announcer'
+    },
+    {
+        path: '/ushering/announcer',
+        name: 'ushering-announcer',
         component: AnnouncerView,
         meta: {
             title: 'Omroepen',
@@ -34,7 +45,11 @@ const routes: RouteRecordRaw[] = [
     },
     {
         path: '/narrowcasting',
-        name: 'narrowcasting',
+        redirect: '/narrowcasting/timetable'
+    },
+    {
+        path: '/narrowcasting/timetable',
+        name: 'narrowcasting-timetable',
         component: NarrowcastingView,
         meta: {
             title: 'Timetable',
@@ -42,7 +57,11 @@ const routes: RouteRecordRaw[] = [
     },
     {
         path: '/slideshow',
-        name: 'slideshow',
+        redirect: '/narrowcasting/slideshow'
+    },
+    {
+        path: '/narrowcasting/slideshow',
+        name: 'narrowcasting-slideshow',
         component: SlideshowView,
         meta: {
             title: 'Diavoorstelling',
@@ -50,7 +69,11 @@ const routes: RouteRecordRaw[] = [
     },
     {
         path: '/intermission-finder',
-        name: 'intermission-finder',
+        redirect: '/poc/intermission'
+    },
+    {
+        path: '/poc/intermission',
+        name: 'poc-intermission',
         component: IntermissionFinderView,
         meta: {
             title: 'Filmpauze',
@@ -62,9 +85,10 @@ const routes: RouteRecordRaw[] = [
         component: SplitscreenView,
         meta: {
             title: 'Filmpauze',
-            showNavigation: false, // Hide header for splitscreen view
-            // overlayHeader: true, // Show overlay header for splitscreen view
-            showFooter: false, // Hide footer for splitscreen view
+            showNavigation: false,
+            showFooter: false,
+            smallHero: true,
+            heroZeroHeight: true,
         }
     }
 ];

@@ -5,40 +5,41 @@ import Button from '@/components/Button.vue';
 </script>
 
 <template>
-    <HeroImage class="large" />
     <main>
-        <section>
-            <div>
+        <section class="flex">
+            <div style="flex: 50%">
                 <h2>Voor theaters</h2>
+                <h3>Ushering</h3>
                 <div class="flex">
-                    <RouterLink to="/timetable" style="text-decoration: none;">
+                    <RouterLink to="/ushering/schedule" style="text-decoration: none;">
                         <Button class="primary">
                             <Icon>print</Icon>Tijdenlijstje maken
                         </Button>
                     </RouterLink>
-                    <RouterLink to="/announcer" style="text-decoration: none;">
+                    <RouterLink to="/ushering/announcer" style="text-decoration: none;">
                         <Button class="secondary">
-                            <Icon>alarm</Icon>Serviceomroepen
+                            <Icon>alarm</Icon>Omroepen
                         </Button>
                     </RouterLink>
-                    <RouterLink to="/narrowcasting" style="text-decoration: none;">
+                </div>
+                <h3>Narrowcasting</h3>
+                <div class="flex">
+                    <RouterLink to="/narrowcasting/timetable" style="text-decoration: none;">
                         <Button class="secondary">
-                            <Icon>dvr</Icon>Timetable bedienen
+                            <Icon>dvr</Icon>CineMec-timetable
                         </Button>
                     </RouterLink>
-                    <RouterLink to="/slideshow" style="text-decoration: none;">
+                    <RouterLink to="/narrowcasting/slideshow" style="text-decoration: none;">
                         <Button class="secondary">
                             <Icon>present_to_all</Icon>Diavoorstelling
                         </Button>
                     </RouterLink>
                 </div>
             </div>
-        </section>
-        <section>
-            <div>
+            <div style="flex: 50%">
                 <h2>Voor POC</h2>
                 <div class="flex">
-                    <RouterLink to="/intermission-finder" style="text-decoration: none;">
+                    <RouterLink to="/poc/intermission" style="text-decoration: none;">
                         <Button class="secondary">
                             <Icon>camera_roll</Icon>Pauzemoment bepalen
                         </Button>

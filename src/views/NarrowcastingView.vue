@@ -46,7 +46,6 @@ const { isOverDropZone } = useDropZone(main, {
 
 <template>
     <main ref="main">
-        <HeroImage />
         <TimetableUploadSection />
 
         <CinemecTimetableSection />
