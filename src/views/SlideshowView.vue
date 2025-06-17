@@ -1,21 +1,23 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue';
-import { useDropZone, useFullscreen, useLocalStorage, useUrlSearchParams } from '@vueuse/core';
+import { ref, onUnmounted, useTemplateRef, computed } from 'vue';
+import { useMouse, useDropZone, useFullscreen, useLocalStorage, useUrlSearchParams } from '@vueuse/core';
 import { useSlideshowImagesStore } from '@/stores/slideshowImages';
 
-const carousel = ref<HTMLElement>(null);
-const main = ref<HTMLElement>(null)
+const carousel = useTemplateRef('carousel');
+const main = useTemplateRef('main');
 
 const store = useSlideshowImagesStore();
 const currentSlide = ref(0);
 
+// OPTIONS
+
 const slideDuration = useLocalStorage('slideshow-duration', 60);
 
-const { isFullscreen, enter, exit, toggle } = useFullscreen(carousel);
+// FULLSCREEN TOGGLE
 
+const { isFullscreen, enter, exit, toggle } = useFullscreen(carousel);
 const params = useUrlSearchParams('history');
 const fakeFullscreen = ref(params.fullscreen === 'true');
-
 function toggleFullscreen() {
     if (isFullscreen.value || fakeFullscreen.value) {
         fakeFullscreen.value = false;
@@ -25,11 +27,10 @@ function toggleFullscreen() {
     }
 }
 
+// MOUSE MOVE HANDLER
+
 const isMouseMoving = ref(false);
-
 let mouseMoveTimeout: ReturnType<typeof setTimeout>;
-let slideshowTimeout: ReturnType<typeof setTimeout>;
-
 function handleMouseMove() {
     isMouseMoving.value = true;
     clearTimeout(mouseMoveTimeout);
@@ -39,6 +40,28 @@ function handleMouseMove() {
 };
 handleMouseMove();
 
+// DOTNAV PROXIMITY HOVER
+
+const dotnav = useTemplateRef('dotnav');
+const { x: mouseX, y: mouseY } = useMouse();
+const proximityThreshold = 100;
+
+const isHoverNearby = computed(() => {
+    if (!dotnav.value) return false
+
+    const rect = dotnav.value.getBoundingClientRect()
+
+    const withinX = mouseX.value >= rect.left - proximityThreshold &&
+        mouseX.value <= rect.right + proximityThreshold
+
+    const withinY = mouseY.value >= rect.top - proximityThreshold &&
+        mouseY.value <= rect.bottom + proximityThreshold
+
+    return withinX && withinY
+})
+
+// SLIDESHOW CONTROLS
+
 function nextSlide() {
     currentSlide.value = ((currentSlide.value + 1) % store.images.length) || 0;
 }
@@ -47,6 +70,7 @@ function previousSlide() {
     currentSlide.value = ((currentSlide.value - 1 + store.images.length) % store.images.length) || 0;
 }
 
+let slideshowTimeout: ReturnType<typeof setTimeout>;
 function startSlideshow() {
     clearTimeout(slideshowTimeout);
     slideshowTimeout = setTimeout(() => {
@@ -55,6 +79,8 @@ function startSlideshow() {
     }, slideDuration.value * 1000);
 };
 startSlideshow();
+
+// KEYBOARD CONTROLS
 
 function handleKeydown(event: KeyboardEvent) {
     if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
@@ -72,12 +98,12 @@ function handleKeydown(event: KeyboardEvent) {
             break;
     }
 }
-
 window.addEventListener('keydown', handleKeydown);
-
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeydown);
 });
+
+// DROP ZONE HANDLER
 
 const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
@@ -89,7 +115,7 @@ const { isOverDropZone } = useDropZone(main, {
 <template>
     <main ref="main">
         <HeroImage />
-        <SlideshowUploadSection @slide-clicked="currentSlide = $event" />
+        <SlideshowUploadSection />
         <section id="pictures">
             <div class="grid">
                 <div>
@@ -100,7 +126,7 @@ const { isOverDropZone } = useDropZone(main, {
                         @mouseleave="isMouseMoving = false">
 
                         <TransitionGroup name="slide">
-                            <img v-for="(url, index) in store.images" :key="url" :src="url"
+                            <img v-for="(image, index) in store.images" :key="image.name" :src="image.url"
                                 v-show="index === currentSlide">
                         </TransitionGroup>
 
@@ -117,35 +143,33 @@ const { isOverDropZone } = useDropZone(main, {
                         <button class="control next" @click="nextSlide">
                             <Icon>chevron_right</Icon>
                         </button>
-                        <div class="control dotnav">
-                            <button v-for="(url, index) in store.images" @click="currentSlide = index"
-                                :class="{ active: index === currentSlide }"></button>
+                        <div class="control dotnav" ref="dotnav" :class="{ hoverNearby: isHoverNearby }">
+                            <button class="dot" v-for="(url, index) in store.images" @click="currentSlide = index"
+                                :class="{ active: index === currentSlide }">
+                                <img :src="url.url" />
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 <SidePanel>
-                    <Tabs>
-                        <Tab value="Opties">
-                            <fieldset>
-                                <legend>Automatische weergave</legend>
-                                <InputNumber v-model.number="slideDuration" @change="startSlideshow"
-                                    identifier="slideDuration" step="1" min="1" max="240" unit="s">
-                                    Seconden per dia
-                                    <small v-if="slideDuration > 0">
-                                        Elke {{ slideDuration }} seconden wordt de volgende dia getoond.
-                                    </small>
-                                    <small v-else>
-                                        De automatische weergave is uitgeschakeld.
-                                    </small>
-                                </InputNumber>
-                                <Button class="secondary full"
-                                    @click="currentSlide = 0; startSlideshow(); toggleFullscreen()">
-                                    <Icon>play_arrow</Icon>Automatische weergave starten
-                                </Button>
-                            </fieldset>
-                        </Tab>
-                    </Tabs>
+                    <h2>Opties</h2>
+                    <fieldset>
+                        <legend>Automatische weergave</legend>
+                        <InputNumber v-model.number="slideDuration" @change="startSlideshow" identifier="slideDuration"
+                            step="1" min="1" max="240" unit="s">
+                            Seconden per dia
+                            <small v-if="slideDuration > 0">
+                                Elke {{ slideDuration }} seconden wordt de volgende dia getoond.
+                            </small>
+                            <small v-else>
+                                De automatische weergave is uitgeschakeld.
+                            </small>
+                        </InputNumber>
+                        <Button class="secondary full" @click="currentSlide = 0; startSlideshow(); toggleFullscreen()">
+                            <Icon>play_arrow</Icon>Automatische weergave starten
+                        </Button>
+                    </fieldset>
                 </SidePanel>
             </div>
         </section>
@@ -264,21 +288,54 @@ const { isOverDropZone } = useDropZone(main, {
         background-color: #0000008d;
         color: #fff;
         border: none;
-        border-radius: 50vmax;
+        border-radius: 6px;
 
-        &>button {
+        .dot {
+            position: relative;
             height: 7px;
             width: 7px;
             padding: 0;
 
             background-color: #ffffff85;
             border: none;
-            border-radius: 50%;
+            outline: none;
+            border-radius: 6px;
+            overflow: hidden;
 
             cursor: pointer;
+            transition: width 150ms, height 150ms;
+
+            img {
+                position: absolute;
+                inset: 0;
+                object-fit: cover;
+                opacity: 0;
+                transition: opacity 150ms;
+            }
 
             &.active {
                 background-color: #fff;
+            }
+        }
+
+        &:hover,
+        &.hoverNearby {
+            gap: 7px;
+            padding: 7px 9px;
+
+            .dot {
+                height: 50px;
+                width: calc(50px * 16 / 9);
+                outline: 1px solid #ffffff33;
+
+                img {
+                    opacity: 1;
+                }
+
+                &.active {
+                    outline-color: #feb91e;
+                    outline-width: 2px;
+                }
             }
         }
     }

@@ -1,33 +1,63 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, h } from 'vue';
 import { useSlideshowImagesStore } from '@/stores/slideshowImages';
 import { httpStatuses, useServerStore } from '@/stores/server';
-
-const emit = defineEmits<{
-	'slide-clicked': [index: number]
-}>();
+import { showDialog } from '@/utils/dialogManager';
+import Button from '../Button.vue';
 
 const store = useSlideshowImagesStore();
 
 const serverStore = useServerStore();
 
 const showOptions = ref<boolean>(false);
+
+function deleteImage(fileName: string) {
+	const dialog = showDialog(() => [
+		h('h3', "Afbeelding verwijderen"),
+		h('p', `Weet je zeker dat je de afbeelding "${fileName}" wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`),
+		h(Button, {
+			class: 'primary',
+			onClick: () => {
+				store.deleteImage(fileName)
+				dialog.destroy();
+			}
+		}, 'Verwijderen'),
+	])
+}
+
+function deleteAllImages() {
+	const dialog = showDialog(() => [
+		h('h3', "Alle afbeeldingen verwijderen"),
+		h('p', "Weet je zeker dat je alle afbeeldingen wilt verwijderen? Dit kan niet ongedaan worden gemaakt."),
+		h(Button, {
+			class: 'primary',
+			onClick: () => {
+				store.deleteAll();
+				dialog.destroy();
+			}
+		}, 'Alles verwijderen'),
+	])
+}
 </script>
 
 <template>
 	<section id="upload">
 		<div class="floating">
-			<!-- <h2>Dia's -->
 			<button id="upload-status" @click="showOptions = true"
 				:title="httpStatuses[store.status].long || store.status + '\nKlik om serveropties te wijzigen'">
 				<div id="upload-status-light" :class="store.status"></div>
 				{{ httpStatuses[store.status].short || store.status }}
 			</button>
-			<!-- </h2> -->
 		</div>
 		<FileUploadBlock @files-uploaded="store.filesUploaded" accept="image/*" multiple>
 			<div v-if="store.images?.length" class="pictures" style="flex-grow: 1;">
-				<img v-for="(imgUrl, index) in store.images" :src="imgUrl" @click="emit('slide-clicked', index)" />
+				<TransitionGroup name="list">
+					<button v-for="image in store.images" :key="image.name" :title="image.name"
+						@click="deleteImage(image.name)">
+						<img :src="image.url" />
+						<Icon>delete</Icon>
+					</button>
+				</TransitionGroup>
 			</div>
 			<p v-else style="flex-grow: 1;">
 				Geen afbeeldingen
@@ -35,7 +65,7 @@ const showOptions = ref<boolean>(false);
 				<small>Upload afbeeldingen met de knop of door ze hierheen te slepen.</small>
 			</p>
 			<template #buttons>
-				<Button class="secondary" v-if="store.images?.length" @click="store.deleteAll">
+				<Button class="secondary" v-if="store.images?.length" @click="deleteAllImages">
 					<Icon>delete_forever</Icon>Alles verwijderen
 				</Button>
 			</template>
@@ -106,15 +136,40 @@ const showOptions = ref<boolean>(false);
 
 	overflow-x: auto;
 
-	img {
-		max-width: 140px;
-		object-fit: contain;
+	button {
+		position: relative;
+		width: auto;
+		padding: 0;
+		cursor: pointer;
 
 		background-color: #000;
 		border: 1px solid #ffffff33;
 		border-radius: 6px;
 
-		cursor: pointer;
+		img {
+			max-width: 140px;
+			object-fit: contain;
+		}
+
+		.icon {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			translate: -50% -50%;
+			color: #fff;
+			--size: 22px;
+			opacity: 0;
+		}
+
+		&:hover {
+			img {
+				opacity: .5;
+			}
+
+			.icon {
+				opacity: 1;
+			}
+		}
 	}
 }
 

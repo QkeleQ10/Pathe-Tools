@@ -3,21 +3,12 @@ import { defineStore } from 'pinia'
 import { useServerStore } from './server';
 
 export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
-    const images = ref<string[]>([]);
+    const images = ref<{ name: string, url: string }[]>([]);
     const status = ref<'no-connection' | 'no-credentials' | 'sending' | 'sent' | 'send-error' | 'receiving' | 'received' | 'receive-error' | 'error'>('no-connection');
 
     const serverStore = useServerStore();
 
     onMounted(connect);
-
-    // const now = new Date();
-    // const target = new Date();
-    // target.setHours(5, 0, 0, 0);
-    // if (now > target) target.setDate(target.getDate() + 1);
-    // setTimeout(() => {
-    //     connect();
-    //     setInterval(connect, 24 * 60 * 60 * 1000); // Call connect every 24 hours
-    // }, target.getTime() - now.getTime());
 
     async function connect() {
         while (images.value.length) images.value.pop();
@@ -37,7 +28,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
         }
     }
 
-    async function getFromServer(): Promise<string[]> {
+    async function getFromServer(): Promise<{ name: string, url: string }[]> {
         return new Promise(async (resolve, reject) => {
             try {
                 const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures`, {
@@ -50,7 +41,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
                 const data = await response.json();
                 if (!data) throw new Error('No data found');
 
-                const array = await Promise.all(data.map(async (fileId: string) => await fetchImage(fileId)));
+                const array = await Promise.all(data.map(async (fileName: string) => ({ name: fileName, url: await fetchImage(fileName) })));
                 resolve(array);
             } catch (error) {
                 console.error("Error getting data from server:", error);
@@ -86,8 +77,8 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
 
                 images.value = [
                     ...images.value,
-                    ...(await Promise.all(data.files.map(async (fileId: string) => await fetchImage(fileId))))
-                ].sort((a, b) => a.localeCompare(b));
+                    ...(await Promise.all(data.files.map(async (fileName: string) => ({ name: fileName, url: await fetchImage(fileName) }))))
+                ].sort((a, b) => a.name.localeCompare(b.name));
 
                 status.value = 'sent';
                 resolve();
@@ -125,6 +116,32 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
         });
     }
 
+    async function deleteImage(fileId: string): Promise<void> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                status.value = 'sending';
+
+                const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures/${fileId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        Authorization: 'Basic ' + btoa(`${serverStore.username}:${serverStore.password}`),
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+                if (!response.ok) throw new Error(`Server responded with ${response.status} ${response.statusText}`);
+
+                images.value = images.value.filter(image => image.name !== fileId);
+
+                status.value = 'sent';
+                resolve();
+            } catch (error) {
+                status.value = 'send-error';
+                console.error(error);
+                reject(error);
+            }
+        });
+    }
+
     async function fetchImage(fileId: string) {
         const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures/${fileId}`, {
             headers: {
@@ -135,5 +152,5 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
         return URL.createObjectURL(blob);
     }
 
-    return { images, filesUploaded, deleteAll, fetchImage, status, connect };
+    return { images, filesUploaded, deleteAll, deleteImage, fetchImage, status, connect };
 });
