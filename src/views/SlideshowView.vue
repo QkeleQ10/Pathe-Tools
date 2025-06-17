@@ -29,13 +29,13 @@ function toggleFullscreen() {
 
 // MOUSE MOVE HANDLER
 
-const isMouseMoving = ref(false);
+const shouldShowControls = ref(false);
 let mouseMoveTimeout: ReturnType<typeof setTimeout>;
 function handleMouseMove() {
-    isMouseMoving.value = true;
+    shouldShowControls.value = true;
     clearTimeout(mouseMoveTimeout);
     mouseMoveTimeout = setTimeout(() => {
-        isMouseMoving.value = false;
+        shouldShowControls.value = false;
     }, 2000);
 };
 handleMouseMove();
@@ -46,7 +46,7 @@ const dotnav = useTemplateRef('dotnav');
 const { x: mouseX, y: mouseY } = useMouse();
 const proximityThreshold = 100;
 
-const isHoverNearby = computed(() => {
+const shouldExpandDotnav = computed(() => {
     if (!dotnav.value) return false
 
     const rect = dotnav.value.getBoundingClientRect()
@@ -121,9 +121,9 @@ const { isOverDropZone } = useDropZone(main, {
                 <div>
                     <h2>Diavoorstelling</h2>
                     <div class="carousel" ref="carousel"
-                        :class="{ 'mouse-moving': isMouseMoving, 'fake-fullscreen': fakeFullscreen }"
-                        @mousemove="handleMouseMove" @mouseenter="isMouseMoving = true"
-                        @mouseleave="isMouseMoving = false">
+                        :class="{ 'mouse-moving': shouldShowControls, 'fake-fullscreen': fakeFullscreen }"
+                        @mousemove="handleMouseMove" @mouseenter="shouldShowControls = true"
+                        @mouseleave="shouldShowControls = false">
 
                         <TransitionGroup name="slide">
                             <img v-for="(image, index) in store.images" :key="image.name" :src="image.url"
@@ -143,7 +143,7 @@ const { isOverDropZone } = useDropZone(main, {
                         <button class="control next" @click="nextSlide">
                             <Icon>chevron_right</Icon>
                         </button>
-                        <div class="control dotnav" ref="dotnav" :class="{ hoverNearby: isHoverNearby }">
+                        <div class="control dotnav" ref="dotnav" :class="{ hoverNearby: shouldExpandDotnav && shouldShowControls }">
                             <button class="dot" v-for="(url, index) in store.images" @click="currentSlide = index"
                                 :class="{ active: index === currentSlide }">
                                 <img :src="url.url" />
