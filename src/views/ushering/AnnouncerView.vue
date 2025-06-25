@@ -369,10 +369,6 @@ const { isOverDropZone } = useDropZone(main, {
     multiple: false
 })
 
-const shouldShowFeedbackDialog = useStorage('show-feedback-dialog', true);
-if (shouldShowFeedbackDialog) {
-    showFeedbackDialog()
-}
 function showFeedbackDialog() {
     const dialog = showDialog([
         h('h3', "Ik heb feedback nodig!"),
@@ -390,14 +386,7 @@ function showFeedbackDialog() {
             h('br'),
             h('br'),
             "Bedankt, ", h('br'), "Quinten"
-        ]),
-        h(Button, {
-            class: 'secondary',
-            onClick: () => {
-                shouldShowFeedbackDialog.value = false;
-                dialog.destroy();
-            }
-        }, "Niet meer weergeven"),
+        ])
     ])
 }
 </script>
