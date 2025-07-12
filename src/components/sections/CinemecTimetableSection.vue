@@ -336,8 +336,9 @@ function hexToAscii(hexString: string) {
 }
 
 function padCenter(string: string, maxLength: number, fillString: string = ' ') {
-    const pad = Math.floor((maxLength - string.length) / 2);
-    return fillString.repeat(pad) + string + fillString.repeat(maxLength - string.length - pad);
+    const pad = Math.floor((maxLength - string.replace(/~[CB]\d;|~[FNRI];/g, '').length) / 2);
+    const result = fillString.repeat(pad) + string + fillString.repeat(maxLength - string.replace(/~[CB]\d;|~[FNRI];/g, '').length - pad);
+    return result;
 }
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
