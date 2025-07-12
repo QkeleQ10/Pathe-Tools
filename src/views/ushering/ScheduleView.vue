@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useVueToPrint } from "vue-to-print"
 import { format } from 'date-fns'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
+import { useCreditsStingersStore } from '@/stores/creditsStingers'
 import { Show, TimetableShow } from '@/classes/classes'
 import { nl } from 'date-fns/locale'
 
 const store = useTmsScheduleStore()
+const stingersStore = useCreditsStingersStore()
 
 const columns = {
     mainTime: {
@@ -39,10 +41,6 @@ const optionalColumnsSetting = useStorage('optional-columns', {
 const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
 const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
 const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
-const postCreditsFilms = useStorage('post-credits-films', new Set())
-while (postCreditsFilms.value.size > 20) {
-    postCreditsFilms.value.delete(Array.from(postCreditsFilms.value)[0])
-}
 
 const printComponent = ref(null)
 const main = ref<HTMLElement>(null)
@@ -74,8 +72,8 @@ const transformedTable = computed(() => {
             timetableShow.creditsTime.getTime() - testRow.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&
             timetableShow.creditsTime.getTime() - (testRow.mainShowTime ? testRow.mainShowTime.getTime() : (testRow.showTime.getTime() + 900000)) <= 0
         )
-        timetableShow.hasPostCredits = postCreditsFilms.value.has(timetableShow.title?.trim())
-        timetableShow.timeToNextUsherout = store.table[i + 1]?.creditsTime.getTime() - (timetableShow.hasPostCredits ? timetableShow.endTime : timetableShow.creditsTime).getTime()
+        timetableShow.hasCreditsStinger = stingersStore.stingers.includes(timetableShow.title?.trim())
+        timetableShow.timeToNextUsherout = store.table[i + 1]?.creditsTime.getTime() - (timetableShow.hasCreditsStinger ? timetableShow.endTime : timetableShow.creditsTime).getTime()
         timetableShow.nextStartTime = store.table.find((testRow, testI) => testI > i && testRow.auditorium === timetableShow.auditorium)?.scheduledTime
         return timetableShow
     }) || []
@@ -96,6 +94,39 @@ const transformedTable = computed(() => {
     return arr || []
 })
 
+const showStingersModal = ref(false)
+
+async function addStinger() {
+    try {
+        await stingersStore.addStinger(prompt())
+    } catch (error) {
+        console.error('Failed to add stinger:', error)
+    }
+}
+
+async function toggleCreditsStinger(title: string) {
+    const trimmedTitle = title?.trim()
+    if (!trimmedTitle) return
+
+    try {
+        if (stingersStore.stingers.includes(trimmedTitle)) {
+            await stingersStore.deleteStinger(trimmedTitle)
+        } else {
+            await stingersStore.addStinger(trimmedTitle)
+        }
+    } catch (error) {
+        console.error('Failed to toggle post-credits:', error)
+    }
+}
+
+async function removeStinger(title: string) {
+    try {
+        await stingersStore.deleteStinger(title)
+    } catch (error) {
+        console.error('Failed to remove stinger:', error)
+    }
+}
+
 const { handlePrint } = useVueToPrint({
     content: () => printComponent.value,
     documentTitle: "Tijdenlijstje " + format(transformedTable.value[0]?.scheduledTime || new Date(), 'yyyy-MM-dd', { locale: nl }),
@@ -105,6 +136,10 @@ const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
     multiple: false
+})
+
+onMounted(() => {
+    stingersStore.getStingers()
 })
 </script>
 
@@ -118,7 +153,7 @@ const { isOverDropZone } = useDropZone(main, {
                     <div id="print-component" ref="printComponent" v-if="transformedTable.length > 0">
                         <div class="header" v-if="'flags' in store.metadata">
                             {{ store.metadata.flags.includes('times-only') ? 'datum onbekend' :
-                                format(transformedTable[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
+                            format(transformedTable[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
                         </div>
                         <table class="timetable" spellcheck="false">
                             <colgroup>
@@ -160,7 +195,7 @@ const { isOverDropZone } = useDropZone(main, {
                                     <span class="preshow-duration"
                                         v-if="(show.scheduledTime && show.mainShowTime) && ((displayPreshowDuration === 1 && show.auditorium?.includes('4DX')) || displayPreshowDuration === 2)">
                                         +{{ Math.round((show.mainShowTime.getTime() - show.scheduledTime.getTime()) /
-                                            60000) }}
+                                        60000) }}
                                     </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
@@ -179,9 +214,9 @@ const { isOverDropZone } = useDropZone(main, {
                                     <span contenteditable class="credits-time">
                                         {{ format(show.creditsTime, 'HH:mm:ss') }}
                                         <span class="credits-duration"
-                                            v-if="(show.creditsTime && show.endTime) && ((displayCreditsDuration === 1 && show.hasPostCredits) || displayCreditsDuration === 2)">
+                                            v-if="(show.creditsTime && show.endTime) && ((displayCreditsDuration === 1 && show.hasCreditsStinger) || displayCreditsDuration === 2)">
                                             +{{ Math.round((show.endTime.getTime() - show.creditsTime.getTime()) /
-                                                60000) }}
+                                            60000) }}
                                         </span>
                                     </span>
                                 </td>
@@ -218,13 +253,13 @@ const { isOverDropZone } = useDropZone(main, {
                         <div class="footer">
                             <span v-if="'lastModified' in store.metadata">
                                 Gegevens: {{ new Date(store.metadata.lastModified).toLocaleString('nl-NL', {
-                                    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit',
-                                    minute: '2-digit'
+                                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit',
+                                minute: '2-digit'
                                 }) }} •
                             </span>
                             Gegenereerd: {{ new Date().toLocaleDateString('nl-NL', {
-                                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:
-                                    '2-digit'
+                            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:
+                            '2-digit'
                             }) }}
                             • Pathé Tools • Quinten Althues
                         </div>
@@ -316,9 +351,9 @@ const { isOverDropZone } = useDropZone(main, {
         </section>
         <Transition>
             <ContextMenu v-if="showMenu" class="dark" :x="menuX" :y="menuY" @click-outside="closeContextMenu">
-                <button
-                    @click="postCreditsFilms.has(targetRow.title?.trim()) ? postCreditsFilms.delete(targetRow.title?.trim()) : postCreditsFilms.add(targetRow.title?.trim()); closeContextMenu()">
-                    <div class="check" :class="{ 'empty': !postCreditsFilms.has(targetRow.title?.trim()) }"></div>
+                <button @click="toggleCreditsStinger(targetRow.title); closeContextMenu()">
+                    <div class="check" :class="{ 'empty': !stingersStore.stingers.includes(targetRow.title?.trim()) }">
+                    </div>
                     Post-credits-scène bij {{ targetRow.title }}
                 </button>
             </ContextMenu>
@@ -327,6 +362,41 @@ const { isOverDropZone } = useDropZone(main, {
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
         </div>
+
+        <Button class="secondary" @click="showStingersModal = true" style="opacity: .05;">
+            <Icon>movie</Icon>
+            Post-credits-scènes
+        </Button>
+        <ModalDialog v-if="showStingersModal" @dismiss="showStingersModal = false">
+            <div>
+                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <Button @click="stingersStore.getStingers()">
+                        <Icon>refresh</Icon>
+                        Vernieuwen
+                    </Button>
+                    <Button @click="addStinger">
+                        <Icon>add</Icon>
+                        Toevoegen
+                    </Button>
+                </div>
+
+                <div v-if="stingersStore.stingers.length > 0"
+                    style="max-height: 300px; overflow-y: auto; border: 1px solid #ffffff14; border-radius: 4px;">
+                    <div v-for="stinger in stingersStore.stingers" :key="stinger"
+                        style="display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #ffffff14;">
+                        <span>{{ stinger }}</span>
+                        <button @click="removeStinger(stinger)"
+                            style="background: none; border: none; color: #ff6b6b; cursor: pointer; padding: 4px 8px; border-radius: 4px;"
+                            title="Verwijderen">
+                            <Icon>close</Icon>
+                        </button>
+                    </div>
+                </div>
+                <div v-else style="text-align: center; padding: 32px; opacity: 0.5;">
+                    Geen films in database
+                </div>
+            </div>
+        </ModalDialog>
     </main>
 </template>
 

@@ -26,7 +26,7 @@ export type Show = {
 
 export type TimetableShow = Show & {
     overlapWithPlf?: boolean;
-    hasPostCredits?: boolean;
+    hasCreditsStinger?: boolean;
     nextStartTime?: Date;
     timeToNextUsherout?: number;
     isNearPlf?: boolean;
