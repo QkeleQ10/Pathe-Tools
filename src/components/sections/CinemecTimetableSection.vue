@@ -48,7 +48,7 @@ const walkIns = ref<{ scheduledTime: Date, title: string, auditorium: string, i:
 const lines: { [key: string]: (...arg: any[]) => DisplayLine } = {
     empty: () => ({ fcolor: 3, bcolor: 0, textString: "", enabled: false, align: 'left', speed: 0x07 }),
     black: () => ({ fcolor: 3, bcolor: 0, textString: "", enabled: true, align: 'left', speed: 0x07 }),
-    ticker: (fallback = lines.black()) => (tickerText.value.length ? { fcolor: 1, bcolor: 0, textString: tickerText.value, enabled: true, align: 'marquee', speed: 0x07 } : fallback)
+    ticker: (fallback = lines.black()) => (tickerText.value.length ? { fcolor: 1, bcolor: 0, textString: tickerText.value, enabled: true, align: tickerText.value.replace(/~[CB]\d;|~[FNRI];/g, '').length > 60 ? 'marquee' : 'center', speed: 0x07 } : fallback)
 }
 
 const presetConfigurations: { [key: string]: { name: string, lines: () => DisplayLine[] } } = {
@@ -439,6 +439,8 @@ onBeforeUnmount(() => {
                                     <option
                                         value="De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.">
                                         Rooftop open</option>
+                                    <option value="Nieuw: ervaar ~C2;IMAX~C1; vanaf 23 juli ook in Utrecht!">IMAX Utrecht 23 juli</option>
+                                    <option value="Nieuw: ervaar ~C2;IMAX~C1; nu ook in Utrecht!">IMAX Utrecht</option>
                                 </template>
                             </InputText>
                         </fieldset>
@@ -524,8 +526,8 @@ onBeforeUnmount(() => {
                             filmtitels zijn te
                             lang en
                             worden mogelijk afgekapt.</p>
-                        <InputSwitch v-if="walkIns.length" identifier="syncFilmTitles" style="max-width: 650px; margin-bottom: 16px;"
-                            v-model="syncFilmTitles">
+                        <InputSwitch v-if="walkIns.length" identifier="syncFilmTitles"
+                            style="max-width: 650px; margin-bottom: 16px;" v-model="syncFilmTitles">
                             Alle identieke filmtitels tegelijk bewerken
                         </InputSwitch>
                         <div>
