@@ -1,23 +1,32 @@
 <script setup lang="ts">
-import { FastAverageColor } from 'fast-average-color';
 import { ref } from 'vue';
+import { FastAverageColor } from 'fast-average-color';
 
-const imageUrl = new URL(`../assets/heroes/${Math.floor(Math.random() * 13)}.webp`, import.meta.url).href
+const imageUrl = ref('');
 const color = ref('');
 
-const fac = new FastAverageColor();
+const files = import.meta.glob('../assets/heroes/*.webp');
+const heroImages = Object.keys(files);
 
-fac.getColorAsync(imageUrl, {
-    ignoredColor: [
-        [255, 255, 255, 255, 100]
-    ]
-})
-    .then(result => {
-        color.value = result.hex;
-        fac.destroy();
+if (heroImages.length > 0) {
+    const randomIndex = Math.floor(Math.random() * heroImages.length);
+    imageUrl.value = new URL(heroImages[randomIndex], import.meta.url).href;
+
+    const fac = new FastAverageColor();
+
+    fac.getColorAsync(imageUrl.value, {
+        ignoredColor: [
+            [255, 255, 255, 255, 100]
+        ]
     })
-    .catch(console.error);
-
+        .then(result => {
+            color.value = result.hex;
+            fac.destroy();
+        })
+        .catch(console.error);
+} else {
+    console.warn('No hero images found.');
+}
 </script>
 
 <template>
@@ -46,7 +55,7 @@ fac.getColorAsync(imageUrl, {
         background-position: center;
         mask-image: linear-gradient(to bottom, #000, #00000041 60%, transparent);
 
-        transition: height  0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        transition: height 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
     }
 
     .color-bleed {
