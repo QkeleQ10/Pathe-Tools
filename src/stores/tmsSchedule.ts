@@ -151,7 +151,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                         feature: obj.FEATURE,
                         featureRating: obj.FEATURE_RATING,
                         auditorium: obj.AUDITORIUM,
-                        auditoriumNumber: parseInt(obj.AUDITORIUM?.replace("Rooftop", "10").replace(/^\w+\s/, '')?.split(' ')[0]) || 0,
+                        auditoriumNumber: obj.AUDITORIUM === "IMAX" ? 1 : parseInt(obj.AUDITORIUM?.replace("Rooftop", "10").replace(/^\w+\s/, '')?.split(' ')[0]) || 0,
                         scheduledTime: timeStringToDate(obj.SCHEDULED_TIME),
                         showTime: timeStringToDate(obj.SHOW_TIME),
                         creditsTime: timeStringToDate(obj.CREDITS_TIME),
