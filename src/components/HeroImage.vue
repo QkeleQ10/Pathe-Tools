@@ -6,11 +6,9 @@ const imageUrl = ref('');
 const color = ref('');
 
 const files = import.meta.glob('../assets/heroes/*.webp', { eager: true });
-console.log("files", files);
-const randomKey = Object.keys(files)[Math.floor(Math.random() * Object.keys(files).length)];
-console.log("randomKey", randomKey);
-console.log("default", files[randomKey].default);
-imageUrl.value = new URL(randomKey, import.meta.url).href;
+const fileKeys = Object.keys(files);
+const randomKey = fileKeys[Math.floor(Math.random() * fileKeys.length)];
+imageUrl.value = new URL((files[randomKey] as { default: string }).default, import.meta.url).href;
 
 const fac = new FastAverageColor();
 
