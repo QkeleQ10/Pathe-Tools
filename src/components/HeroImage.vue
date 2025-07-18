@@ -5,28 +5,25 @@ import { FastAverageColor } from 'fast-average-color';
 const imageUrl = ref('');
 const color = ref('');
 
-const files = import.meta.glob('../assets/heroes/*.webp');
-const heroImages = Object.keys(files);
+const files = import.meta.glob('../assets/heroes/*.webp', { eager: true });
+console.log("files", files);
+const randomKey = Object.keys(files)[Math.floor(Math.random() * Object.keys(files).length)];
+console.log("randomKey", randomKey);
+console.log("default", files[randomKey].default);
+imageUrl.value = new URL(randomKey, import.meta.url).href;
 
-if (heroImages.length > 0) {
-    const randomIndex = Math.floor(Math.random() * heroImages.length);
-    imageUrl.value = new URL(heroImages[randomIndex], import.meta.url).href;
+const fac = new FastAverageColor();
 
-    const fac = new FastAverageColor();
-
-    fac.getColorAsync(imageUrl.value, {
-        ignoredColor: [
-            [255, 255, 255, 255, 100]
-        ]
+fac.getColorAsync(imageUrl.value, {
+    ignoredColor: [
+        [255, 255, 255, 255, 100]
+    ]
+})
+    .then(result => {
+        color.value = result.hex;
+        fac.destroy();
     })
-        .then(result => {
-            color.value = result.hex;
-            fac.destroy();
-        })
-        .catch(console.error);
-} else {
-    console.warn('No hero images found.');
-}
+    .catch(console.error);
 </script>
 
 <template>
