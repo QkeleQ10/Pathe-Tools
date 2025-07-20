@@ -439,9 +439,16 @@ onBeforeUnmount(() => {
                                 <template #datalist>
                                     <option
                                         value="De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.">
-                                        Rooftop open</option>
-                                    <option value="Nieuw: ervaar ~C2;IMAX~C1; vanaf 23 juli ook in Utrecht!">IMAX Utrecht 23 juli</option>
-                                    <option value="Nieuw: ervaar ~C2;IMAX~C1; nu ook in Utrecht!">IMAX Utrecht</option>
+                                        Rooftop weer open</option>
+                                    <option
+                                        value="Deze zomer: 5 avonden per week een film op de ~C3;Rooftop~C1;! Check pathé.nl of de Pathé-app.">
+                                        Rooftop zomervakantie</option>
+                                    <option value="Nieuw: ervaar ~C2;IMAX~C1; nu ook in Utrecht!">
+                                        IMAX Utrecht - opening
+                                    </option>
+                                    <option
+                                        value="Nieuw: ervaar ~C2;filmtitel 1~C1; & ~C2;filmtitel 2~C1; nu in ~C2;IMAX~C1;!">
+                                        IMAX Utrecht - films</option>
                                 </template>
                             </InputText>
                         </fieldset>
