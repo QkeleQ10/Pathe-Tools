@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, h } from 'vue';
+import { useUrlSearchParams } from '@vueuse/core';
 import { useSlideshowImagesStore } from '@/stores/slideshowImages';
 import { httpStatuses, useServerStore } from '@/stores/server';
 import { showDialog } from '@/utils/dialogManager';
 import Button from '../Button.vue';
+
+const params = useUrlSearchParams('history');
 
 const store = useSlideshowImagesStore();
 
@@ -101,13 +104,20 @@ function deleteAllImages() {
 
 					<em class="label">Configuratie</em>
 					<div class="server-options-container">
-						<p>Serveradres<span style="float: right; opacity: .5;">{{ serverStore.url }}</span></p>
-						<InputText v-model="serverStore.username" identifier="username">
-							<span>Gebruikersnaam</span>
-						</InputText>
-						<InputText v-model="serverStore.password" identifier="password">
-							<span>Wachtwoord</span>
-						</InputText>
+						<p>
+							Serveradres
+							<span style="float: right; opacity: .5;">
+								{{ params.url || 'http://localhost:3541' }}
+							</span>
+						</p>
+						<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+							<InputGroup type="text" id="username" v-model="serverStore.username">
+								<template #label>Gebruikersnaam</template>
+							</InputGroup>
+							<InputGroup type="text" id="password" v-model="serverStore.password">
+								<template #label>Wachtwoord</template>
+							</InputGroup>
+						</div>
 					</div>
 					<Button class="primary full" @click="showOptions = false; store.connect();">
 						<Icon>check</Icon>Vernieuwen

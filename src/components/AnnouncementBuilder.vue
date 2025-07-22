@@ -36,20 +36,20 @@ function sentenceCase(string: string) {
     <Transition>
         <ModalDialog v-if="showAnnouncementBuilder" @dismiss="showAnnouncementBuilder = false">
             <h3>Omroeponderdelen</h3>
-            <ul v-if="model.length" class="segment-list">
-                <li class="segment" v-for="(segment, i) in model" :key="i">
-                    <InputText class="no-label" :identifier="'spriteName' + i" v-model="segment.spriteName"
-                        :spellcheck="false" autocomplete="off" autocapitalize="off">
-                        <template #datalist>
-                            <option v-for="(key) in allSounds" :key="key" :value="key">
-                                {{ sentenceCase(getSoundInfo(key).name) }}
-                            </option>
-                        </template>
-                    </InputText>
-                    <InputNumber class="no-label" :identifier="'offset' + i" v-model="segment.offset" unit="ms">
-                    </InputNumber>
-                    <Icon style="float: right; cursor: pointer; padding: 2px;" @click="model.splice(i, 1)">
-                        delete</Icon>
+            <ul v-if="model.length" class="scrollable-list">
+                <li class="segment" v-for="(segment, i) in model" :key="i" style="position: relative;">
+                    <Input type="text" :id="'spriteName' + i" v-model="segment.spriteName" :spellcheck="false"
+                        autocomplete="off" autocapitalize="off" :list="'spriteName' + i + 'datalist'" />
+                    <datalist :id="'spriteName' + i + 'datalist'">
+                        <option v-for="(key) in allSounds" :key="key" :value="key">
+                            {{ sentenceCase(getSoundInfo(key).name) }}
+                        </option>
+                    </datalist>
+                    <Input type="number" :id="'offset' + i" v-model="segment.offset" />
+                    <span class="unit"
+                        style="position: absolute; right: 50px; top: 20px; opacity: .5; font-size: 12px;">ms</span>
+                    <Icon class="delete" @click="model.splice(i, 1)">
+                        close</Icon>
                 </li>
             </ul>
             <p v-else>
@@ -70,53 +70,11 @@ function sentenceCase(string: string) {
 </template>
 
 <style scoped>
-.segment-list {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-}
-
 .segment {
-    display: block;
-    margin-top: 8px;
-    margin-bottom: 8px;
-    padding: 6px;
-    background-color: #ffffff14;
-    border-radius: 5px;
-
-    &>* {
-        margin: 6px;
-    }
-
-    .checkbox-input.toggler {
-        font-size: 16px;
-        font-weight: bold;
-        align-items: center;
-    }
-
-    .timing-input {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .select-input {
-        width: 200px;
-    }
-
-    summary {
-        cursor: pointer;
-    }
-
-    .filters:open {
-        background-color: #ffffff14;
-        border-radius: 5px;
-        padding: 6px;
-
-        &>* {
-            margin: 6px;
-        }
-    }
+    display: grid;
+    align-items: center;
+    grid-template-columns: 1fr 125px auto;
+    gap: 8px;
 }
 
 .add-segment {

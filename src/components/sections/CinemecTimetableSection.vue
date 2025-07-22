@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, inject, nextTick, onBeforeUnmount, onMounted, Ref } from 'vue';
+import { ref, computed, inject, nextTick, onBeforeUnmount, onMounted, Ref, h } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import * as qmln from '@/utils/qmln'
 import { format } from 'date-fns';
+import { showDialog } from '@/utils/dialogManager';
 
 interface DisplayLine {
     fcolor: 0x00 | 0x01 | 0x02 | 0x03;
@@ -32,8 +33,8 @@ const hideTime = useLocalStorage('hide-time', 17);
 const animation = useLocalStorage('animation', 0x00);
 const animationSpeed = useLocalStorage('animation-speed', 0x07);
 
-const theatreName = useLocalStorage('theatre-name', 'Pathé Utrecht Leidsche Rijn');
-const tickerText = useLocalStorage('ticker-text', 'De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.');
+const theatreName = useLocalStorage('theatre-name', 'Pathé');
+const tickerText = useLocalStorage('ticker-text', '');
 
 const receiveBeta = useLocalStorage('receive-beta', false);
 const autoSend = useLocalStorage('auto-send', true);
@@ -186,6 +187,8 @@ function repeatDisplayLine(length: number, line: DisplayLine = lines.empty()): D
 function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): DisplayLine[] {
     let result: DisplayLine[] = [];
 
+    let longestAuditoriumLength = showsSoon.value.reduce((max, show) => Math.max(max, show.auditorium.toString().replace(/~[CB]\d;|~[FNRI];/g, '').length), 1);
+
     let showIndex = 0;
     for (let lineNumber = 0; lineNumber < displayLines.length; lineNumber++) {
         if (!displayLines[lineNumber].enabled) {
@@ -200,9 +203,9 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
             const isStarted = show.scheduledTime.getTime() - Date.now() < -(isStartedTime.value * 60000);
             const aboutToStart = show.scheduledTime.getTime() - Date.now() < -(aboutToStartTime.value * 60000) && !isStarted;
 
-            let str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 51).padEnd(51)}${show.auditorium.toString().substring(0, 3).padStart(3)}`;
-            if (isStarted) str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 40).padEnd(40)} ~C1;is gestart~C3;${show.auditorium.toString().substring(0, 3).padStart(3)}`;
-            if (aboutToStart) str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 38).padEnd(38)} ~F;~C1;gaat starten~N;~C3;${show.auditorium.toString().substring(0, 3).padStart(3)}`;
+            let str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 53 - longestAuditoriumLength).padEnd(53 - longestAuditoriumLength)} ${show.auditorium.toString().padStart(longestAuditoriumLength)}`;
+            if (isStarted) str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 53 - 11 - longestAuditoriumLength).padEnd(53 - 11 - longestAuditoriumLength)} ~C1;is gestart~C3; ${show.auditorium.toString().padStart(longestAuditoriumLength)}`;
+            if (aboutToStart) str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 53 - 13 - longestAuditoriumLength).padEnd(53 - 13 - longestAuditoriumLength)} ~F;~C1;gaat starten~N;~C3; ${show.auditorium.toString().padStart(longestAuditoriumLength)}`;
 
             result.push({
                 textString: str, enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
@@ -366,14 +369,28 @@ onBeforeUnmount(() => {
     if (intervalId) clearInterval(intervalId);
     if (timeoutId) clearTimeout(timeoutId);
 });
+
+function showFormattingInfo() {
+    const dialog = showDialog([
+        h('h3', "Opmaak"),
+        h('p', [
+            "In invoervelden zoals deze kunnen de volgende codes worden gebruikt:", h('br'), h('br'),
+            h('code', "~Cn;"), " tekstkleur (waarbij n = 0, 1, 2 of 3)", h('br'),
+            h('code', "~Bn;"), " achtergrondkleur (waarbij n = 0, 1, 2 of 3)", h('br'),
+            h('code', "~R;"), " kleuren omwisselen", h('br'),
+            h('code', "~I;"), " kleuren resetten", h('br'),
+            h('code', "~F;"), " knipperen", h('br'),
+            h('code', "~N;"), " niet meer knipperen", h('br'),
+        ])
+    ])
+}
 </script>
 
 <template>
     <section>
 
         <div style="display: flex; gap: 32px; flex-wrap: wrap;">
-
-            <div style="flex: 585px 0 0;">
+            <div style="flex: 520px 0 0;">
                 <h2>Voorbeeld</h2>
 
                 <div class="block" id="matrix-display" :class="{
@@ -397,31 +414,21 @@ onBeforeUnmount(() => {
                 </div>
                 <br>
 
+                <small>Dit voorbeeld is slechts indicatief.</small><br>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
                     <small>Laatst verzonden om
                         {{ lastSentTime ? format(lastSentTime, 'HH:mm:ss') : 'onbekend' }}</small>
                     <small>{{ sending ? "Verzenden..." : "" }}</small>
                     <small v-for="(status, i) in lastSentStatus" :key="i">
                         Scherm {{ i + 1 }}: {{
-                            !status ? "Niets verzonden" :
-                                status === 'ok' ? "OK" :
-                                    status === 'error' ? "Fout" :
-                                        status
+                        !status ? "Niets verzonden" :
+                        status === 'ok' ? "OK" :
+                        status === 'error' ? "Fout" :
+                        status
                         }}
                     </small>
                 </div>
-                <p>
-                    Dit voorbeeld is slechts indicatief.
-                    <br><br>
-                    <b>Tip:</b> In invoervelden kunnen de volgende codes worden gebruikt:<br>
-                    <code>~Cn;</code>&emsp; tekstkleur (waarbij n = 0, 1, 2 of 3)<br>
-                    <code>~Bn;</code>&emsp; achtergrondkleur (waarbij n = 0, 1, 2 of 3)<br>
-                    <code>~R; </code>&emsp; kleuren omwisselen<br>
-                    <code>~I; </code>&emsp; kleuren resetten<br>
-                    <code>~F; </code>&emsp; knipperen<br>
-                    <code>~N; </code>&emsp; niet meer knipperen<br>
-                </p>
-
             </div>
 
             <SidePanel style="flex: 40% 1 1">
@@ -431,12 +438,12 @@ onBeforeUnmount(() => {
                     <Tab value="Algemeen">
                         <fieldset>
                             <legend>Teksten</legend>
-                            <InputText identifier="theatreName" v-model="theatreName">
-                                Naam theater
-                            </InputText>
-                            <InputText identifier="tickerText" v-model="tickerText">
-                                Lichtkrant
-                                <template #datalist>
+                            <InputGroup type="text" id="theatreName" v-model="theatreName">
+                                <template #label>Naam theater</template>
+                            </InputGroup>
+                            <InputGroup type="text" id="tickerText" v-model="tickerText" list="tickerText-list">
+                                <template #label>Lichtkrant</template>
+                                <datalist id="tickerText-list">
                                     <option
                                         value="De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.">
                                         Rooftop weer open</option>
@@ -449,105 +456,101 @@ onBeforeUnmount(() => {
                                     <option
                                         value="Nieuw: ervaar ~C2;filmtitel 1~C1; & ~C2;filmtitel 2~C1; nu in ~C2;IMAX~C1;!">
                                         IMAX Utrecht - films</option>
-                                </template>
-                            </InputText>
+                                </datalist>
+                                <Icon style="position: absolute;top:0;right:0;color: #ffc426; cursor: pointer;"
+                                    @click="showFormattingInfo">info
+                                </Icon>
+                            </InputGroup>
                         </fieldset>
 
                         <fieldset>
                             <legend>Timing</legend>
-                            <InputNumber identifier="aboutToStartTime" v-model="aboutToStartTime" unit="min">
-                                'Gaat starten' tonen na
-                                <small>De tekst 'gaat starten' verschijnt tussen {{ aboutToStartTime }} en {{
-                                    isStartedTime }} minuten
-                                    na de aanvangstijd.</small>
-                            </InputNumber>
-                            <InputNumber identifier="isStartedTime" v-model="isStartedTime" unit="min">
-                                'Is gestart' tonen na
-                                <small>De tekst 'is gestart' verschijnt tussen {{ isStartedTime }} en {{ hideTime }}
-                                    minuten
-                                    na de aanvangstijd.</small>
-                            </InputNumber>
-                            <InputNumber identifier="hideTime" v-model="hideTime" unit="min">
-                                Voorstellingen verbergen na
-                                <small>Voorstellingen worden tot {{ hideTime }} minuten
-                                    na de aanvangstijd getoond op het bord.</small>
-                            </InputNumber>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                                <InputGroup type="number" id="aboutToStartTime" v-model="aboutToStartTime" :min="0"
+                                    :max="isStartedTime">
+                                    <template #label>'Gaat starten' tonen na</template>
+                                    <span class="unit">minuten</span>
+                                </InputGroup>
+                                <InputGroup type="number" id="isStartedTime" v-model="isStartedTime"
+                                    :min="aboutToStartTime">
+                                    <template #label>'Is gestart' tonen na</template>
+                                    <span class="unit">minuten</span>
+                                </InputGroup>
+                                <InputGroup type="number" id="hideTime" v-model="hideTime" :min="isStartedTime"
+                                    :max="180">
+                                    <template #label>Verbergen na</template>
+                                    <span class="unit">minuten</span>
+                                </InputGroup>
+                            </div>
+
+                            <small>De tekst 'gaat starten' verschijnt tussen {{ aboutToStartTime }} en {{
+                                isStartedTime }} minuten
+                                na de aanvangstijd. De tekst 'is gestart' verschijnt tussen {{ isStartedTime }} en {{
+                                hideTime }}
+                                minuten
+                                na de aanvangstijd. Vanaf {{ hideTime }} minuten na de aanvangstijd worden
+                                voorstellingen verborgen.</small>
                         </fieldset>
 
                         <fieldset>
-                            <legend>Automatisering</legend>
-                            <InputSwitch identifier="autoConfigure" v-model="autoConfigure">
-                                Best passende weergave gebruiken
-                                <small>
-                                    Als er inlopen zijn in de komende 3 uur, dan wordt de configuratie
-                                    <i>Voorstellingen</i> getoond.<br>
-                                    Anders wordt tussen 21:00 en 01:00 de configuratie <i>Uitloop</i> getoond.<br>
-                                    Anders wordt de configuratie <i>Geen info</i> getoond.
-                                </small>
-                            </InputSwitch>
-                            <InputSwitch identifier="autoBlack" v-model="autoBlack">
-                                Verlichting 's nachts uitschakelen
-                                <small>
-                                    Tussen 01:00 en 09:30 is het bord zwart als er in de komende 3 uur geen inlopen
-                                    zijn.
-                                </small>
-                            </InputSwitch>
-                        </fieldset>
-
-                        <fieldset>
-                            <legend>Overig</legend>
-                            <InputSelect identifier="animation" v-model="animation">
-                                Animatie
-                                <template #options>
-                                    <option :value="0x00">Geen</option>
-                                    <option :value="0x01">Scannen naar rechts</option>
-                                    <option :value="0x02">Scannen naar links</option>
-                                    <option :value="0x03">Scannen naar beneden</option>
-                                    <option :value="0x04">Scannen naar boven</option>
-                                    <option :value="0x05">Schuiven naar rechts</option>
-                                    <option :value="0x06">Schuiven naar links</option>
-                                    <option :value="0x07">Duwen naar beneden</option>
-                                    <option :value="0x08">Duwen naar boven</option>
-                                    <option :value="0x09">Vloeien</option>
-                                    <option :value="0x0A">Bedekken naar rechts</option>
-                                    <option :value="0x0B">Bedekken naar links</option>
-                                    <option :value="0x0C">Bedekken naar beneden</option>
-                                    <option :value="0x0D">Bedekken naar boven</option>
-                                    <option :value="0x0E">Scannen naar buiten</option>
-                                    <option :value="0x0F">Scannen naar binnen</option>
-                                    <option :value="0x10">Duwen naar buiten</option>
-                                    <option :value="0x11">Duwen naar binnen</option>
-                                    <option :value="0x12">Bedekken naar buiten</option>
-                                    <option :value="0x13">Bedekken naar binnen</option>
-                                    <option :value="0x14">Glinsteren</option>
-                                </template>
-                            </InputSelect>
-                            <InputNumber identifier="animationSpeed" v-model="animationSpeed" :min="0" :max="9"
-                                unit="/9">
-                                Animatiesnelheid
-                            </InputNumber>
+                            <legend>Effecten</legend>
+                            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                                <InputGroup type="select" id="animation" v-model="animation">
+                                    <template #label>Animatie</template>
+                                    <template #input>
+                                        <option :value="0x00">Geen</option>
+                                        <option :value="0x01">Scannen naar rechts</option>
+                                        <option :value="0x02">Scannen naar links</option>
+                                        <option :value="0x03">Scannen naar beneden</option>
+                                        <option :value="0x04">Scannen naar boven</option>
+                                        <option :value="0x05">Schuiven naar rechts</option>
+                                        <option :value="0x06">Schuiven naar links</option>
+                                        <option :value="0x07">Duwen naar beneden</option>
+                                        <option :value="0x08">Duwen naar boven</option>
+                                        <option :value="0x09">Vloeien</option>
+                                        <option :value="0x0A">Bedekken naar rechts</option>
+                                        <option :value="0x0B">Bedekken naar links</option>
+                                        <option :value="0x0C">Bedekken naar beneden</option>
+                                        <option :value="0x0D">Bedekken naar boven</option>
+                                        <option :value="0x0E">Scannen naar buiten</option>
+                                        <option :value="0x0F">Scannen naar binnen</option>
+                                        <option :value="0x10">Duwen naar buiten</option>
+                                        <option :value="0x11">Duwen naar binnen</option>
+                                        <option :value="0x12">Bedekken naar buiten</option>
+                                        <option :value="0x13">Bedekken naar binnen</option>
+                                        <option :value="0x14">Glinsteren</option>
+                                    </template>
+                                </InputGroup>
+                                <InputGroup type="number" id="animationSpeed" v-model="animationSpeed" :min="0"
+                                    :max="9">
+                                    <template #label>Animatiesnelheid</template>
+                                    <span class="unit">/9</span>
+                                </InputGroup>
+                            </div>
                         </fieldset>
                     </Tab>
 
                     <Tab value="Voorstellingen">
-                        <p v-if="walkIns.some(walkIn => walkIn.title.length > 38)"><b>Let op:</b> roodgekleurde
-                            filmtitels zijn te
-                            lang en
-                            worden mogelijk afgekapt.</p>
+                        <Icon style="position: absolute;top:0;right:0;color: #ffc426; cursor: pointer;"
+                            @click="showFormattingInfo">info
+                        </Icon>
+                        <p v-if="walkIns.some(walkIn => walkIn.title.length > 38)">
+                            <b>Let op:</b> roodgekleurde filmtitels zijn te lang en worden mogelijk afgekapt.
+                        </p>
                         <InputSwitch v-if="walkIns.length" identifier="syncFilmTitles"
                             style="max-width: 650px; margin-bottom: 16px;" v-model="syncFilmTitles">
                             Alle identieke filmtitels tegelijk bewerken
                         </InputSwitch>
-                        <div>
+                        <ul class="scrollable-list">
                             <TransitionGroup name="list">
-                                <div v-for="(walkIn) in [...walkIns].sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())"
+                                <li v-for="(walkIn) in [...walkIns].sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())"
                                     class="flex walkin" :key="walkIn.i" :id="`walkin-${walkIn.i}`"
-                                    :style="{ opacity: (walkIn.scheduledTime.getTime() - Date.now() < -(hideTime * 60000) && walkIn.scheduledTime.getTime() - Date.now() < (180 * 60000)) ? 0.5 : 1 }">
-                                    <InputDate class="no-label walkin-time" :identifier="`walkin-${walkIn.i}-time`"
+                                    :class="{ 'past': walkIn.scheduledTime.getTime() - Date.now() < -(hideTime * 60000) && walkIn.scheduledTime.getTime() - Date.now() < (180 * 60000) }">
+                                    <InputDate class="walkin-time" :id="`walkin-${walkIn.i}-time`"
                                         v-model="walkIn.scheduledTime">
                                     </InputDate>
-                                    <InputText class="no-label walkin-title" :spellcheck="false" autocomplete="off"
-                                        :identifier="`walkin-${walkIn.i}-title`" :model-value="walkIn.title"
+                                    <Input type="text" class="walkin-title" :spellcheck="false" autocomplete="off"
+                                        :id="`walkin-${walkIn.i}-title`" :model-value="walkIn.title"
                                         @update:model-value="(value) => {
                                             if (syncFilmTitles) {
                                                 walkIns.filter(walkIn2 => walkIn2.title === walkIn.title).forEach(walkIn2 => walkIn2.title = value);
@@ -555,18 +558,18 @@ onBeforeUnmount(() => {
                                                 walkIn.title = value;
                                             }
                                         }" :class="{ 'too-long': walkIn.title.length > 38 }">
-                                    </InputText>
-                                    <InputText class="no-label walkin-auditorium" :spellcheck="false" autocomplete="off"
-                                        :identifier="`walkin-${walkIn.i}-auditorium`" v-model="walkIn.auditorium">
-                                    </InputText>
-                                    <Icon style="float: right; cursor: pointer; padding: 2px;"
+                                    </Input>
+                                    <Input type="text" class="walkin-auditorium" :spellcheck="false" autocomplete="off"
+                                        :id="`walkin-${walkIn.i}-auditorium`" v-model="walkIn.auditorium">
+                                    </Input>
+                                    <Icon class="delete"
                                         @click="walkIns.splice(walkIns.findIndex(w => w.scheduledTime === walkIn.scheduledTime && w.title === walkIn.title && w.auditorium === walkIn.auditorium), 1)">
-                                        delete</Icon>
-                                </div>
+                                        close</Icon>
+                                </li>
                             </TransitionGroup>
                             <p v-if="!walkIns.length">Geen voorstellingen gepland.</p>
-                        </div>
-                        <Button class="secondary"
+                        </ul>
+                        <Button class="secondary" style="margin-top: 8px;"
                             @click="walkIns.push({ scheduledTime: new Date(), title: '', auditorium: '', i: walkIns.length })">
                             <Icon>add</Icon>
                             <span>Nieuwe voorstelling</span>
@@ -610,6 +613,9 @@ onBeforeUnmount(() => {
                         </fieldset>
 
                         <fieldset v-if="!autoConfigure">
+                            <Icon style="position: absolute;top:0;right:0;color: #ffc426; cursor: pointer;"
+                                @click="showFormattingInfo">info
+                            </Icon>
                             <legend>Configuratie</legend>
                             <small>
                                 Onderstaande statische configuratie wordt op het bord weergegeven.<br>
@@ -668,12 +674,14 @@ onBeforeUnmount(() => {
                         <fieldset>
                             <legend>Verbinding</legend>
                             <div class="flex" style="flex-direction: column;">
-                                <InputText v-model="ip1" identifier="ip">
-                                    <span>IP-adres scherm 1</span>
-                                </InputText>
-                                <InputText v-model="ip2" identifier="ip2">
-                                    <span>IP-adres scherm 2</span>
-                                </InputText>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                    <InputGroup type="text" v-model="ip1" id="ip">
+                                        <template #label>IP-adres scherm 1</template>
+                                    </InputGroup>
+                                    <InputGroup type="text" v-model="ip2" id="ip2">
+                                        <template #label>IP-adres scherm 2</template>
+                                    </InputGroup>
+                                </div>
                                 <InputSwitch v-model="autoSend" identifier="autoSend">
                                     <span>Automatisch verzenden</span>
                                 </InputSwitch>
@@ -705,10 +713,10 @@ onBeforeUnmount(() => {
                                 <small>{{ sending ? "Verzenden..." : "" }}</small>
                                 <small v-for="(status, i) in lastSentStatus" :key="i">
                                     Scherm {{ i + 1 }}: {{
-                                        !status ? "Niets verzonden" :
-                                            status === 'ok' ? "OK" :
-                                                status === 'error' ? "Fout" :
-                                                    status
+                                    !status ? "Niets verzonden" :
+                                    status === 'ok' ? "OK" :
+                                    status === 'error' ? "Fout" :
+                                    status
                                     }}
                                 </small>
                             </div>
@@ -738,17 +746,8 @@ pre {
 }
 
 :deep(#tickerText) {
-    width: 75%;
-    max-width: none;
     font-family: monospace;
-}
-
-:deep(.modal-content) {
-    max-width: max-content;
-}
-
-#walkin-editor :deep(.modal-content) {
-    overflow: hidden;
+    font-size: 14px;
 }
 
 #display-lines {
@@ -769,7 +768,8 @@ pre {
 
     :deep(input[type="text"]) {
         font-family: monospace;
-        width: calc(60ch + 18px);
+        font-size: 14px;
+        width: calc(60ch + 32px);
         max-width: none;
     }
 }
@@ -795,32 +795,45 @@ pre {
 .walkin {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-top: 8px;
-    margin-bottom: 8px;
-    font-family: monospace;
+    gap: 8px;
 
-    :deep(input) {
+    &.past>input {
+        opacity: 0.5;
+    }
+
+    .walkin-time {
+        flex: 0 0 150px;
+        width: 150px;
+        height: 36px;
+        font-size: 14px;
+        letter-spacing: -1.25px;
+    }
+
+    .walkin-title {
+        flex: 1 1 400px;
         font-family: monospace;
+        font-size: 14px;
+        height: 36px;
+        padding-right: 0;
     }
 
-    .walkin-title :deep(input) {
-        width: 400px;
-        max-width: 400px;
+    .too-long {
+        color: #f15a5a;
     }
 
-    .too-long :deep(input) {
-        color: red;
-    }
-
-    .walkin-auditorium :deep(input) {
-        width: 52px;
+    .walkin-auditorium {
+        flex: 0 0 52px;
+        font-family: monospace;
+        font-size: 14px;
+        height: 36px;
+        padding-right: 0;
     }
 }
 
 #matrix-display {
     position: relative;
     font-family: monospace;
+    font-size: 14px;
     width: calc(60ch + 56px);
 
     &.blackout {

@@ -184,7 +184,7 @@ const { isOverDropZone } = useDropZone(main, {
                                     </td>
                                     <td>{{ formatDuration(reel.properStart * filmDuration, reel.frameRate) }}
                                         ({{ (reel.properStart * 100).toLocaleString('nl-NL',
-                                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%)
+                                            { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%)
                                     </td>
                                 </tr>
                             </table>
@@ -195,19 +195,19 @@ const { isOverDropZone } = useDropZone(main, {
                                     en de
                                     {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel
                                     (na {{ formatDuration(mostCentralGap * filmDuration, reels[0].frameRate) }} of {{
-                                    (mostCentralGap * 100).toLocaleString('nl-NL',
-                                    { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%).
+                                        (mostCentralGap * 100).toLocaleString('nl-NL',
+                                            { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%).
                                 </p>
                                 <p v-else-if="reels.length > 1">
                                     Er is geen reel die tussen {{ 50 -
-                                    intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
+                                        intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
                                     film
                                     eindigt.
                                     <a v-if="(Math.abs(mostCentralGap - 0.5) - (intermissionPercentageDev / 100)) < 0.05"
                                         class="link"
                                         @click="intermissionPercentageDev = Math.ceil(Math.abs(mostCentralGap - 0.5) * 100)">
                                         Maximale afwijking bijstellen tot {{ Math.ceil(Math.abs(mostCentralGap - 0.5) *
-                                        100) }}%?</a>
+                                            100) }}%?</a>
                                     <br>
                                     Een pauze zou kunnen worden ingepland tijdens de
                                     {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel (bijvoorbeeld na
@@ -226,21 +226,19 @@ const { isOverDropZone } = useDropZone(main, {
                     <p v-else>Geen bestand geüpload</p>
                 </div>
                 <SidePanel style="flex: 229px 1 1;">
-                    <Tabs>
-                        <Tab value="Configuratie">
-                            <fieldset>
-                                <legend>Pauzesuggestie</legend>
-                                <InputNumber v-model.number="intermissionPercentageDev"
-                                    identifier="intermissionPercentageDev" unit="%">
-                                    Maximale afwijking van middenpunt
-                                    <small>De filmpauze kan worden geplaatst tussen {{ 50 -
-                                        intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
-                                        film.
-                                    </small>
-                                </InputNumber>
-                            </fieldset>
-                        </Tab>
-                    </Tabs>
+                    <h2>Opties</h2>
+                    <fieldset>
+                        <legend>Pauzesuggestie</legend>
+                        <InputGroup type="number" id="intermissionPercentageDev"
+                            v-model.number="intermissionPercentageDev">
+                            <template #label>Maximale afwijking van middenpunt</template>
+                            <span class="unit">%</span>
+                        </InputGroup>
+                        <small>De filmpauze kan worden geplaatst tussen {{ 50 -
+                            intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
+                            film.
+                        </small>
+                    </fieldset>
                 </SidePanel>
             </div>
         </section>

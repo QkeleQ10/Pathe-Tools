@@ -34,11 +34,11 @@
 
 * {
     box-sizing: border-box;
-    /* color-scheme: dark; */
 }
 
 html {
     scroll-padding-top: calc(70px + 40px);
+    color-scheme: dark;
 
     &:has(.fake-fullscreen) {
         overflow: hidden;
@@ -164,16 +164,42 @@ em.label {
     opacity: 0;
 }
 
-.side-panel fieldset {
-    border: 1px solid #4a4b4d;
+.scrollable-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+
+    overflow-y: auto;
+    max-height: 500px;
     border-radius: 5px;
+    border: 1px solid #4a4b4d;
+
+    &>* {
+        padding: 8px 12px;
+        border-bottom: 1px solid #4a4b4d;
+    }
+
+    &>*:last-child {
+        border-bottom: none;
+    }
+
+    &>* .delete {
+        color: #f15a5a;
+        cursor: pointer;
+    }
+}
+
+.side-panel fieldset {
+    border: none;
+    border-top: 1px solid #4a4b4d;
     margin-left: 0;
     margin-right: 0;
-    padding: 8px 12px 12px;
+    margin-bottom: 24px;
+    padding: 8px 0 0;
 
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
 }
 
 .side-panel>fieldset:first-of-type {
@@ -186,7 +212,8 @@ em.label {
 
 .side-panel fieldset>legend {
     font-weight: bold;
-    margin-left: -2px;
+    margin-left: -8px;
+    padding: 0 8px;
 }
 
 .side-panel .tab-content>div>.input {

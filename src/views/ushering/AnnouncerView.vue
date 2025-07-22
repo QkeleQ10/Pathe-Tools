@@ -406,8 +406,8 @@ function showFeedbackDialog() {
                                 :class="{ 'announcing': announcement.audio && !announcement.audio.paused }">
                                 <div class="room" v-if="announcement.show">
                                     {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium ===
-                                        'Rooftop') ? 'RT' :
-                                        announcement.show.auditorium.replace(/^\w+\s/, '') }}
+                                    'Rooftop') ? 'RT' :
+                                    announcement.show.auditorium.replace(/^\w+\s/, '') }}
                                 </div>
                                 <div class="title" v-if="announcement.show">{{ announcement.show.title }}</div>
                                 <div class="time" v-if="announcement.show">
@@ -429,8 +429,8 @@ function showFeedbackDialog() {
                                     </div>
                                     <div>
                                         '{{announcement.segments
-                                            .map(segment => getSoundInfo(segment.spriteName).name)
-                                            .join(' ')}}'
+                                        .map(segment => getSoundInfo(segment.spriteName).name)
+                                        .join(' ')}}'
                                     </div>
                                 </div>
                             </div>
@@ -453,20 +453,21 @@ function showFeedbackDialog() {
                         <legend>Handmatige omroep</legend>
                         <AnnouncementBuilder v-model="customAnnouncement" class="full">
                             <Icon>build</Icon>
-                            <span>Omroep maken</span>
+                            <span>Omroep inplannen</span>
                             <template #footer>
                                 <h3>Afspeelopties</h3>
-                                <InputDate identifier="customAnnouncementDate" v-model="customAnnouncementDate">
-                                    Inplannen voor</InputDate>
                                 <div class="flex buttons">
-                                    <Button class="secondary add-rule" @click="previewAnnouncement(customAnnouncement)">
-                                        <Icon>play_arrow</Icon>
-                                        Nu afspelen
-                                    </Button>
+                                    <InputDate identifier="customAnnouncementDate" v-model="customAnnouncementDate"
+                                        style="height: 48px">
+                                        Inplannen voor</InputDate>
                                     <Button
                                         @click="scheduledAnnouncements.push({ time: customAnnouncementDate, segments: customAnnouncement, audio: null })">
                                         <Icon>timer</Icon>
-                                        Later afspelen
+                                        Omroep inplannen
+                                    </Button>
+                                    <Button class="secondary add-rule" @click="previewAnnouncement(customAnnouncement)">
+                                        <Icon>play_arrow</Icon>
+                                        Nu afspelen
                                     </Button>
                                 </div>
                             </template>
@@ -486,43 +487,49 @@ function showFeedbackDialog() {
                     </fieldset>
 
                     <fieldset>
-                        <legend>Regels</legend>
-                        <InputSelect identifier="chime2Replacement" v-model="chimeBReplacement">
-                            Geluidje voor aftiteling
-                            <template #options>
-                                <option :value="1">♪ 1a</option>
-                                <option :value="2">♪ 1b</option>
-                                <option :value="3">♪ 2a</option>
-                                <option :value="4">♪ 2b</option>
-                                <option :value="5">♪ 3a</option>
-                                <option :value="6">♪ 3b</option>
-                                <option :value="7">♪ 4</option>
-                                <option :value="8">♪ 5</option>
-                                <option :value="0">♪ oud</option>
-                            </template>
-                        </InputSelect>
-                        <InputSelect identifier="chime1Replacement" v-model="chimeAReplacement">
-                            Geluidje voor overige gebeurtenissen
-                            <template #options>
-                                <option :value="1">♪ 1a</option>
-                                <option :value="2">♪ 1b</option>
-                                <option :value="3">♪ 2a</option>
-                                <option :value="4">♪ 2b</option>
-                                <option :value="5">♪ 3a</option>
-                                <option :value="6">♪ 3b</option>
-                                <option :value="7">♪ 4</option>
-                                <option :value="8">♪ 5</option>
-                                <option :value="0">♪ oud</option>
-                            </template>
-                        </InputSelect>
+                        <legend>Geluiden</legend>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <InputGroup type="select" id="chime2Replacement" v-model="chimeBReplacement">
+                                <template #label>Aftiteling</template>
+                                <template #input>
+                                    <option :value="1">♪ 1a</option>
+                                    <option :value="2">♪ 1b</option>
+                                    <option :value="3">♪ 2a</option>
+                                    <option :value="4">♪ 2b</option>
+                                    <option :value="5">♪ 3a</option>
+                                    <option :value="6">♪ 3b</option>
+                                    <option :value="7">♪ 4</option>
+                                    <option :value="8">♪ 5</option>
+                                    <option :value="0">♪ oud</option>
+                                </template>
+                            </InputGroup>
+                            <InputGroup type="select" id="chime1Replacement" v-model="chimeAReplacement">
+                                <template #label>Overige gebeurtenissen</template>
+                                <template #input>
+                                    <option :value="1">♪ 1a</option>
+                                    <option :value="2">♪ 1b</option>
+                                    <option :value="3">♪ 2a</option>
+                                    <option :value="4">♪ 2b</option>
+                                    <option :value="5">♪ 3a</option>
+                                    <option :value="6">♪ 3b</option>
+                                    <option :value="7">♪ 4</option>
+                                    <option :value="8">♪ 5</option>
+                                    <option :value="0">♪ oud</option>
+                                </template>
+                            </InputGroup>
+                        </div>
                         <a @click="showFeedbackDialog" style="text-decoration: underline; cursor: pointer;">Klik hier
                             voor informatie</a>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Regels</legend>
                         <Button class="secondary full" @click="showRuleEditor = true">
                             <Icon>edit</Icon>
                             <span>Regels bewerken
                                 <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
                                     {{customRules.filter(r =>
-                                        r.enabled).length}} actief)</small>
+                                    r.enabled).length}} actief)</small>
                             </span>
                         </Button>
                     </fieldset>

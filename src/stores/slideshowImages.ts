@@ -1,10 +1,13 @@
 import { ref, onMounted } from 'vue'
+import { useUrlSearchParams } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { useServerStore } from './server';
 
 export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
     const images = ref<{ name: string, url: string }[]>([]);
     const status = ref<'no-connection' | 'no-credentials' | 'sending' | 'sent' | 'send-error' | 'receiving' | 'received' | 'receive-error' | 'error'>('no-connection');
+
+    const params = useUrlSearchParams('history');
 
     const serverStore = useServerStore();
 
@@ -31,7 +34,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
     async function getFromServer(): Promise<{ name: string, url: string }[]> {
         return new Promise(async (resolve, reject) => {
             try {
-                const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures`, {
+                const response = await fetch(`${params.url || 'http://localhost:3541'}/users/${serverStore.username}/pictures`, {
                     headers: {
                         'ngrok-skip-browser-warning': 'true'
                     }

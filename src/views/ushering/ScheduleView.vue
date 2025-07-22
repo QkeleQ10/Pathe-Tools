@@ -153,7 +153,7 @@ onMounted(() => {
                     <div id="print-component" ref="printComponent" v-if="transformedTable.length > 0">
                         <div class="header" v-if="'flags' in store.metadata">
                             {{ store.metadata.flags.includes('times-only') ? 'datum onbekend' :
-                            format(transformedTable[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
+                                format(transformedTable[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
                         </div>
                         <table class="timetable" spellcheck="false">
                             <colgroup>
@@ -195,7 +195,7 @@ onMounted(() => {
                                     <span class="preshow-duration"
                                         v-if="(show.scheduledTime && show.mainShowTime) && ((displayPreshowDuration === 1 && show.auditorium?.includes('4DX')) || displayPreshowDuration === 2)">
                                         +{{ Math.round((show.mainShowTime.getTime() - show.scheduledTime.getTime()) /
-                                        60000) }}
+                                            60000) }}
                                     </span>
                                 </td>
                                 <td nowrap contenteditable v-if="optionalColumnsSetting.mainTime" class="translucent">
@@ -216,7 +216,7 @@ onMounted(() => {
                                         <span class="credits-duration"
                                             v-if="(show.creditsTime && show.endTime) && ((displayCreditsDuration === 1 && show.hasCreditsStinger) || displayCreditsDuration === 2)">
                                             +{{ Math.round((show.endTime.getTime() - show.creditsTime.getTime()) /
-                                            60000) }}
+                                                60000) }}
                                         </span>
                                     </span>
                                 </td>
@@ -253,13 +253,13 @@ onMounted(() => {
                         <div class="footer">
                             <span v-if="'lastModified' in store.metadata">
                                 Gegevens: {{ new Date(store.metadata.lastModified).toLocaleString('nl-NL', {
-                                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit',
-                                minute: '2-digit'
+                                    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit',
+                                    minute: '2-digit'
                                 }) }} •
                             </span>
                             Gegenereerd: {{ new Date().toLocaleDateString('nl-NL', {
-                            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:
-                            '2-digit'
+                                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:
+                                    '2-digit'
                             }) }}
                             • Pathé Tools • Quinten Althues
                         </div>
@@ -271,65 +271,70 @@ onMounted(() => {
                     <fieldset
                         v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX')))">
                         <legend>4DX-inloop</legend>
-                        <small>Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
-                            streeplijntje.</small>
-
-                        <InputNumber v-model.number="plfTimeBefore" identifier="plfTimeBefore" min="0" max="30"
-                            unit="min">
-                            Tijd voor aanvang
-                            <small v-if="plfTimeBefore > 0">De 4DX-inloop begint {{ plfTimeBefore }} minuten
-                                voor de aanvangstijd en eindigt wanneer de hoofdfilm begint.</small>
-                        </InputNumber>
+                        <InputGroup type="number" id="plfTimeBefore" v-model.number="plfTimeBefore" min="0" max="30">
+                            <template #label>Tijd voor aanvang</template>
+                            <span class="unit">minuten</span>
+                        </InputGroup>
+                        <small v-if="plfTimeBefore > 0">
+                            Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
+                            streeplijntje. De 4DX-inloop begint {{ plfTimeBefore }} minuten
+                            voor de aanvangstijd en eindigt wanneer de hoofdfilm begint.
+                        </small>
                     </fieldset>
                     <fieldset>
                         <legend>Uitloop</legend>
-                        <InputNumber v-model.number="shortGapInterval" identifier="shortGapInterval" min="0" max="20"
-                            unit="min">Interval
-                            voor dubbele
-                            uitloop
-                            <small v-if="shortGapInterval > 0">
-                                Uitlopen met minder dan {{ shortGapInterval }} minuten ertussen krijgen een
-                                boogje
-                            </small>
-                            <small v-else>Uitlopen met weinig tijd ertussen worden niet gemarkeerd</small>
-                        </InputNumber>
-                        <InputNumber v-model.number="longGapInterval" identifier="longGapInterval" min="20" max="80"
-                            unit="min">Interval
-                            voor gat tussen
-                            uitlopen
-                            <small v-if="longGapInterval > 0">Gaten van meer dan {{ longGapInterval }}
-                                minuten
-                                krijgen een stippellijntje
-                            </small>
-                            <small v-else>Uitlopen met veel tijd ertussen worden niet gemarkeerd</small>
-                        </InputNumber>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <InputGroup type="number" id="shortGapInterval" v-model.number="shortGapInterval" min="0"
+                                max="20">
+                                <template #label>Interval voor dubbele uitloop</template>
+                                <span class="unit">minuten</span>
+                            </InputGroup>
+                            <InputGroup type="number" id="shortGapInterval" v-model.number="longGapInterval" min="20"
+                                max="80">
+                                <template #label>Interval voor gat tussen uitlopen</template>
+                                <span class="unit">minuten</span>
+                            </InputGroup>
+                        </div>
                         <small>
-                            Bij uitlopen met post-credits-scènes wordt de tijd 'Einde voorstelling' gebruikt
-                            voor het
-                            berekenen van de tijd tot de volgende uitloop.
+                            <span v-if="shortGapInterval > 0">
+                                Uitlopen met minder dan {{ shortGapInterval }} minuten ertussen krijgen een
+                                boogje.
+                            </span>
+                            <span v-else>
+                                Uitlopen met weinig tijd ertussen worden niet gemarkeerd.
+                            </span>
+                            <span v-if="longGapInterval > 0">
+                                Gaten van meer dan {{ longGapInterval }} minuten krijgen een stippellijntje.
+                            </span>
+                            <span v-else>
+                                Uitlopen met veel tijd ertussen worden niet gemarkeerd.
+                            </span>
+                            <br>
+                            Als een voorstelling een post-credits-scène heeft, dan wordt de tijd 'Einde voorstelling' gebruikt
+                            voor het berekenen van de tijd tot de volgende uitloop.
                         </small>
-                        <InputSelect v-model="displayCreditsDuration" identifier="showCreditsDuration">
-                            Tijd tussen aftiteling en einde voorstelling tonen
-                            <template #options>
-                                <option :value="0">Nooit tonen</option>
-                                <option :value="1">Alleen bij post-credits-scènes</option>
-                                <option :value="2">Altijd tonen</option>
-                            </template>
-                        </InputSelect>
                     </fieldset>
                     <fieldset>
                         <legend>Overig</legend>
                         <InputSwitch v-model="splitExtra" identifier="splitExtra">
                             Extra informatie scheiden van filmtitel
                         </InputSwitch>
-                        <InputSelect v-model="displayPreshowDuration" identifier="showPreshowDuration">
-                            Tijd tussen inloop en start hoofdfilm tonen
-                            <template #options>
-                                <option :value="0">Nooit tonen</option>
-                                <option :value="1">Alleen bij 4DX-inloop</option>
-                                <option :value="2">Altijd tonen</option>
-                            </template>
-                        </InputSelect>
+                            <InputGroup type="select" id="displayCreditsDuration" v-model="displayCreditsDuration">
+                                <template #label>Tijd tussen aftiteling en einde voorstelling tonen</template>
+                                <template #input>
+                                    <option :value="0">Nooit tonen</option>
+                                    <option :value="1">Alleen bij post-credits-scènes</option>
+                                    <option :value="2">Altijd tonen</option>
+                                </template>
+                            </InputGroup>
+                            <InputGroup type="select" id="displayPreshowDuration" v-model="displayPreshowDuration">
+                                <template #label>Tijd tussen inloop en start hoofdfilm tonen</template>
+                                <template #input>
+                                    <option :value="0">Nooit tonen</option>
+                                    <option :value="1">Alleen bij 4DX-inloop</option>
+                                    <option :value="2">Altijd tonen</option>
+                                </template>
+                            </InputGroup>
                     </fieldset>
                     <fieldset>
                         <legend>Extra kolommen</legend>

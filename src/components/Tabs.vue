@@ -38,6 +38,7 @@ onMounted((): void => {
     position: relative;
     display: flex;
     gap: 10px;
+    margin-left: -8px;
 }
 
 .tabs button {

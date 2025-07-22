@@ -58,18 +58,17 @@ function addRule() {
             </InputCheckbox>
             <div v-if="!toggleOnly" class="input timing-input">
                 <span>Timing:</span>
-                <span>
-                    <InputNumber class="no-label" :identifier="rule.id + 'triggerPreponeMinutes'" unit="min."
-                        v-model="rule.trigger.preponeMinutes"></InputNumber>
+                <span style="position: relative;">
+                    <Input type="number" :id="rule.id + 'triggerPreponeMinutes'" v-model="rule.trigger.preponeMinutes"
+                        style="width: 75px;" />
+                    <span class="unit"
+                        style="position: absolute; left: 48px; top: 12px; opacity: .5; font-size: 12px;">min.</span>
                     vóór
-                    <InputSelect class="no-label" :identifier="rule.id + 'triggerProperty'"
-                        v-model="rule.trigger.property">
-                        <template #options>
-                            <option v-for="(value, key) in properties" :key="key" :value="key">
-                                {{ value }}
-                            </option>
-                        </template>
-                    </InputSelect>
+                    <Select :id="rule.id + 'triggerProperty'" v-model="rule.trigger.property" style="width: 200px;">
+                        <option v-for="(value, key) in properties" :key="key" :value="key">
+                            {{ value }}
+                        </option>
+                    </Select>
                 </span>
             </div>
             <p v-else>
@@ -109,7 +108,7 @@ function addRule() {
                         'en' }}
                     <span v-if="rule.filter.playlistTitleIncludes">met <b>{{
                         rule.filter.playlistTitleIncludes
-                    }}</b> in de titel
+                            }}</b> in de titel
                     </span>
                     <span v-if="rule.filter.playlistTitleExcludes">zonder <b>{{
                         rule.filter.playlistTitleExcludes }}</b>
@@ -131,14 +130,16 @@ function addRule() {
                     <InputCheckbox :identifier="rule.id + 'firstShowOnly'" v-model="rule.filter.firstShowOnly">
                         Alleen de eerste overeenkomst
                     </InputCheckbox>
-                    <InputText :identifier="rule.id + 'playlistTitleIncludes'"
-                        v-model="rule.filter.playlistTitleIncludes">
-                        Titel moet bevatten
-                    </InputText>
-                    <InputText :identifier="rule.id + 'playlistTitleExcludes'"
-                        v-model="rule.filter.playlistTitleExcludes">
-                        Titel mag niet bevatten
-                    </InputText>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <InputGroup type="text" :id="rule.id + 'playlistTitleIncludes'"
+                            v-model="rule.filter.playlistTitleIncludes">
+                            <template #label>Titel moet bevatten</template>
+                        </InputGroup>
+                        <InputGroup type="text" :id="rule.id + 'playlistTitleExcludes'"
+                            v-model="rule.filter.playlistTitleExcludes">
+                            <template #label>Titel mag niet bevatten</template>
+                        </InputGroup>
+                    </div>
                 </ModalDialog>
             </Transition>
         </li>

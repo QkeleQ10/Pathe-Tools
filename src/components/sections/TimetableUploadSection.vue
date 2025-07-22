@@ -75,13 +75,20 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
 
                     <em class="label">Configuratie</em>
                     <div class="server-options-container">
-                        <p>Serveradres<span style="float: right; opacity: .5;">{{ serverStore.url }}</span></p>
-                        <InputText v-model="serverStore.username" identifier="username">
-                            <span>Gebruikersnaam</span>
-                        </InputText>
-                        <InputText v-model="serverStore.password" identifier="password">
-                            <span>Wachtwoord</span>
-                        </InputText>
+                        <p>
+                            Serveradres
+                            <span style="float: right; opacity: .5;">
+                                {{ serverStore.url }}
+                            </span>
+                        </p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+                            <InputGroup type="text" id="username" v-model="serverStore.username">
+                                <template #label>Gebruikersnaam</template>
+                            </InputGroup>
+                            <InputGroup type="text" id="password" v-model="serverStore.password">
+                                <template #label>Wachtwoord</template>
+                            </InputGroup>
+                        </div>
                     </div>
                     <small v-if="['send-error', 'no-credentials', 'no-connection'].includes(store.status)"
                         style="display: block; margin-block: 12px;">Let op: als je gegevens vernieuwt, dan gaan

@@ -8,7 +8,7 @@ const model = defineModel<string>();
         <div class="title">
             <slot></slot>
         </div>
-        <input type="text" :id="identifier" :list="identifier + '-list'" v-model="model" :disabled="disabled"
+        <Input type="text" :id="identifier" :list="identifier + '-list'" v-model="model" :disabled="disabled"
             :spellcheck="spellcheck" :autocomplete="autocomplete" />
         <datalist :id="identifier + '-list'">
             <slot name="datalist"></slot>
@@ -40,22 +40,6 @@ label.no-label {
     flex: max-content 0 0;
     flex-direction: column;
     gap: 4px;
-}
-
-input {
-    height: 100%;
-    width: 100%;
-    max-width: 200px;
-    padding: 8px;
-    padding-right: 0;
-    font: 15px Arial, Helvetica, sans-serif;
-    border: 1px solid #6d6e71;
-    color: #000;
-    border-radius: 6px;
-}
-
-input:focus-visible {
-    outline: 2px solid #feb91e;
 }
 
 div.input.has-unit {

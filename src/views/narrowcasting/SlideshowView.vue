@@ -142,7 +142,8 @@ const { isOverDropZone } = useDropZone(main, {
                         <button class="control next" @click="nextSlide">
                             <Icon>chevron_right</Icon>
                         </button>
-                        <div class="control dotnav" ref="dotnav" :class="{ hoverNearby: shouldExpandDotnav && shouldShowControls }">
+                        <div class="control dotnav" ref="dotnav"
+                            :class="{ hoverNearby: shouldExpandDotnav && shouldShowControls }">
                             <button class="dot" v-for="(url, index) in store.images" @click="currentSlide = index"
                                 :class="{ active: index === currentSlide }">
                                 <img :src="url.url" />
@@ -155,16 +156,11 @@ const { isOverDropZone } = useDropZone(main, {
                     <h2>Opties</h2>
                     <fieldset>
                         <legend>Automatische weergave</legend>
-                        <InputNumber v-model.number="slideDuration" @change="startSlideshow" identifier="slideDuration"
-                            step="1" min="1" max="240" unit="s">
-                            Seconden per dia
-                            <small v-if="slideDuration > 0">
-                                Elke {{ slideDuration }} seconden wordt de volgende dia getoond.
-                            </small>
-                            <small v-else>
-                                De automatische weergave is uitgeschakeld.
-                            </small>
-                        </InputNumber>
+                        <InputGroup type="number" id="slideDuration" v-model.number="slideDuration"
+                            @change="startSlideshow" step="1" min="1" max="240">
+                            <template #label>Volgende dia elke</template>
+                            <span class="unit">seconden</span>
+                        </InputGroup>
                         <Button class="secondary full" @click="currentSlide = 0; startSlideshow(); toggleFullscreen()">
                             <Icon>play_arrow</Icon>Automatische weergave starten
                         </Button>

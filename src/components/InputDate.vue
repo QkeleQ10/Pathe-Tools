@@ -2,7 +2,6 @@
 import { format } from 'date-fns';
 import { computed } from 'vue';
 
-const props = defineProps<{ identifier: string; disabled?: boolean }>();
 const model = defineModel<Date>();
 
 const transformedModel = computed<string>({
@@ -18,57 +17,18 @@ const transformedModel = computed<string>({
 </script>
 
 <template>
-    <label class="input time-input" :for="identifier">
-        <div class="title">
-            <slot></slot>
-        </div>
-        <div class="input">
-            <input type="datetime-local" :id="identifier" :disabled="disabled" :value="transformedModel"
-                @blur="transformedModel = ($event.target as HTMLInputElement).value" />
-        </div>
-    </label>
+    <input type="datetime-local" :value="transformedModel"
+        @blur="transformedModel = ($event.target as HTMLInputElement).value" />
 </template>
 
 <style scoped>
-label {
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    cursor: pointer;
-    user-select: none;
-}
-
-label.no-label {
-    display: inline-block;
-
-    .title {
-        display: none;
-    }
-}
-
-.title {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-div.input {
-    position: relative;
-    height: 34px;
-    width: 175px;
-    flex-shrink: 0;
-    font: 15px Arial, Helvetica, sans-serif;
-    color: #000;
-}
-
 input {
-    height: 100%;
-    width: 100%;
-    padding: 8px;
-    padding-right: 0;
-    font: 15px Arial, Helvetica, sans-serif;
-    border: 1px solid #6d6e71;
+    height: 40px;
+    padding: 0 12px;
+    font: 16px Heebo, arial, sans-serif;
+    border: 1px solid #30343d;
+    background-color: #ffffff06;
+    color: #fff;
     border-radius: 6px;
 }
 
