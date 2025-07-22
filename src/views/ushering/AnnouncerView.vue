@@ -183,8 +183,8 @@ watch(presetRules, () => {
 
 const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true });
 
-const chimeAReplacement = useStorage('chimea-replacement', 1);
-const chimeBReplacement = useStorage('chimeb-replacement', 1);
+const chimeAReplacement = useStorage('chimea-replacement', 7);
+const chimeBReplacement = useStorage('chimeb-replacement', 7);
 
 const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true });
 

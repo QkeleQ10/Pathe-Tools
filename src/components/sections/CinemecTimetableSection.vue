@@ -626,10 +626,10 @@ function showFormattingInfo() {
                                     <div class="flex">
                                         <InputCheckbox class="no-label" :identifier="`line-${i}-enabled`"
                                             v-model="line.enabled" />
-                                        <InputText class="no-label" :identifier="`line-${i}-text`"
+                                        <Input type="text" :id="`line-${i}-text`"
                                             v-model="line.textString"
                                             :class="{ 'too-long': line.textString.length > 60 }">
-                                        </InputText>
+                                        </Input>
                                     </div>
                                     <div class="flex" style="padding-left: 32px;" v-if="line.textString.length">
                                         <div class="flex select-icons">
