@@ -15,7 +15,7 @@ const { width } = useElementSize(useTemplateRef('ghostRef'));
 
 <template>
     <div class="input-group">
-        <label :for="id">
+        <label :for="id" class="label">
             <slot name="label"></slot>
         </label>
         <component :is="type === 'select' ? Select : Input" :type="type" :id="id" v-model="model" v-bind="$attrs">
@@ -31,17 +31,6 @@ const { width } = useElementSize(useTemplateRef('ghostRef'));
 <style scoped>
 .input-group {
     position: relative;
-}
-
-label {
-    display: block;
-    font-weight: 700;
-    font-size: 10px;
-    line-height: 20px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-    text-wrap: nowrap;
 }
 
 .ghost-span {
@@ -60,5 +49,6 @@ label {
     top: 38px;
     opacity: .5;
     font-size: 12px;
+    pointer-events: none;
 }
 </style>

@@ -289,7 +289,7 @@ onMounted(() => {
                                 <template #label>Interval voor dubbele uitloop</template>
                                 <span class="unit">minuten</span>
                             </InputGroup>
-                            <InputGroup type="number" id="shortGapInterval" v-model.number="longGapInterval" min="20"
+                            <InputGroup type="number" id="longGapInterval" v-model.number="longGapInterval" min="20"
                                 max="80">
                                 <template #label>Interval voor gat tussen uitlopen</template>
                                 <span class="unit">minuten</span>

@@ -17,8 +17,8 @@ label {
     position: relative;
     display: flex;
     justify-content: space-between;
-    align-items: first baseline;
-    gap: 16px;
+    align-items: first center;
+    gap: 8px;
     cursor: pointer;
     user-select: none;
 }
@@ -29,6 +29,19 @@ label.no-label {
     .title {
         display: none;
     }
+}
+
+label.enclose-box {
+    flex-direction: row-reverse;
+    justify-content: start;
+    height: 40px;
+    width: 100%;
+    padding: 0 12px;
+    font: 16px Heebo, arial, sans-serif;
+    border: 1px solid #30343d;
+    /* background-color: #ffffff06; */
+    color: currentColor;
+    border-radius: 6px;
 }
 
 label.label-end {

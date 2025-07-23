@@ -36,6 +36,10 @@ const animationSpeed = useLocalStorage('animation-speed', 0x07);
 const theatreName = useLocalStorage('theatre-name', 'Pathé');
 const tickerText = useLocalStorage('ticker-text', '');
 
+const additionalAgeRating = useLocalStorage('additional-age-rating', true);
+const additionalPlf = useLocalStorage('additional-plf', false);
+const additionalLanguage = useLocalStorage('additional-language', false);
+
 const receiveBeta = useLocalStorage('receive-beta', false);
 const autoSend = useLocalStorage('auto-send', true);
 const autoConfigure = useLocalStorage('auto-configure', true);
@@ -132,23 +136,33 @@ const autoConfiguration = computed(() => {
 const manualConfiguration = ref<DisplayLine[]>(presetConfigurations['walkin'].lines());
 const currentConfiguration = computed(() => autoConfigure.value ? autoConfiguration.value : manualConfiguration.value);
 
-store.$subscribe(() => {
+store.$subscribe(loadWalkIns)
+
+function loadWalkIns() {
     if (!store.table.length) return;
+
+    walkIns.value = [...store.table]
+        .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
+        .map((show, i) => {
+            let showTitle = show.title;
+            if (additionalPlf.value) showTitle += show.extras.filter(e => ['3D', '4DX', 'IMAX', 'SCREENX', 'ATMOS', 'DOLBY', 'ROOFTOP'].includes(e)).map(e => ` ${e}`).join('');
+            if (additionalLanguage.value) showTitle += show.extras.filter(e => ['(NL)', '(OV)'].includes(e)).map(e => ` ${e}`).join('');
+            if (additionalAgeRating.value && (show.featureRating === '16' || show.featureRating === '18')) showTitle += ` (16+)`;
+
+            return {
+                scheduledTime: show.scheduledTime,
+                title: showTitle.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join(''),
+                auditorium: show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '').split(' ')[0],
+                i
+            }
+        });
+
     if (autoSend.value) {
         nextTick(() => {
             sendData();
         });
     }
-
-    walkIns.value = [...store.table]
-        .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
-        .map((show, i) => ({
-            scheduledTime: show.scheduledTime,
-            title: show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join(''),
-            auditorium: show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '').split(' ')[0],
-            i
-        }));
-})
+}
 
 function getFormattedText(line: DisplayLine): { textString: string, fcolor: number, bcolor: number, flash: boolean }[] {
     if (!line?.textString) return [];
@@ -422,10 +436,10 @@ function showFormattingInfo() {
                     <small>{{ sending ? "Verzenden..." : "" }}</small>
                     <small v-for="(status, i) in lastSentStatus" :key="i">
                         Scherm {{ i + 1 }}: {{
-                        !status ? "Niets verzonden" :
-                        status === 'ok' ? "OK" :
-                        status === 'error' ? "Fout" :
-                        status
+                            !status ? "Niets verzonden" :
+                                status === 'ok' ? "OK" :
+                                    status === 'error' ? "Fout" :
+                                        status
                         }}
                     </small>
                 </div>
@@ -461,6 +475,20 @@ function showFormattingInfo() {
                                     @click="showFormattingInfo">info
                                 </Icon>
                             </InputGroup>
+                            <div>
+                                <div class="label">Aanvullende informatie</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                                    <InputCheckbox class="enclose-box" identifier="additionalAgeRating"
+                                        v-model="additionalAgeRating" @update:model-value="loadWalkIns">16+
+                                    </InputCheckbox>
+                                    <InputCheckbox class="enclose-box" identifier="additionalPlf"
+                                        v-model="additionalPlf" @update:model-value="loadWalkIns">PLF's
+                                    </InputCheckbox>
+                                    <InputCheckbox class="enclose-box" identifier="additionalLanguage"
+                                        v-model="additionalLanguage" @update:model-value="loadWalkIns">Taal
+                                    </InputCheckbox>
+                                </div>
+                            </div>
                         </fieldset>
 
                         <fieldset>
@@ -486,7 +514,7 @@ function showFormattingInfo() {
                             <small>De tekst 'gaat starten' verschijnt tussen {{ aboutToStartTime }} en {{
                                 isStartedTime }} minuten
                                 na de aanvangstijd. De tekst 'is gestart' verschijnt tussen {{ isStartedTime }} en {{
-                                hideTime }}
+                                    hideTime }}
                                 minuten
                                 na de aanvangstijd. Vanaf {{ hideTime }} minuten na de aanvangstijd worden
                                 voorstellingen verborgen.</small>
@@ -626,8 +654,7 @@ function showFormattingInfo() {
                                     <div class="flex">
                                         <InputCheckbox class="no-label" :identifier="`line-${i}-enabled`"
                                             v-model="line.enabled" />
-                                        <Input type="text" :id="`line-${i}-text`"
-                                            v-model="line.textString"
+                                        <Input type="text" :id="`line-${i}-text`" v-model="line.textString"
                                             :class="{ 'too-long': line.textString.length > 60 }">
                                         </Input>
                                     </div>
@@ -713,10 +740,10 @@ function showFormattingInfo() {
                                 <small>{{ sending ? "Verzenden..." : "" }}</small>
                                 <small v-for="(status, i) in lastSentStatus" :key="i">
                                     Scherm {{ i + 1 }}: {{
-                                    !status ? "Niets verzonden" :
-                                    status === 'ok' ? "OK" :
-                                    status === 'error' ? "Fout" :
-                                    status
+                                        !status ? "Niets verzonden" :
+                                            status === 'ok' ? "OK" :
+                                                status === 'error' ? "Fout" :
+                                                    status
                                     }}
                                 </small>
                             </div>
