@@ -35,7 +35,9 @@ const { width } = useElementSize(useTemplateRef('ghostRef'));
 
 .ghost-span {
     width: max-content;
+    max-width: calc(100% - 48px);
     position: absolute;
+    left: 0;
     visibility: hidden;
     white-space: pre;
     font: inherit;
