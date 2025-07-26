@@ -3,8 +3,8 @@ import { ref } from 'vue';
 import { onClickOutside } from '@vueuse/core';
 
 const props = defineProps<{
-    x: number;
-    y: number;
+    x?: number;
+    y?: number;
 }>();
 const emit = defineEmits<{
     'click-outside': [MouseEvent];
@@ -35,6 +35,7 @@ onClickOutside(target, (event: MouseEvent) => emit('click-outside', event));
     border-radius: 5px;
     box-shadow: 2px 2px 8px 2px #00000070;
     overflow: hidden;
+    z-index: 1;
 }
 
 .context-menu.dark {

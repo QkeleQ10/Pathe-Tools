@@ -42,6 +42,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     RuleList: typeof import('./src/components/RuleList.vue')['default']
+    ScheduleTableRow: typeof import('./src/components/ushering/schedule/ScheduleTableRow.vue')['default']
     Select: typeof import('./src/components/Select.vue')['default']
     SidePanel: typeof import('./src/components/SidePanel.vue')['default']
     SlideshowUploadSection: typeof import('./src/components/sections/SlideshowUploadSection.vue')['default']
