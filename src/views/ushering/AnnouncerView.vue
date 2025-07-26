@@ -395,7 +395,7 @@ function showFeedbackDialog() {
     <main ref="main">
         <TimetableUploadSection />
         <section>
-            <div class="flex" style="flex-wrap: wrap-reverse;">
+            <div class="section-content flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex: 50% 1 1;">
                     <h2>Geplande omroepen</h2>
                     <div id="upcoming-announcements">

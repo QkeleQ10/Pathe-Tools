@@ -42,6 +42,7 @@ label.enclose-box {
     /* background-color: #ffffff06; */
     color: currentColor;
     border-radius: 6px;
+    line-height: 16px;
 }
 
 label.label-end {

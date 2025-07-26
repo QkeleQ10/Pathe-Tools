@@ -45,34 +45,36 @@ function deleteAllImages() {
 
 <template>
 	<section id="upload">
-		<div class="floating">
-			<button id="upload-status" @click="showOptions = true"
-				:title="httpStatuses[store.status].long || store.status + '\nKlik om serveropties te wijzigen'">
-				<div id="upload-status-light" :class="store.status"></div>
-				{{ httpStatuses[store.status].short || store.status }}
-			</button>
-		</div>
-		<FileUploadBlock @files-uploaded="store.filesUploaded" accept="image/*" multiple>
-			<div v-if="store.images?.length" class="pictures" style="flex-grow: 1;">
-				<TransitionGroup name="list">
-					<button v-for="image in store.images" :key="image.name" :title="image.name"
-						@click="deleteImage(image.name)">
-						<img :src="image.url" />
-						<Icon>delete</Icon>
-					</button>
-				</TransitionGroup>
+		<div class="section-content">
+			<div class="floating">
+				<button id="upload-status" @click="showOptions = true"
+					:title="httpStatuses[store.status].long || store.status + '\nKlik om serveropties te wijzigen'">
+					<div id="upload-status-light" :class="store.status"></div>
+					{{ httpStatuses[store.status].short || store.status }}
+				</button>
 			</div>
-			<p v-else style="flex-grow: 1;">
-				Geen afbeeldingen
-				<br>
-				<small>Upload afbeeldingen met de knop of door ze hierheen te slepen.</small>
-			</p>
-			<template #buttons>
-				<Button class="secondary" v-if="store.images?.length" @click="deleteAllImages">
-					<Icon>delete_forever</Icon>Alles verwijderen
-				</Button>
-			</template>
-		</FileUploadBlock>
+			<FileUploadBlock @files-uploaded="store.filesUploaded" accept="image/*" multiple>
+				<div v-if="store.images?.length" class="pictures" style="flex-grow: 1;">
+					<TransitionGroup name="list">
+						<button v-for="image in store.images" :key="image.name" :title="image.name"
+							@click="deleteImage(image.name)">
+							<img :src="image.url" />
+							<Icon>delete</Icon>
+						</button>
+					</TransitionGroup>
+				</div>
+				<p v-else style="flex-grow: 1;">
+					Geen afbeeldingen
+					<br>
+					<small>Upload afbeeldingen met de knop of door ze hierheen te slepen.</small>
+				</p>
+				<template #buttons>
+					<Button class="secondary" v-if="store.images?.length" @click="deleteAllImages">
+						<Icon>delete_forever</Icon>Alles verwijderen
+					</Button>
+				</template>
+			</FileUploadBlock>
+		</div>
 
 		<Transition>
 			<ModalDialog v-if="showOptions" @dismiss="showOptions = false">

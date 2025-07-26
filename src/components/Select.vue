@@ -17,7 +17,7 @@ select {
     font: 16px Heebo, arial, sans-serif;
     border: 1px solid #30343d;
     background-color: #ffffff06;
-    color: #fff;
+    color: currentColor;
     border-radius: 6px;
 }
 

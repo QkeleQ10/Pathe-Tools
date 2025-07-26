@@ -403,7 +403,7 @@ function showFormattingInfo() {
 <template>
     <section>
 
-        <div style="display: flex; gap: 32px; flex-wrap: wrap;">
+        <div class="section-content" style="display: flex; gap: 32px; flex-wrap: wrap;">
             <div style="flex: 520px 0 0;">
                 <h2>Voorbeeld</h2>
 

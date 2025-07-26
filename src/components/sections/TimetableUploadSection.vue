@@ -17,38 +17,41 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
 
 <template>
     <section id="upload">
-        <div class="floating">
-            <!-- <h2>Gegevensbestand -->
-            <button id="upload-status" @click="showOptions = true"
-                :title="httpStatuses[store.status].long || store.status + '\nKlik om serveropties te wijzigen'">
-                <div id="upload-status-light" :class="store.status"></div>
-                {{ httpStatuses[store.status].short || store.status }}
-            </button>
-            <!-- </h2> -->
+        <div class="section-content">
+            <div class="floating">
+                <!-- <h2>Gegevensbestand -->
+                <button id="upload-status" @click="showOptions = true"
+                    :title="httpStatuses[store.status].long || store.status + '\nKlik om serveropties te wijzigen'">
+                    <div id="upload-status-light" :class="store.status"></div>
+                    {{ httpStatuses[store.status].short || store.status }}
+                </button>
+                <!-- </h2> -->
+            </div>
+            <FileUploadBlock @files-uploaded="store.filesUploaded" accept="text/csv,.csv,text/tsv,.tsv">
+                <p v-if="'name' in store.metadata" style="flex-grow: 1;">
+                    {{ store.metadata.name }}
+                    <br>
+                    <small>
+                        {{ store.table.length }} voorstellingen
+                        {{store.table.some(show => show.intermissionTime) ? 'met pauzes' : ''}}
+                        <span v-if="store.metadata.flags.includes('times-only')">zonder datum</span>
+                        <span v-else>op {{ format(store.table[0].scheduledTime, 'PP', { locale: nl }) }}</span>
+                        •
+                        Laatst gewijzigd op {{ format(store.metadata.lastModified, 'PPpp', { locale: nl }) }}
+                        •
+                        Geüpload op {{ format(store.metadata.uploadedDate, 'PPpp', { locale: nl }) }}
+                    </small>
+                </p>
+                <p v-else style="flex-grow: 1;">
+                    Geen gegevens
+                    <br>
+                    <small>Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) met de knop of
+                        door
+                        hem
+                        hierheen te slepen.</small>
+                </p>
+            </FileUploadBlock>
         </div>
-        <FileUploadBlock @files-uploaded="store.filesUploaded" accept="text/csv,.csv,text/tsv,.tsv">
-            <p v-if="'name' in store.metadata" style="flex-grow: 1;">
-                {{ store.metadata.name }}
-                <br>
-                <small>
-                    {{ store.table.length }} voorstellingen
-                    {{store.table.some(show => show.intermissionTime) ? 'met pauzes' : ''}}
-                    <span v-if="store.metadata.flags.includes('times-only')">zonder datum</span>
-                    <span v-else>op {{ format(store.table[0].scheduledTime, 'PP', { locale: nl }) }}</span>
-                    •
-                    Laatst gewijzigd op {{ format(store.metadata.lastModified, 'PPpp', { locale: nl }) }}
-                    •
-                    Geüpload op {{ format(store.metadata.uploadedDate, 'PPpp', { locale: nl }) }}
-                </small>
-            </p>
-            <p v-else style="flex-grow: 1;">
-                Geen gegevens
-                <br>
-                <small>Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) met de knop of door
-                    hem
-                    hierheen te slepen.</small>
-            </p>
-        </FileUploadBlock>
 
         <Transition>
             <ModalDialog v-if="showOptions" @dismiss="showOptions = false">

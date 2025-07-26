@@ -132,7 +132,7 @@ const { isOverDropZone } = useDropZone(main, {
     <main ref="main">
         <TmsXmlUploadSection />
         <section>
-            <div class="flex" style="flex-wrap: wrap;">
+            <div class="section-content flex" style="flex-wrap: wrap;">
                 <div style="flex: 50% 1 1;">
                     <h2>Filminformatie</h2>
                     <div class="film" v-if="store.metadata?.name">

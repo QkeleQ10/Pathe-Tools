@@ -11,6 +11,8 @@ import { nl } from 'date-fns/locale'
 const store = useTmsScheduleStore()
 const stingersStore = useCreditsStingersStore()
 
+const trueColours = useStorage('true-colours', false);
+
 const displayScheduledTime = useStorage('display-scheduled-time', true);
 const displayMainShowTime = useStorage('display-main-show-time', false);
 const displayIntermissionTime = useStorage('display-intermission-time', true);
@@ -106,12 +108,15 @@ onMounted(() => {
 <template>
     <main ref="main">
         <TimetableUploadSection />
-        <section id="edit">
-            <div class="flex" style="flex-wrap: wrap-reverse;">
+        <section id="edit" :class="{ gray: trueColours }">
+            <div class="section-content flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex-basis: calc(210mm + 16px);">
-                    <h2>Tijdenlijstje bewerken</h2>
+                    <div class="flex" style="justify-content: space-between; align-items: center; padding-right: 16px;">
+                        <h2>Tijdenlijstje bewerken</h2>
+                        <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch>
+                    </div>
                     <div id="print-component-wrapper" v-if="transformedTable.length > 0">
-                        <div id="print-component" ref="printComponent" class="">
+                        <div id="print-component" ref="printComponent">
                             <div class="header" v-if="'flags' in store.metadata">
                                 {{ store.metadata.flags.includes('times-only') ? 'Datum onbekend' :
                                     format(transformedTable[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
@@ -177,7 +182,7 @@ onMounted(() => {
                     </div>
                     <p id="upload-hint" v-else>Upload eerst een bestand.</p>
                 </div>
-                <SidePanel style="flex-basis: 355px;">
+                <SidePanel style="flex-basis: 300px;">
                     <h2>Opties</h2>
                     <fieldset>
                         <legend>Kolommen</legend>
@@ -185,7 +190,7 @@ onMounted(() => {
                             <div class="label">Weergeven indien beschikbaar</div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                                 <InputCheckbox class="enclose-box" identifier="displayScheduledTime"
-                                    v-model="displayScheduledTime">Aanvang
+                                    v-model="displayScheduledTime">Inloop
                                 </InputCheckbox>
                                 <InputCheckbox class="enclose-box" identifier="displayMainShowTime"
                                     v-model="displayMainShowTime">Start hoofdfilm
@@ -200,35 +205,22 @@ onMounted(() => {
                                     Einde voorstelling
                                 </InputCheckbox>
                                 <InputCheckbox class="enclose-box" identifier="displayNextStartTime"
-                                    v-model="displayNextStartTime">Aanvang volgende voorstelling
+                                    v-model="displayNextStartTime">Volgende inloop
                                 </InputCheckbox>
                             </div>
                         </div>
-                    </fieldset>
-                    <fieldset
-                        v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX')))">
-                        <legend>4DX-inloop</legend>
-                        <InputGroup type="number" id="plfTimeBefore" v-model.number="plfTimeBefore" min="0" max="30">
-                            <template #label>Tijd voor aanvang</template>
-                            <span class="unit">minuten</span>
-                        </InputGroup>
-                        <small v-if="plfTimeBefore > 0">
-                            Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
-                            streeplijntje. De 4DX-inloop begint {{ plfTimeBefore }} minuten
-                            voor de aanvangstijd en eindigt wanneer de hoofdfilm begint.
-                        </small>
                     </fieldset>
                     <fieldset>
                         <legend>Uitloop</legend>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                             <InputGroup type="number" id="shortGapInterval" v-model.number="shortGapInterval" min="0"
                                 max="20">
-                                <template #label>Interval voor dubbele uitloop</template>
+                                <template #label>Dubbele uitloop tot</template>
                                 <span class="unit">minuten</span>
                             </InputGroup>
                             <InputGroup type="number" id="longGapInterval" v-model.number="longGapInterval" min="20"
                                 max="80">
-                                <template #label>Interval voor gat tussen uitlopen</template>
+                                <template #label>Gat tussen uitlopen vanaf</template>
                                 <span class="unit">minuten</span>
                             </InputGroup>
                         </div>
@@ -250,6 +242,19 @@ onMounted(() => {
                             Als een voorstelling een post-credits-scène heeft, dan wordt de tijd 'Einde voorstelling'
                             gebruikt
                             voor het berekenen van de tijd tot de volgende uitloop.
+                        </small>
+                    </fieldset>
+                    <fieldset
+                        v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX')))">
+                        <legend>4DX-inloop</legend>
+                        <InputGroup type="number" id="plfTimeBefore" v-model.number="plfTimeBefore" min="0" max="30">
+                            <template #label>Tijd voor aanvang</template>
+                            <span class="unit">minuten</span>
+                        </InputGroup>
+                        <small v-if="plfTimeBefore > 0">
+                            Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
+                            streeplijntje. De 4DX-inloop begint {{ plfTimeBefore }} minuten
+                            voor de aanvangstijd en eindigt wanneer de hoofdfilm begint.
                         </small>
                     </fieldset>
                     <fieldset>
@@ -337,7 +342,7 @@ onMounted(() => {
     gap: 16px;
 
     overflow: auto;
-    border-radius: 5px;
+    border-radius: 6px;
     background-color: #ffffff14;
     padding: 16px 4px;
 }
@@ -356,7 +361,17 @@ onMounted(() => {
     --color: #fff;
     --inverse-color: #000;
 
-    &.print {
+
+}
+
+section.gray {
+    #print-component-wrapper {
+        background-color: #ffffff;
+        color: #000000;
+        box-shadow: 1px 2px 10px #00000030;
+    }
+
+    #print-component {
         --border-color: #525252;
         --row-color: #fff;
         --banded-row-color: #e4e4e4;

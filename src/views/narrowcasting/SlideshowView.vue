@@ -116,7 +116,7 @@ const { isOverDropZone } = useDropZone(main, {
     <main ref="main">
         <SlideshowUploadSection />
         <section id="pictures">
-            <div class="grid">
+            <div class="section-content grid">
                 <div>
                     <h2>Diavoorstelling</h2>
                     <div class="carousel" ref="carousel"
