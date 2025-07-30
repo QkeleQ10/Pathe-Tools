@@ -35,6 +35,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     RuleList: typeof import('./src/components/RuleList.vue')['default']
+    SchedulePage: typeof import('./src/components/ushering/schedule/SchedulePage.vue')['default']
     ScheduleTableRow: typeof import('./src/components/ushering/schedule/ScheduleTableRow.vue')['default']
     Select: typeof import('./src/components/Select.vue')['default']
     SidePanel: typeof import('./src/components/SidePanel.vue')['default']

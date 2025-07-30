@@ -82,7 +82,8 @@ async function toggleCreditsStinger(title: string) {
         </td>
         <td nowrap class="td-credits">
             <Icon4dx class="plf-icon" src="@/assets/symbols/icon-4dx.svg" v-if="show.isNearPlf" />
-            <div class="double-usherout" v-if="show.timeToNextUsherout <= shortGapInterval * 60000">
+            <div class="double-usherout"
+                v-if="show.timeToNextUsherout <= shortGapInterval * 60000 && shortGapInterval > 0">
             </div>
             <div class="long-gap" v-if="show.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
             </div>
@@ -141,7 +142,7 @@ async function toggleCreditsStinger(title: string) {
             </button>
             <button @click="printRow = !printRow; displayContextMenu = false">
                 <div class="check" :class="{ 'empty': printRow }"></div>
-                Deze voorstelling niet afdrukken
+                Voorstelling verwijderen uit lijst
             </button>
         </ContextMenu>
     </Transition>

@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
-import { useVueToPrint } from "vue-to-print"
-import { format } from 'date-fns'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { useCreditsStingersStore } from '@/stores/creditsStingers'
 import { Show, TimetableShow } from '@/classes/classes'
-import { nl } from 'date-fns/locale'
 
 const store = useTmsScheduleStore()
 const stingersStore = useCreditsStingersStore()
@@ -23,19 +20,13 @@ const displayNextStartTime = useStorage('display-next-start-time', false);
 const splitExtra = ref(true);
 const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
 const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
-const optionalColumnsSetting = useStorage('optional-columns', {
-    mainTime: false,
-    endTime: false,
-    nextStartTime: false
-})
 const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
 const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
 const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
 
-const printComponent = ref(null)
 const main = ref<HTMLElement>(null)
 
-const transformedTable = computed(() => {
+function transformTable() {
     const plfRows = store.table?.filter(row => row.auditorium?.includes('4DX')) || []
     let arr = store.table?.map((show: Show, i: number) => {
         const hasCreditsStinger = stingersStore.stingers.includes(show.title?.trim())
@@ -69,7 +60,32 @@ const transformedTable = computed(() => {
     })
 
     return arr || []
-})
+}
+
+const pages = ref<TimetableShow[][]>([]);
+
+const shows1 = ref<TimetableShow[]>([]);
+const shows2 = ref<TimetableShow[]>([]);
+
+// Array to hold refs to SchedulePage components
+const schedulePageRefs = ref<any[]>([]);
+
+store.$subscribe(() => {
+    const transformed = transformTable();
+    // Split the transformed shows into two pages for display
+    const MAX_PAGE_SIZE = 46
+    const overlap = 2
+
+    const numPages = Math.ceil(transformed.length / MAX_PAGE_SIZE)
+    const pageSize = Math.ceil(transformed.length / numPages)
+
+    // Each page includes a small overlap with the previous/next page for context
+    pages.value = Array.from({ length: numPages }, (_, i) => {
+        const start = Math.max(0, i * pageSize - overlap)
+        const end = Math.min((i + 1) * pageSize + overlap, transformed.length)
+        return transformed.slice(start, end)
+    })
+});
 
 const showStingersModal = ref(false)
 
@@ -89,11 +105,6 @@ async function removeStinger(title: string) {
     }
 }
 
-const { handlePrint } = useVueToPrint({
-    content: () => printComponent.value,
-    documentTitle: "Tijdenlijstje " + format(transformedTable.value[0]?.scheduledTime || new Date(), 'yyyy-MM-dd', { locale: nl }),
-})
-
 const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
@@ -110,77 +121,16 @@ onMounted(() => {
         <TimetableUploadSection />
         <section id="edit" :class="{ gray: trueColours }">
             <div class="section-content flex" style="flex-wrap: wrap-reverse;">
-                <div style="flex-basis: calc(210mm + 16px);">
+                <div style="flex-basis: 210mm;">
                     <div class="flex" style="justify-content: space-between; align-items: center; padding-right: 16px;">
                         <h2>Tijdenlijstje bewerken</h2>
                         <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch>
                     </div>
-                    <div id="print-component-wrapper" v-if="transformedTable.length > 0">
-                        <div id="print-component" ref="printComponent">
-                            <div class="header" v-if="'flags' in store.metadata">
-                                {{ store.metadata.flags.includes('times-only') ? 'Datum onbekend' :
-                                    format(transformedTable[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
-                            </div>
-                            <table class="timetable" spellcheck="false">
-                                <colgroup>
-                                    <col span="1" style="width: 6%;" />
-                                    <col span="1" style="width: 9%;" />
-                                    <col span="1" style="width: 6%;" />
-                                    <col span="1" style="width: 6%;" />
-                                    <col span="1" style="width: 13%;" />
-                                    <col span="1" style="width: 6%;" />
-                                    <col span="1" style="width: 4%;" />
-                                    <col span="1" style="width: 49%;" />
-                                    <col span="1" style="width: 2%;" />
-                                </colgroup>
-                                <thead>
-                                    <tr>
-                                        <td nowrap class="td-auditorium">Zaal</td>
-                                        <td nowrap class="td-scheduled">
-                                            {{ displayScheduledTime ? "Inloop" : '' }}
-                                        </td>
-                                        <td nowrap class="td-main">
-                                            {{displayMainShowTime && store.table.some(show => show.mainShowTime)
-                                                ? "Start" : ''}}
-                                        </td>
-                                        <td nowrap class="td-intermission">
-                                            {{displayIntermissionTime && store.table.some(show => show.intermissionTime)
-                                                ? "Pauze" : ''}}
-                                        </td>
-                                        <td nowrap class="td-credits">
-                                            {{ displayCreditsTime ? "Aftiteling" : '' }}
-                                        </td>
-                                        <td nowrap class="td-end">
-                                            {{ displayEndTime ? "Eind" : '' }}
-                                        </td>
-                                        <td nowrap class="td-next">
-                                            {{ displayNextStartTime ? "Volg." : '' }}
-                                        </td>
-                                        <td nowrap class="td-title">Film</td>
-                                        <td nowrap class="td-age"></td>
-                                    </tr>
-                                </thead>
-                                <ScheduleTableRow v-for="(show, i) in transformedTable" :key="i" :show="show" />
-                            </table>
-                            <br>
-                            <span contenteditable class="custom-content"></span>
-                            <div class="footer">
-                                <span v-if="'lastModified' in store.metadata">
-                                    Gegevens: {{ new Date(store.metadata.lastModified).toLocaleString('nl-NL', {
-                                        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit',
-                                        minute: '2-digit'
-                                    }) }} •
-                                </span>
-                                Gegenereerd: {{ new Date().toLocaleDateString('nl-NL', {
-                                    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit',
-                                    minute:
-                                        '2-digit'
-                                }) }}
-                                • Pathé Tools • Quinten Althues
-                            </div>
-                        </div>
+                    <p id="upload-hint" v-if="!pages?.[0]?.length">Upload eerst een bestand.</p>
+                    <div id="pages">
+                        <SchedulePage v-for="(page, i) in pages" :ref="el => schedulePageRefs[i] = el" :shows="page"
+                            :metadata="store.metadata" :page-num="i" :num-pages="pages.length" />
                     </div>
-                    <p id="upload-hint" v-else>Upload eerst een bestand.</p>
                 </div>
                 <SidePanel style="flex-basis: 300px;">
                     <h2>Opties</h2>
@@ -244,8 +194,7 @@ onMounted(() => {
                             voor het berekenen van de tijd tot de volgende uitloop.
                         </small>
                     </fieldset>
-                    <fieldset
-                        v-show="!(transformedTable.length > 0 && !transformedTable.some(row => row.auditorium?.includes('4DX')))">
+                    <fieldset v-show="!(shows1.length > 0 && !shows1.some(row => row.auditorium?.includes('4DX')))">
                         <legend>4DX-inloop</legend>
                         <InputGroup type="number" id="plfTimeBefore" v-model.number="plfTimeBefore" min="0" max="30">
                             <template #label>Tijd voor aanvang</template>
@@ -281,10 +230,13 @@ onMounted(() => {
                     </fieldset>
 
                     <div class="buttons"
-                        style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-top: auto; position: sticky; bottom: 0; padding: 16px;">
-                        <Button class="primary full" @click="handlePrint" v-if="transformedTable.length > 0">
+                        style="display: flex; gap: 16px; justify-content: stretch; margin-top: auto; position: sticky; bottom: 0; padding: 16px;">
+                        <Button v-for="(page, i) in pages" :key="i" @click="schedulePageRefs[i]?.handlePrint()"
+                            class="primary full">
                             <Icon>print</Icon>
-                            Afdrukken
+                            {{ pages.length > 1
+                                ? 'Deel ' + (i + 1) + ' afdrukken'
+                                : 'Afdrukken' }}
                         </Button>
                     </div>
                 </SidePanel>
@@ -300,203 +252,37 @@ onMounted(() => {
             Post-credits-scènes
         </Button>
         <ModalDialog v-if="showStingersModal" @dismiss="showStingersModal = false">
-            <div>
-                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                    <Button @click="stingersStore.getStingers()">
-                        <Icon>refresh</Icon>
-                        Vernieuwen
-                    </Button>
-                    <Button @click="addStinger">
-                        <Icon>add</Icon>
-                        Toevoegen
-                    </Button>
-                </div>
-
-                <div v-if="stingersStore.stingers.length > 0"
-                    style="max-height: 300px; overflow-y: auto; border: 1px solid #ffffff14; border-radius: 4px;">
-                    <div v-for="stinger in stingersStore.stingers" :key="stinger"
-                        style="display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #ffffff14;">
-                        <span>{{ stinger }}</span>
-                        <button @click="removeStinger(stinger)"
-                            style="background: none; border: none; color: #ff6b6b; cursor: pointer; padding: 4px 8px; border-radius: 4px;"
-                            title="Verwijderen">
-                            <Icon>close</Icon>
-                        </button>
-                    </div>
-                </div>
-                <div v-else style="text-align: center; padding: 32px; opacity: 0.5;">
-                    Geen films in database
-                </div>
+            <h3>Films met post-credits-scènes</h3>
+            <ul v-if="stingersStore.stingers.length > 0" class="scrollable-list">
+                <li v-for="stinger in stingersStore.stingers" :key="stinger" style="display: flex;
+                    justify-content: space-between; align-items: center;">
+                    <span>{{ stinger }}</span>
+                    <Icon @click="removeStinger(stinger)" class="delete" title="Verwijderen">
+                        close
+                    </Icon>
+                </li>
+            </ul>
+            <div v-else style="text-align: center; padding: 32px; opacity: 0.5;">
+                Geen films in database
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 16px;">
+                <Button @click="stingersStore.getStingers()">
+                    <Icon>refresh</Icon>
+                    Vernieuwen
+                </Button>
+                <Button @click="addStinger">
+                    <Icon>add</Icon>
+                    Toevoegen
+                </Button>
             </div>
         </ModalDialog>
     </main>
 </template>
 
 <style scoped>
-#print-component-wrapper {
-    position: relative;
-
+#pages {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 16px;
-
-    overflow: auto;
-    border-radius: 6px;
-    background-color: #ffffff14;
-    padding: 16px 4px;
-}
-
-#print-component {
-    position: relative;
-
-    width: calc(210mm + 16px);
-    height: calc(297mm + 16px);
-    padding: 16px;
-
-    --border-color: #ffffff3d;
-    --row-color: transparent;
-    --banded-row-color: #ffffff14;
-    --header-color: #ffffff96;
-    --color: #fff;
-    --inverse-color: #000;
-
-
-}
-
-section.gray {
-    #print-component-wrapper {
-        background-color: #ffffff;
-        color: #000000;
-        box-shadow: 1px 2px 10px #00000030;
-    }
-
-    #print-component {
-        --border-color: #525252;
-        --row-color: #fff;
-        --banded-row-color: #e4e4e4;
-        --header-color: #525252;
-        --color: #000;
-        --inverse-color: #fff;
-    }
-}
-
-.custom-content {
-    display: inline-block;
-    width: 100%;
-    padding: 10px;
-    color: var(--color);
-    text-align: center;
-
-    &:empty:after {
-        content: "Eigen tekst toevoegen";
-        opacity: .3;
-    }
-}
-
-div.header {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    color: var(--color);
-    opacity: 0.5;
-    font-size: 10px;
-    text-align: center;
-
-    &::first-letter {
-        text-transform: uppercase;
-    }
-}
-
-div.footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    color: var(--color);
-    opacity: 0.1;
-    font-size: 10px;
-    text-align: center;
-}
-
-@media print {
-    @page {
-        size: A4 portrait;
-        margin: 1.35cm;
-        margin-top: 0.8cm;
-        margin-bottom: 0.8cm;
-        /* padding: 0.15cm */
-    }
-
-    #print-component {
-        display: block;
-        position: unset;
-        width: auto;
-        height: auto;
-        box-sizing: border-box;
-        padding: 0;
-        margin-top: 16px;
-        margin-top: 16px;
-        background-color: transparent;
-        max-width: none;
-        overflow: visible;
-        aspect-ratio: unset;
-        border-radius: 0;
-
-        --border-color: #525252;
-        --row-color: #fff;
-        --banded-row-color: #e4e4e4;
-        --header-color: #525252;
-        --color: #000;
-        --inverse-color: #fff;
-    }
-
-    .custom-content:empty {
-        display: none;
-    }
-}
-
-[contenteditable]:hover {
-    outline: 1px solid #ffffff88;
-    outline-offset: -1px;
-    background-color: #ffc52631;
-}
-
-[contenteditable]:focus-visible {
-    outline: 1px solid #ffc426;
-    outline-offset: -1px;
-    background-color: #ffc52631;
-}
-
-table.timetable {
-    width: 100%;
-    border: 1px solid var(--border-color);
-    border-collapse: collapse;
-    color: var(--color);
-    font-family: Arial, Helvetica, sans-serif;
-    --row-height: 21.5px;
-    font-size: 12.5px;
-
-    thead>tr {
-        background-color: var(--header-color);
-        color: var(--inverse-color);
-        font-weight: bold;
-    }
-
-    tr,
-    thead {
-        font: inherit;
-        height: var(--row-height);
-    }
-
-    td {
-        position: relative;
-        padding: 2px 6px;
-    }
-
-    .td-credits {
-        padding-left: 32px;
-    }
 }
 </style>

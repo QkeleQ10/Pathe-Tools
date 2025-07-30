@@ -111,7 +111,7 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                 <p id="file-upload-notice">
                     Je hebt een <span v-if="store.metadata.type.includes('csv')"><b>CSV</b>-</span>bestand
                     <span v-if="store.metadata.flags.includes('times-only')">met de optie <b>Times only</b></span>
-                    geüpload. Meestal werkt dat prima, maar soms kunnen er problemen optreden.
+                    geüpload. Voor tijdenlijstjes is dat meestal prima, maar soms kunnen er problemen optreden.
                     <br>
                     <br>Kies in RosettaBridge liever
                     <span v-if="store.metadata.flags.includes('times-only')">

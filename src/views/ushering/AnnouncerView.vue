@@ -406,8 +406,8 @@ function showFeedbackDialog() {
                                 :class="{ 'announcing': announcement.audio && !announcement.audio.paused }">
                                 <div class="room" v-if="announcement.show">
                                     {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium ===
-                                    'Rooftop') ? 'RT' :
-                                    announcement.show.auditorium.replace(/^\w+\s/, '') }}
+                                        'Rooftop') ? 'RT' :
+                                        announcement.show.auditorium.replace(/^\w+\s/, '') }}
                                 </div>
                                 <div class="title" v-if="announcement.show">{{ announcement.show.title }}</div>
                                 <div class="time" v-if="announcement.show">
@@ -429,8 +429,8 @@ function showFeedbackDialog() {
                                     </div>
                                     <div>
                                         '{{announcement.segments
-                                        .map(segment => getSoundInfo(segment.spriteName).name)
-                                        .join(' ')}}'
+                                            .map(segment => getSoundInfo(segment.spriteName).name)
+                                            .join(' ')}}'
                                     </div>
                                 </div>
                             </div>
@@ -473,16 +473,17 @@ function showFeedbackDialog() {
                             </template>
                         </AnnouncementBuilder>
                         <div class="manual-sounds-list" v-for="ids in [
-                            [...voices.chimes.sounds, ...voices.default.sounds.filter(id => !id.startsWith('auditorium'))],
+                            voices.chimes.sounds,
+                            voices.default.sounds.filter(id => !id.startsWith('auditorium')),
                             voices.default.sounds.filter(id => id.startsWith('auditorium')),
                             ...preferredVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
                         ]" v-show="ids?.length > 0">
-                            <button v-for="id of ids" @click="previewAnnouncement([{ spriteName: id, offset: 0 }])"
+                            <Button class="secondary manual-sound-button" v-for="id of ids" @click="previewAnnouncement([{ spriteName: id, offset: 0 }])"
                                 :class="{ translucent: !id.startsWith('chime') && !preferredVoices.some(e => voices[e].sounds.includes(id)) }">
                                 <span>
                                     {{ getSoundInfo(id).name }}
                                 </span>
-                            </button>
+                            </Button>
                         </div>
                     </fieldset>
 
@@ -500,7 +501,6 @@ function showFeedbackDialog() {
                                     <option :value="6">♪ 3b</option>
                                     <option :value="7">♪ 4</option>
                                     <option :value="8">♪ 5</option>
-                                    <option :value="0">♪ oud</option>
                                 </template>
                             </InputGroup>
                             <InputGroup type="select" id="chime1Replacement" v-model="chimeAReplacement">
@@ -514,7 +514,6 @@ function showFeedbackDialog() {
                                     <option :value="6">♪ 3b</option>
                                     <option :value="7">♪ 4</option>
                                     <option :value="8">♪ 5</option>
-                                    <option :value="0">♪ oud</option>
                                 </template>
                             </InputGroup>
                         </div>
@@ -529,7 +528,7 @@ function showFeedbackDialog() {
                             <span>Regels bewerken
                                 <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
                                     {{customRules.filter(r =>
-                                    r.enabled).length}} actief)</small>
+                                        r.enabled).length}} actief)</small>
                             </span>
                         </Button>
                     </fieldset>
@@ -678,22 +677,14 @@ function showFeedbackDialog() {
     flex-wrap: wrap;
     gap: 6px;
 
-    &>button {
-        display: flex;
-        align-items: center;
+    .manual-sound-button {
         height: 22px;
-        padding-inline: 6px;
-        font: 13px Arial, Helvetica, sans-serif;
-        text-transform: none;
-        background-color: #ffffff14;
-        border: none;
-        border-radius: 4px;
-        color: #fff;
-        cursor: pointer;
-    }
-
-    &+& {
-        margin-top: -10px;
+        min-width: 0;
+        padding-left: 6px;
+        padding-right: 6px;
+        font-size: 13px;
+        font-weight: normal;
+        overflow: hidden;
     }
 }
 

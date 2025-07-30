@@ -46,11 +46,8 @@ label.enclose-box {
 }
 
 label.label-end {
+    flex-direction: row-reverse;
     justify-content: start;
-
-    &>input {
-        order: -1;
-    }
 }
 
 .title {
