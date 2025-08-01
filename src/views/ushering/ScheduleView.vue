@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { useCreditsStingersStore } from '@/stores/creditsStingers'
@@ -26,9 +26,10 @@ const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the d
 
 const main = ref<HTMLElement>(null)
 
-function transformTable() {
+const pages = computed<TimetableShow[][]>(() => {
     const plfRows = store.table?.filter(row => row.auditorium?.includes('4DX')) || []
     let arr = store.table?.map((show: Show, i: number) => {
+        console.log(show.title.trim(), 'hasCreditsStinger:', stingersStore.stingers.includes(show.title?.trim()))
         const hasCreditsStinger = stingersStore.stingers.includes(show.title?.trim())
         const overlapWithPlf = plfRows.some(plf =>
             show.creditsTime.getTime() - plf.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&
@@ -59,19 +60,7 @@ function transformTable() {
         arr[Math.max(index, 0)].isNearPlf = true
     })
 
-    return arr || []
-}
-
-const pages = ref<TimetableShow[][]>([]);
-
-const shows1 = ref<TimetableShow[]>([]);
-const shows2 = ref<TimetableShow[]>([]);
-
-// Array to hold refs to SchedulePage components
-const schedulePageRefs = ref<any[]>([]);
-
-store.$subscribe(() => {
-    const transformed = transformTable();
+    const transformed = arr || [];
     // Split the transformed shows into two pages for display
     const MAX_PAGE_SIZE = 46
     const overlap = 2
@@ -80,12 +69,15 @@ store.$subscribe(() => {
     const pageSize = Math.ceil(transformed.length / numPages)
 
     // Each page includes a small overlap with the previous/next page for context
-    pages.value = Array.from({ length: numPages }, (_, i) => {
+    return Array.from({ length: numPages }, (_, i) => {
         const start = Math.max(0, i * pageSize - overlap)
         const end = Math.min((i + 1) * pageSize + overlap, transformed.length)
         return transformed.slice(start, end)
     })
 });
+
+// Array to hold refs to SchedulePage components
+const schedulePageRefs = ref<any[]>([]);
 
 const showStingersModal = ref(false)
 
@@ -194,7 +186,8 @@ onMounted(() => {
                             voor het berekenen van de tijd tot de volgende uitloop.
                         </small>
                     </fieldset>
-                    <fieldset v-show="!(shows1.length > 0 && !shows1.some(row => row.auditorium?.includes('4DX')))">
+                    <fieldset
+                        v-show="!(pages[0]?.length && !pages.flatMap(e => e).some(row => row.auditorium?.includes('4DX')))">
                         <legend>4DX-inloop</legend>
                         <InputGroup type="number" id="plfTimeBefore" v-model.number="plfTimeBefore" min="0" max="30">
                             <template #label>Tijd voor aanvang</template>
