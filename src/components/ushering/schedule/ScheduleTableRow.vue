@@ -16,7 +16,6 @@ const displayCreditsTime = useStorage('display-credits-time', true);
 const displayEndTime = useStorage('display-end-time', false);
 const displayNextStartTime = useStorage('display-next-start-time', false);
 
-const splitExtra = ref(true);
 const displayPreshowDuration = useStorage('show-preshow-duration', 1);
 const displayCreditsDuration = useStorage('show-credits-duration', 1);
 const shortGapInterval = useStorage('short-gap-interval', 10);
@@ -116,8 +115,8 @@ async function toggleCreditsStinger(title: string) {
             </span>
         </td>
         <td nowrap class="td-title">
-            <span contenteditable>{{ splitExtra ? show.title : show.playlist }}</span>
-            <span v-if="splitExtra" contenteditable>{{ show.extras.join(' ') }}</span>
+            <span contenteditable>{{ show.title }}</span>
+            <span contenteditable>{{ show.extras.join(' ') }}</span>
         </td>
         <td nowrap class="age-rating"
             :class="{ translucent: ['AL', '6', '9', '12', '14'].includes(show.featureRating) }">

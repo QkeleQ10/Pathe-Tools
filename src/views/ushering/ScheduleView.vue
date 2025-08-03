@@ -17,7 +17,6 @@ const displayCreditsTime = useStorage('display-credits-time', true);
 const displayEndTime = useStorage('display-end-time', false);
 const displayNextStartTime = useStorage('display-next-start-time', false);
 
-const splitExtra = ref(true);
 const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
 const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
 const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
@@ -201,9 +200,6 @@ onMounted(() => {
                     </fieldset>
                     <fieldset>
                         <legend>Overig</legend>
-                        <InputSwitch v-model="splitExtra" identifier="splitExtra">
-                            Extra informatie scheiden van filmtitel
-                        </InputSwitch>
                         <InputGroup type="select" id="displayCreditsDuration" v-model="displayCreditsDuration">
                             <template #label>Tijd tussen aftiteling en einde voorstelling tonen</template>
                             <template #input>

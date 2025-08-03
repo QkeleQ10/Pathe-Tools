@@ -217,9 +217,9 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
             const isStarted = show.scheduledTime.getTime() - Date.now() < -(isStartedTime.value * 60000);
             const aboutToStart = show.scheduledTime.getTime() - Date.now() < -(aboutToStartTime.value * 60000) && !isStarted;
 
-            let str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 53 - longestAuditoriumLength).padEnd(53 - longestAuditoriumLength)} ${show.auditorium.toString().padStart(longestAuditoriumLength)}`;
-            if (isStarted) str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 53 - 11 - longestAuditoriumLength).padEnd(53 - 11 - longestAuditoriumLength)} ~C1;is gestart~C3; ${show.auditorium.toString().padStart(longestAuditoriumLength)}`;
-            if (aboutToStart) str = `${format(show.scheduledTime, 'HH:mm')} ${show.title.substring(0, 53 - 13 - longestAuditoriumLength).padEnd(53 - 13 - longestAuditoriumLength)} ~F;~C1;gaat starten~N;~C3; ${show.auditorium.toString().padStart(longestAuditoriumLength)}`;
+            let str = `${format(show.scheduledTime, 'HH:mm')} ${truncateAndPad(show.title, 53 - longestAuditoriumLength)} ${truncateAndPad(show.auditorium, longestAuditoriumLength, 'right')}`;
+            if (isStarted) str = `${format(show.scheduledTime, 'HH:mm')} ${truncateAndPad(show.title, 53 - 11 - longestAuditoriumLength)} ~C1;is gestart~C3; ${truncateAndPad(show.auditorium, longestAuditoriumLength, 'right')}`;
+            if (aboutToStart) str = `${format(show.scheduledTime, 'HH:mm')} ${truncateAndPad(show.title, 53 - 13 - longestAuditoriumLength)} ~F;~C1;gaat starten~N;~C3; ${truncateAndPad(show.auditorium, longestAuditoriumLength, 'right')}`;
 
             result.push({
                 textString: str, enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
@@ -262,9 +262,7 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
         } else {
             stillTextCommands.push(new qmln.CommandShowTextString(
                 null, line.fcolor, line.bcolor, null, i + 1,
-                line.align === 'center' ? padCenter(line.textString, 60)
-                    : line.align === 'right' ? line.textString.padStart(60)
-                        : line.textString
+                truncateAndPad(line.textString, 60, line.align)
             ));
         }
     }
@@ -352,9 +350,46 @@ function hexToAscii(hexString: string) {
     return asciiString;
 }
 
-function padCenter(string: string, maxLength: number, fillString: string = ' ') {
-    const pad = Math.floor((maxLength - string.replace(/~[CB]\d;|~[FNRI];/g, '').length) / 2);
-    const result = fillString.repeat(pad) + string + fillString.repeat(maxLength - string.replace(/~[CB]\d;|~[FNRI];/g, '').length - pad);
+function truncateAndPad(string: string, maxLength: number, align: 'left' | 'center' | 'right' = 'left'): string {
+    let visibleLength = 0;
+    let result = '';
+
+    const parts = [...string.matchAll(/(~[CB]\d;|~[FNRI];)|([\s\S])/g)];
+
+    for (const [, format, char] of parts) {
+        if (format) {
+            result += format; // Add formatting code without increasing visible length
+        } else if (char) {
+            if (visibleLength < maxLength) {
+                result += char;
+                visibleLength++;
+            } else {
+                break;
+            }
+        }
+    }
+
+    const paddingNeeded = maxLength - visibleLength;
+    if (paddingNeeded > 0) {
+        let leadingSpaces = 0;
+        let trailingSpaces = 0;
+
+        switch (align) {
+            case 'left':
+                trailingSpaces = paddingNeeded;
+                break;
+            case 'right':
+                leadingSpaces = paddingNeeded;
+                break;
+            case 'center':
+                leadingSpaces = Math.floor(paddingNeeded / 2);
+                trailingSpaces = paddingNeeded - leadingSpaces;
+                break;
+        }
+
+        result = ' '.repeat(leadingSpaces) + result + ' '.repeat(trailingSpaces);
+    }
+
     return result;
 }
 
