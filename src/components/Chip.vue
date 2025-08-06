@@ -9,16 +9,16 @@ div {
     display: flex;
     gap: 4px;
     align-items: center;
-    background-color: #ffc426;
-    color: #000;
-    font: 400 14px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    border-radius: 5px;
+    background-color: #ffc10514;
+    color: #feb91e;
+    font: 500 14px Heebo, arial, sans-serif;
+    line-height: 20px;
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
-div.translucent-white {
-    background-color: #ffffff14;
+div.secondary {
+    background-color: #82828214;
     color: #fff;
 }
 </style>

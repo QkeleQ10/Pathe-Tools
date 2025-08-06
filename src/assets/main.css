@@ -309,13 +309,3 @@ em.label {
 .list-leave-active {
     position: absolute;
 }
-
-@media (prefers-reduced-motion: reduce) {
-
-    .v-leave-active,
-    .list-move,
-    .list-enter-active,
-    .list-leave-active {
-        transition: none;
-    }
-}

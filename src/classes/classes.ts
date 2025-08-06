@@ -38,6 +38,7 @@ export type Announcement = {
     segments: { spriteName: string; offset: number }[];
     audio: HTMLAudioElement | null;
     show?: Show;
+    scheduled?: boolean;
 };
 
 export type AnnouncementRule = {

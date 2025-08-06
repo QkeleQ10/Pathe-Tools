@@ -8,7 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    AnnouncementBuilder: typeof import('./src/components/AnnouncementBuilder.vue')['default']
+    AnnouncementBuilder: typeof import('./src/components/ushering/announcer/AnnouncementBuilder.vue')['default']
     Button: typeof import('./src/components/Button.vue')['default']
     ButtonText: typeof import('./src/components/ButtonText.vue')['default']
     Chip: typeof import('./src/components/Chip.vue')['default']
@@ -34,7 +34,8 @@ declare module 'vue' {
     ModalDialog: typeof import('./src/components/ModalDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    RuleList: typeof import('./src/components/RuleList.vue')['default']
+    RuleList: typeof import('./src/components/ushering/announcer/RuleList.vue')['default']
+    ScheduledAnnouncement: typeof import('./src/components/ushering/announcer/ScheduledAnnouncement.vue')['default']
     SchedulePage: typeof import('./src/components/ushering/schedule/SchedulePage.vue')['default']
     ScheduleTableRow: typeof import('./src/components/ushering/schedule/ScheduleTableRow.vue')['default']
     Select: typeof import('./src/components/Select.vue')['default']

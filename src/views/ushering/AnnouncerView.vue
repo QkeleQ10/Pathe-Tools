@@ -13,7 +13,6 @@ const store = useTmsScheduleStore()
 const now = inject<Ref<Date>>('now');
 
 const main = useTemplateRef('main');
-const audios = useTemplateRef('audios');
 
 const showRuleEditor = ref(false)
 
@@ -188,7 +187,7 @@ const chimeBReplacement = useStorage('chimeb-replacement', 7);
 
 const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true });
 
-const customAnnouncement = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chimea', offset: -1600 },]);
+const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chimea', offset: -1600 },]);
 const customAnnouncementDate = ref<Date>(new Date());
 
 const scheduledAnnouncements = ref<Announcement[]>([])
@@ -208,9 +207,7 @@ onBeforeUnmount(() => {
 /**
  * Schedule all announcements based on the rules and the imported timetable
  */
-function scheduleAnnouncements() {
-    audios.value.innerHTML = ''; // Clear the audio elements
-
+async function scheduleAnnouncements() {
     let array: Announcement[] = [];
 
     for (const rule of [...presetRules.value, ...customRules.value]) {
@@ -247,6 +244,19 @@ function scheduleAnnouncements() {
 
     scheduledAnnouncements.value = array;
 
+    for (const announcement of [...scheduledAnnouncements.value].sort((a, b) => a.time.getTime() - b.time.getTime())) {
+        const segmentsWithVoices = selectVoices(announcement.segments.map(segment => {
+            if (segment.spriteName === 'chimea') {
+                return { offset: chimeAReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeAReplacement.value}` };
+            }
+            if (segment.spriteName === 'chimeb') {
+                return { offset: chimeBReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeBReplacement.value}` };
+            }
+            return segment;
+        }), preferredVoices.value.map(s => voices[s]));
+        announcement.audio = await assembleAudio(segmentsWithVoices);
+    }
+
     enqueueProximateAnnouncements();
 }
 
@@ -256,32 +266,40 @@ function scheduleAnnouncements() {
 async function enqueueProximateAnnouncements() {
     for (const announcement of scheduledAnnouncements.value) {
         const timeUntilAnnouncement = announcement.time.getTime() - Date.now() - 1000;
-        if (timeUntilAnnouncement > -1000 && timeUntilAnnouncement < 10000 && !announcement.audio) {
-            const segmentsWithVoices = selectVoices(announcement.segments.map(segment => {
-                if (segment.spriteName === 'chimea') {
-                    return { offset: chimeAReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeAReplacement.value}` };
-                }
-                if (segment.spriteName === 'chimeb') {
-                    return { offset: chimeBReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeBReplacement.value}` };
-                }
-                return segment;
-            }), preferredVoices.value.map(s => voices[s]));
-            announcement.audio = await assembleAudio(segmentsWithVoices);
-            audios.value.appendChild(announcement.audio);
+        if (timeUntilAnnouncement < 10000 && !announcement.scheduled) {
+            if (!announcement.audio) {
+                const segmentsWithVoices = selectVoices(announcement.segments.map(segment => {
+                    if (segment.spriteName === 'chimea') {
+                        return { offset: chimeAReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeAReplacement.value}` };
+                    }
+                    if (segment.spriteName === 'chimeb') {
+                        return { offset: chimeBReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeBReplacement.value}` };
+                    }
+                    return segment;
+                }), preferredVoices.value.map(s => voices[s]));
+                announcement.audio = await assembleAudio(segmentsWithVoices);
+            }
 
             setTimeout(() => {
-                waitForOtherAudiosToFinish(() => announcement.audio?.play());
+                waitForOtherAnnouncementsToFinish(() => {
+                    if (!announcement.audio) return;
+                    announcement.audio.play();
+                    announcement.audio.addEventListener('ended', () => {
+                        announcement.audio.remove();
+                        announcement.audio = null; // Clear the audio reference after playing
+                    }, { once: true });
+                });
             }, Math.max(0, timeUntilAnnouncement));
 
-            function waitForOtherAudiosToFinish(callback: () => void) {
-                // Check if there is any other audio playing. If so, wait for it to finish.
-                const otherAudio = Array.from(audios.value.children).find((audio: HTMLAudioElement) => audio !== announcement.audio && !audio.paused);
-                if (otherAudio) {
-                    otherAudio.addEventListener('ended', () => {
-                        waitForOtherAudiosToFinish(callback);
-                    }, { once: true });
-                } else {
+            announcement.scheduled = true; // Mark the announcement as scheduled
+
+            // TODO: this is broken lol
+            function waitForOtherAnnouncementsToFinish(callback: () => void) {
+                // Check if there is any other announcements playing. If so, wait for it to finish before calling callback().
+                if (!scheduledAnnouncements.value.some(a => a.audio && !a.audio.paused)) {
                     callback();
+                } else {
+                    setTimeout(() => waitForOtherAnnouncementsToFinish(callback), 500);
                 }
             }
         }
@@ -298,18 +316,6 @@ function showMatchesFilter(show: Show, index: number, rule: AnnouncementRule) {
     if (rule.filter.playlistTitleExcludes && show.title.toLowerCase().includes(rule.filter.playlistTitleExcludes.toLowerCase())) matches = false;
 
     return matches;
-}
-
-function formatTimeLeft(timeInMs: number) {
-    if (timeInMs < 60000) {
-        return Math.floor(timeInMs / 1000) + ' s'
-    } else if (timeInMs < 600000) {
-        return Math.floor(timeInMs / 60000) + ':' + String(Math.floor((timeInMs % 60000) / 1000)).padStart(2, '0') + ' min'
-    } else if (timeInMs < 3600000) {
-        return Math.floor(timeInMs / 60000) + ' min'
-    } else {
-        return Math.floor(timeInMs / 3600000) + ':' + String(Math.floor((timeInMs % 3600000) / 60000)).padStart(2, '0') + ' h'
-    }
 }
 
 function selectVoices(segments: { spriteName: string; offset: number }[], selectedVoices: Voice[]): { voice: Voice; spriteName: string; offset: number }[] {
@@ -341,9 +347,6 @@ function assembleAudio(segments: { voice: Voice; spriteName: string; offset: num
     return new Promise<HTMLAudioElement>(async (resolve) => {
         const url = await assembleAudioClient(segments);
         const audio = new Audio(url);
-        audio.addEventListener('ended', () => {
-            audio.remove();
-        });
         resolve(audio);
     })
 }
@@ -397,52 +400,65 @@ function showFeedbackDialog() {
         <section>
             <div class="section-content flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex: 50% 1 1;">
-                    <h2>Geplande omroepen</h2>
-                    <div id="upcoming-announcements">
+                    <div class="flex" style="justify-content: space-between; align-items: center">
+                        <h2>Geplande omroepen</h2>
+                        <AnnouncementBuilder v-model="customAnnouncementSegments">
+                            <Icon>add</Icon>
+                            <span>Nieuwe omroep</span>
+                            <template #footer>
+                                <h3>Afspeelopties</h3>
+                                <div class="flex buttons">
+                                    <InputDate identifier="customAnnouncementDate" v-model="customAnnouncementDate"
+                                        style="height: 48px">
+                                        Inplannen voor</InputDate>
+                                    <Button
+                                        @click="scheduledAnnouncements.push({ time: new Date(customAnnouncementDate), segments: customAnnouncementSegments.map(segment => ({ ...segment })), audio: null })">
+                                        <Icon>timer</Icon>
+                                        Omroep inplannen
+                                    </Button>
+                                    <Button class="secondary add-rule"
+                                        @click="previewAnnouncement(customAnnouncementSegments)">
+                                        <Icon>play_arrow</Icon>
+                                        Nu afspelen
+                                    </Button>
+                                </div>
+                            </template>
+                        </AnnouncementBuilder>
+                    </div>
+                    <ul id="upcoming-announcements" class="scrollable-list" style="max-height: 700px;">
                         <TransitionGroup name="list">
-                            <div v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
-                                v-show="announcement.time.getTime() - now.getTime() > -5000 || (announcement.audio?.parentElement)"
-                                class="film" :key="announcement.time.getTime()"
-                                :class="{ 'announcing': announcement.audio && !announcement.audio.paused }">
-                                <div class="room" v-if="announcement.show">
-                                    {{ (announcement.show.auditorium === 'PULR 8' || announcement.show.auditorium ===
-                                        'Rooftop') ? 'RT' :
-                                        announcement.show.auditorium.replace(/^\w+\s/, '') }}
-                                </div>
-                                <div class="title" v-if="announcement.show">{{ announcement.show.title }}</div>
-                                <div class="time" v-if="announcement.show">
-                                    {{ format(announcement.show.scheduledTime, 'HH:mm') }} –
-                                    {{ format(announcement.show.endTime, 'HH:mm:ss') }}</div>
-                                <div class="flex chips" v-if="announcement.show">
-                                    <Chip v-for="extra in announcement.show.extras"
-                                        :class="{ 'translucent-white': extra.match(/\(.+\)/) }">
-                                        {{ extra.replace(/\((.+)\)/, '$1') }}
-                                    </Chip>
-                                </div>
-                                <div class="announcement" @dblclick="previewAnnouncement(announcement.segments)"
-                                    style="display: grid; grid-template-columns: 64px 130px 1fr;">
-
-                                    <Icon>schedule</Icon>
-                                    <div>
-                                        {{ format(announcement.time, 'HH:mm:ss') }}
-                                        ({{ formatTimeLeft(announcement.time.getTime() - now.getTime()) }})
-                                    </div>
-                                    <div>
-                                        '{{announcement.segments
-                                            .map(segment => getSoundInfo(segment.spriteName).name)
-                                            .join(' ')}}'
-                                    </div>
-                                </div>
-                            </div>
+                            <ScheduledAnnouncement
+                                v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
+                                :announcement="announcement" :key="announcement.time.getTime()"
+                                @preview="previewAnnouncement"
+                                @delete="scheduledAnnouncements.splice(scheduledAnnouncements.indexOf(announcement), 1)" />
                             <p v-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
                                 key="0">Er zijn geen omroepen gepland.</p>
                             <p v-if="store.table.length < 1">Upload eerst een bestand.</p>
                         </TransitionGroup>
-                    </div>
+                    </ul>
                 </div>
 
                 <SidePanel style="flex: 35% 1 1;">
                     <h2>Opties</h2>
+
+                    <fieldset>
+                        <legend>Algemeen</legend>
+                        <div class="flex buttons">
+                            <Button class="full" @click="scheduleAnnouncements">
+                                <Icon>refresh</Icon>
+                                <span>Omroepen voorbereiden</span>
+                            </Button>
+                            <Button class="secondary full" @click="showRuleEditor = true">
+                                <Icon>edit</Icon>
+                                <span>Regels bewerken
+                                    <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
+                                        {{customRules.filter(r =>
+                                            r.enabled).length}} actief)</small>
+                                </span>
+                            </Button>
+                        </div>
+                    </fieldset>
 
                     <fieldset>
                         <legend>Stemmen</legend>
@@ -451,34 +467,14 @@ function showFeedbackDialog() {
 
                     <fieldset style="position: relative;">
                         <legend>Handmatige omroep</legend>
-                        <AnnouncementBuilder v-model="customAnnouncement" class="full">
-                            <Icon>build</Icon>
-                            <span>Omroep inplannen</span>
-                            <template #footer>
-                                <h3>Afspeelopties</h3>
-                                <div class="flex buttons">
-                                    <InputDate identifier="customAnnouncementDate" v-model="customAnnouncementDate"
-                                        style="height: 48px">
-                                        Inplannen voor</InputDate>
-                                    <Button
-                                        @click="scheduledAnnouncements.push({ time: customAnnouncementDate, segments: customAnnouncement, audio: null })">
-                                        <Icon>timer</Icon>
-                                        Omroep inplannen
-                                    </Button>
-                                    <Button class="secondary add-rule" @click="previewAnnouncement(customAnnouncement)">
-                                        <Icon>play_arrow</Icon>
-                                        Nu afspelen
-                                    </Button>
-                                </div>
-                            </template>
-                        </AnnouncementBuilder>
                         <div class="manual-sounds-list" v-for="ids in [
                             voices.chimes.sounds,
                             voices.default.sounds.filter(id => !id.startsWith('auditorium')),
                             voices.default.sounds.filter(id => id.startsWith('auditorium')),
                             ...preferredVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
                         ]" v-show="ids?.length > 0">
-                            <Button class="secondary manual-sound-button" v-for="id of ids" @click="previewAnnouncement([{ spriteName: id, offset: 0 }])"
+                            <Button class="secondary manual-sound-button" v-for="id of ids"
+                                @click="previewAnnouncement([{ spriteName: id, offset: 0 }])"
                                 :class="{ translucent: !id.startsWith('chime') && !preferredVoices.some(e => voices[e].sounds.includes(id)) }">
                                 <span>
                                     {{ getSoundInfo(id).name }}
@@ -520,18 +516,6 @@ function showFeedbackDialog() {
                         <a @click="showFeedbackDialog" style="text-decoration: underline; cursor: pointer;">Klik hier
                             voor informatie</a>
                     </fieldset>
-
-                    <fieldset>
-                        <legend>Regels</legend>
-                        <Button class="secondary full" @click="showRuleEditor = true">
-                            <Icon>edit</Icon>
-                            <span>Regels bewerken
-                                <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
-                                    {{customRules.filter(r =>
-                                        r.enabled).length}} actief)</small>
-                            </span>
-                        </Button>
-                    </fieldset>
                 </SidePanel>
             </div>
         </section>
@@ -546,25 +530,20 @@ function showFeedbackDialog() {
                         <RuleList v-model="customRules" :toggleOnly="false" />
                     </Tab>
                 </Tabs>
-                <Button class="full" @click="scheduleAnnouncements(); showRuleEditor = false" style="margin-top: 16px;">
-                    <Icon>refresh</Icon>
-                    <span>Omroepen klaarzetten</span>
-                </Button>
             </ModalDialog>
         </Transition>
 
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
         </div>
-
-        <div ref="audios" id="audios">
-            <!-- This is where the audio elements will reside so we can look them up later -->
-        </div>
     </main>
 </template>
 
 <style scoped>
 #upcoming-announcements {
+    list-style: none;
+    padding: 0;
+    margin: 0;
     position: relative;
 }
 
@@ -676,6 +655,7 @@ function showFeedbackDialog() {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    margin-bottom: 10px;
 
     .manual-sound-button {
         height: 22px;
@@ -685,6 +665,7 @@ function showFeedbackDialog() {
         font-size: 13px;
         font-weight: normal;
         overflow: hidden;
+        border-radius: 4px;
     }
 }
 

@@ -151,10 +151,10 @@ const { isOverDropZone } = useDropZone(main, {
                             <Chip v-if="filmIs3d">
                                 <Icon fill>eyeglasses</Icon>3D
                             </Chip>
-                            <Chip class="translucent-white" v-if="filmSpokenLanguage">
+                            <Chip class="secondary" v-if="filmSpokenLanguage">
                                 <Icon fill>volume_up</Icon> {{ filmSpokenLanguage }}
                             </Chip>
-                            <Chip class="translucent-white" v-if="filmSubtitleLanguage">
+                            <Chip class="secondary" v-if="filmSubtitleLanguage">
                                 <Icon fill>subtitles</Icon> {{ filmSubtitleLanguage }}
                             </Chip>
                         </div>
