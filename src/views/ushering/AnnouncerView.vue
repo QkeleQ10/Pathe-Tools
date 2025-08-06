@@ -268,7 +268,7 @@ async function scheduleAnnouncements() {
 async function enqueueProximateAnnouncements() {
     for (const announcement of scheduledAnnouncements.value) {
         const timeUntilAnnouncement = announcement.time.getTime() - Date.now() - 1000;
-        if (timeUntilAnnouncement < 10000 && !announcement.scheduled) {
+        if (timeUntilAnnouncement > -60000 && timeUntilAnnouncement < 10000 && !announcement.scheduled) {
             if (!announcement.audio) {
                 const segmentsWithVoices = selectVoices(announcement.segments.map(segment => {
                     if (segment.spriteName === 'chimea') {
@@ -431,7 +431,8 @@ function showFeedbackDialog() {
                         <div class="banner" v-if="optionsChanged" key="optionsChangedWarning"
                             style="background-color: #d53232; padding: 4px 16px; border-radius: 5px; margin-bottom: 16px;">
                             <h3 style="margin-bottom: 0;">Let op: opties gewijzigd</h3>
-                            <p style="margin-top: 4px;">Bereid de omroepen opnieuw voor om de wijzigingen toe te passen.</p>
+                            <p style="margin-top: 4px;">Bereid de omroepen opnieuw voor om de wijzigingen toe te passen.
+                            </p>
                         </div>
                     </Transition>
                     <ul id="upcoming-announcements" class="scrollable-list" style="max-height: 700px;">
