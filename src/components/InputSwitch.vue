@@ -55,9 +55,9 @@ input[type="checkbox"] {
     margin: 0;
     font: inherit;
     color: currentColor;
-    width: 42px;
-    height: 24px;
-    border: 2px solid currentColor;
+    width: 40px;
+    height: 22px;
+    border: 1px solid currentColor;
     border-radius: 16px;
 }
 
@@ -70,14 +70,14 @@ input[type="checkbox"]::before {
     content: '';
     border-radius: 16px;
 
-    background-color: #303030;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    background-color: light-dark(#cfcfcf, #303030);
+    box-shadow: inset 0 2px 4px light-dark(#40404066, #00000066);
 
     transition: background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 label:hover input[type="checkbox"]::before {
-    background-color: #404040;
+    background-color: light-dark(#e6e6e6, #404040);
 }
 
 input[type="checkbox"]:checked::before {
@@ -103,7 +103,7 @@ input[type="checkbox"]::after {
     border-radius: 12px;
 
     background-color: #fff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 6px light-dark(#40404066, #00000066);
 
     transition: left 300ms cubic-bezier(0.34, 1.56, 0.64, 1), scale 100ms;
 }

@@ -30,7 +30,7 @@ const displayNextStartTime = useStorage('display-next-start-time', false);
 const printComponent = useTemplateRef('printComponent');
 
 const { handlePrint } = useVueToPrint({
-    content: () => printComponent.value,
+    content: printComponent,
     documentTitle:
         "Tijdenlijstje "
         + format(props.shows?.[0]?.scheduledTime || new Date(), 'yyyy-MM-dd', { locale: nl })
@@ -217,6 +217,19 @@ div.footer {
         margin: 1.35cm;
         margin-top: 0.8cm;
         margin-bottom: 0.8cm;
+    }
+
+    .page, section.gray .page {
+        background-color: transparent;
+        border-radius: 0;
+        box-shadow: none;
+        page-break-before: always;
+    }
+
+    .print-component-wrapper {
+        margin: 0;
+        height: 297mm;
+        width: 210mm;
     }
 
     .print-component {

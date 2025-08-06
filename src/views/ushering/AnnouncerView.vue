@@ -14,7 +14,8 @@ const now = inject<Ref<Date>>('now');
 
 const main = useTemplateRef('main');
 
-const showRuleEditor = ref(false)
+const showRuleEditor = ref(false);
+const optionsChanged = ref(false);
 
 const presetRulesDefault: AnnouncementRule[] = [
     {
@@ -208,6 +209,7 @@ onBeforeUnmount(() => {
  * Schedule all announcements based on the rules and the imported timetable
  */
 async function scheduleAnnouncements() {
+    optionsChanged.value = false;
     let array: Announcement[] = [];
 
     for (const rule of [...presetRules.value, ...customRules.value]) {
@@ -425,6 +427,13 @@ function showFeedbackDialog() {
                             </template>
                         </AnnouncementBuilder>
                     </div>
+                    <Transition name="list">
+                        <div class="banner" v-if="optionsChanged" key="optionsChangedWarning"
+                            style="background-color: #d53232; padding: 4px 16px; border-radius: 5px; margin-bottom: 16px;">
+                            <h3 style="margin-bottom: 0;">Let op: opties gewijzigd</h3>
+                            <p style="margin-top: 4px;">Bereid de omroepen opnieuw voor om de wijzigingen toe te passen.</p>
+                        </div>
+                    </Transition>
                     <ul id="upcoming-announcements" class="scrollable-list" style="max-height: 700px;">
                         <TransitionGroup name="list">
                             <ScheduledAnnouncement
@@ -449,7 +458,7 @@ function showFeedbackDialog() {
                                 <Icon>refresh</Icon>
                                 <span>Omroepen voorbereiden</span>
                             </Button>
-                            <Button class="secondary full" @click="showRuleEditor = true">
+                            <Button class="secondary full" @click="showRuleEditor = true; optionsChanged = true">
                                 <Icon>edit</Icon>
                                 <span>Regels bewerken
                                     <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
@@ -462,7 +471,7 @@ function showFeedbackDialog() {
 
                     <fieldset>
                         <legend>Stemmen</legend>
-                        <VoicesSelector v-model="preferredVoices" />
+                        <VoicesSelector v-model="preferredVoices" @click="optionsChanged = true" />
                     </fieldset>
 
                     <fieldset style="position: relative;">
@@ -485,7 +494,8 @@ function showFeedbackDialog() {
 
                     <fieldset>
                         <legend>Geluiden</legend>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;"
+                            @click="optionsChanged = true">
                             <InputGroup type="select" id="chime2Replacement" v-model="chimeBReplacement">
                                 <template #label>Aftiteling</template>
                                 <template #input>

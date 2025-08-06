@@ -31,7 +31,7 @@ button {
 
     &:hover,
     &[data-drag-active=true] {
-        box-shadow: 0 0 0 8px #ffffff0d;
+        box-shadow: 0 0 0 8px light-dark(#0000000d, #ffffff0d);
         background: #1f252e;
     }
 
@@ -73,11 +73,11 @@ button.primary {
 }
 
 button.secondary {
-    color: #fff;
-    background-color: #ffffff1a;
+    color: light-dark(#000, #fff);
+    background-color: light-dark(#00000033, #ffffff1a);
 
     &:hover {
-        background-color: #ffffff33;
+        background-color: light-dark(#0000001a, #ffffff33);
     }
 }
 </style>

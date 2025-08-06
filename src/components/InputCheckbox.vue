@@ -38,8 +38,7 @@ label.enclose-box {
     width: 100%;
     padding: 0 12px;
     font: 16px Heebo, arial, sans-serif;
-    border: 1px solid #30343d;
-    /* background-color: #ffffff06; */
+    border: 1px solid light-dark(#9da1ac, #30343d);
     color: currentColor;
     border-radius: 6px;
     line-height: 16px;
@@ -81,14 +80,14 @@ input[type="checkbox"]::before {
     content: '';
     border-radius: 4px;
 
-    background-color: #303030;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    background-color: light-dark(#cfcfcf, #303030);
+    box-shadow: inset 0 2px 4px light-dark(#40404066, #00000066);
 
     transition: background-color 150ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 label:hover input[type="checkbox"]::before {
-    background-color: #404040;
+    background-color: light-dark(#e6e6e6, #404040);
 }
 
 input[type="checkbox"]:checked::before {
@@ -116,7 +115,7 @@ input[type="checkbox"]::after {
 
     font-size: 24px;
     font-family: 'Material Symbols Outlined';
-    font-weight: 700;
+    font-weight: 600;
     font-variation-settings:
         'FILL' 0,
         'wght' 700,
@@ -124,7 +123,7 @@ input[type="checkbox"]::after {
         'opsz' 20;
 
     color: #000;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 2px 6px light-dark(#40404066, #00000066);
 
     transition: opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), scale 100ms;
 }

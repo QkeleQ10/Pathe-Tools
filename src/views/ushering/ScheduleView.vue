@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, useTemplateRef } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { useCreditsStingersStore } from '@/stores/creditsStingers'
 import { Show, TimetableShow } from '@/classes/classes'
+import { format } from 'date-fns'
+import { nl } from 'date-fns/locale'
+import { useVueToPrint } from 'vue-to-print'
 
 const store = useTmsScheduleStore()
 const stingersStore = useCreditsStingersStore()
@@ -96,6 +99,15 @@ async function removeStinger(title: string) {
     }
 }
 
+
+const { handlePrint } = useVueToPrint({
+    content: useTemplateRef('pages'),
+    documentTitle:
+        "Tijdenlijstje "
+        + format(pages.value?.[0]?.[0]?.scheduledTime || new Date(), 'yyyy-MM-dd', { locale: nl })
+        + (pages.value.length > 1 ? ` (${pages.value.length} delen)` : ''),
+})
+
 const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
@@ -112,19 +124,20 @@ onMounted(() => {
         <TimetableUploadSection />
         <section id="edit" :class="{ gray: trueColours }">
             <div class="section-content flex" style="flex-wrap: wrap-reverse;">
-                <div style="flex-basis: 210mm;">
+                <div style="flex: 210mm 0 0;">
                     <div class="flex" style="justify-content: space-between; align-items: center; padding-right: 16px;">
                         <h2>Tijdenlijstje bewerken</h2>
                         <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch>
                     </div>
                     <p id="upload-hint" v-if="!pages?.[0]?.length">Upload eerst een bestand.</p>
-                    <div id="pages">
+                    <div id="pages" ref="pages">
                         <SchedulePage v-for="(page, i) in pages" :ref="el => schedulePageRefs[i] = el" :shows="page"
                             :metadata="store.metadata" :page-num="i" :num-pages="pages.length" />
                     </div>
                 </div>
-                <SidePanel style="flex-basis: 300px;">
+                <SidePanel style="flex: 150px 1 0;">
                     <h2>Opties</h2>
+
                     <fieldset>
                         <legend>Kolommen</legend>
                         <div>
@@ -218,16 +231,20 @@ onMounted(() => {
                         </InputGroup>
                     </fieldset>
 
-                    <div class="buttons"
-                        style="display: flex; gap: 16px; justify-content: stretch; margin-top: auto; position: sticky; bottom: 0; padding: 16px;">
+                    <fieldset id="print-buttons" class="buttons flex">
+                        <legend>Afdrukken</legend>
+                        <Button v-if="pages.length > 1" @click="handlePrint()" class="primary full">
+                            <Icon>print</Icon>
+                            Alles
+                        </Button>
                         <Button v-for="(page, i) in pages" :key="i" @click="schedulePageRefs[i]?.handlePrint()"
-                            class="primary full">
+                            class="secondary full">
                             <Icon>print</Icon>
                             {{ pages.length > 1
-                                ? 'Deel ' + (i + 1) + ' afdrukken'
+                                ? 'Deel ' + (i + 1)
                                 : 'Afdrukken' }}
                         </Button>
-                    </div>
+                    </fieldset>
                 </SidePanel>
             </div>
         </section>
@@ -273,5 +290,25 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 16px;
+
+    @media print {
+        display: block;
+    }
+}
+
+#print-buttons {
+    position: sticky;
+    bottom: 0;
+    backdrop-filter: blur(4px);
+    padding: 8px;
+    padding-top: 16px;
+    margin: -8px;
+    gap: 4px;
+}
+
+section.gray {
+    #print-buttons {
+        /* background-color: #f7f7f7; */
+    }
 }
 </style>

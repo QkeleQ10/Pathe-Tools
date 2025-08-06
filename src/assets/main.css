@@ -91,6 +91,10 @@ section>.section-content {
     margin-right: auto;
     padding-left: 0;
     padding-right: 0;
+
+    &.flex {
+        gap: 32px;
+    }
 }
 
 @media (width >=700px) {
