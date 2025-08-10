@@ -1,13 +1,46 @@
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useUrlSearchParams } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { useServerStore } from './server';
+
+export type OmdbResponse = {
+    Title: string;
+    Year: string;
+    Rated: string;
+    Released: string;
+    Runtime: string;
+    Genre: string;
+    Director: string;
+    Writer: string;
+    Actors: string;
+    Plot: string;
+    Language: string;
+    Country: string;
+    Awards: string;
+    Poster: string;
+    Ratings: {
+        Source: string;
+        Value: string;
+    }[];
+    Metascore: string;
+    imdbRating: string;
+    imdbVotes: string;
+    imdbID: string;
+    Type: string;
+    DVD: string;
+    BoxOffice: string;
+    Production: string;
+    Website: string;
+    Response: string;
+};
 
 export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
     const images = ref<{ name: string, url: string }[]>([]);
     const status = ref<'no-connection' | 'no-credentials' | 'sending' | 'sent' | 'send-error' | 'receiving' | 'received' | 'receive-error' | 'error'>('no-connection');
 
     const params = useUrlSearchParams('history');
+
+    const url = computed(() => params.url || 'http://localhost:3541');
 
     const serverStore = useServerStore();
 
@@ -34,7 +67,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
     async function getFromServer(): Promise<{ name: string, url: string }[]> {
         return new Promise(async (resolve, reject) => {
             try {
-                const response = await fetch(`${params.url || 'http://localhost:3541'}/users/${serverStore.username}/pictures`, {
+                const response = await fetch(`${url.value}/users/${serverStore.username}/pictures`, {
                     headers: {
                         'ngrok-skip-browser-warning': 'true'
                     }
@@ -63,7 +96,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
                     formData.append('pictures', file);
                 }
 
-                const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures`, {
+                const response = await fetch(`${url.value}/users/${serverStore.username}/pictures`, {
                     method: 'POST',
                     headers: {
                         Authorization: 'Basic ' + btoa(`${serverStore.username}:${serverStore.password}`),
@@ -98,7 +131,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
             try {
                 status.value = 'sending';
 
-                const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures`, {
+                const response = await fetch(`${url.value}/users/${serverStore.username}/pictures`, {
                     method: 'DELETE',
                     headers: {
                         Authorization: 'Basic ' + btoa(`${serverStore.username}:${serverStore.password}`),
@@ -124,7 +157,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
             try {
                 status.value = 'sending';
 
-                const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures/${fileId}`, {
+                const response = await fetch(`${url.value}/users/${serverStore.username}/pictures/${fileId}`, {
                     method: 'DELETE',
                     headers: {
                         Authorization: 'Basic ' + btoa(`${serverStore.username}:${serverStore.password}`),
@@ -146,7 +179,7 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
     }
 
     async function fetchImage(fileId: string) {
-        const response = await fetch(`http://localhost:3541/users/${serverStore.username}/pictures/${fileId}`, {
+        const response = await fetch(`${url.value}/users/${serverStore.username}/pictures/${fileId}`, {
             headers: {
                 'ngrok-skip-browser-warning': 'true'
             }
@@ -155,5 +188,23 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
         return URL.createObjectURL(blob);
     }
 
-    return { images, filesUploaded, deleteAll, deleteImage, fetchImage, status, connect };
+    async function omdb(t: string, y?: string): Promise<OmdbResponse> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await fetch(`${url.value}/omdb?t=${encodeURIComponent(t.replace('’', "'"))}${y ? `&y=${encodeURIComponent(y)}` : ''}`, {
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+                if (!response.ok) throw new Error(`OMDb API responded with ${response.status} ${response.statusText}`);
+
+                const data = await response.json();
+                resolve(data);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    return { images, filesUploaded, deleteAll, deleteImage, fetchImage, status, connect, omdb };
 });

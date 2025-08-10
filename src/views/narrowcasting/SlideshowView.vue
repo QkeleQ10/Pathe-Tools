@@ -1,13 +1,38 @@
 <script setup lang="ts">
-import { ref, onUnmounted, useTemplateRef, computed } from 'vue';
+import { ref, computed, onUnmounted, useTemplateRef, onMounted } from 'vue';
 import { useMouse, useDropZone, useFullscreen, useLocalStorage, useUrlSearchParams } from '@vueuse/core';
-import { useSlideshowImagesStore } from '@/stores/slideshowImages';
+import { format } from 'date-fns';
+import { nl } from 'date-fns/locale';
+import { OmdbResponse, useSlideshowImagesStore } from '@/stores/slideshowImages';
+import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 
-const carousel = useTemplateRef('carousel');
-const main = useTemplateRef('main');
-
-const store = useSlideshowImagesStore();
+const slideshowImagesStore = useSlideshowImagesStore();
+const tmsScheduleStore = useTmsScheduleStore();
 const currentSlide = ref(0);
+
+const movieOmdbList = ref<OmdbResponse[]>([]);
+
+async function fetchMovieOmdbList() {
+    const shows = tmsScheduleStore.table.map(row => row.title);
+    const freqMap = new Map<string, number>();
+    shows.forEach(title => {
+        freqMap.set(title, (freqMap.get(title) || 0) + 1);
+    });
+    const sortedTitles = Array.from(freqMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([title]) => title);
+    const results = await Promise.allSettled(
+        sortedTitles.map(title => slideshowImagesStore.omdb(title))
+    );
+    movieOmdbList.value = results
+        .filter(result => result.status === 'fulfilled' && result.value)
+        .map(result => (result as PromiseFulfilledResult<OmdbResponse>).value) as OmdbResponse[];
+}
+
+tmsScheduleStore.$subscribe(fetchMovieOmdbList);
+onMounted(fetchMovieOmdbList);
+
+const numSlides = computed(() => slideshowImagesStore.images.length + (movieOmdbList.value?.length ? 1 : 0));
 
 // OPTIONS
 
@@ -15,7 +40,7 @@ const slideDuration = useLocalStorage('slideshow-duration', 60);
 
 // FULLSCREEN TOGGLE
 
-const { isFullscreen, enter, exit, toggle } = useFullscreen(carousel);
+const { isFullscreen, enter, exit, toggle } = useFullscreen(useTemplateRef('carousel'));
 const params = useUrlSearchParams('history');
 const fakeFullscreen = ref(params.fullscreen === 'true');
 function toggleFullscreen() {
@@ -63,17 +88,17 @@ const shouldExpandDotnav = computed(() => {
 // SLIDESHOW CONTROLS
 
 function nextSlide() {
-    currentSlide.value = ((currentSlide.value + 1) % store.images.length) || 0;
+    currentSlide.value = ((currentSlide.value + 1) % numSlides.value) || 0;
 }
 
 function previousSlide() {
-    currentSlide.value = ((currentSlide.value - 1 + store.images.length) % store.images.length) || 0;
+    currentSlide.value = ((currentSlide.value - 1 + numSlides.value) % numSlides.value) || 0;
 }
 
 let slideshowTimeout: ReturnType<typeof setTimeout>;
 function startSlideshow() {
     clearTimeout(slideshowTimeout);
-    slideshowTimeout = setTimeout(() => {
+    if (slideDuration.value > 0) slideshowTimeout = setTimeout(() => {
         nextSlide();
         startSlideshow();
     }, slideDuration.value * 1000);
@@ -91,7 +116,7 @@ function handleKeydown(event: KeyboardEvent) {
         default:
             if (!isNaN(Number(event.key))) {
                 const slideIndex = Number(event.key) - 1;
-                if (slideIndex >= 0 && slideIndex < store.images.length) {
+                if (slideIndex >= 0 && slideIndex < numSlides.value) {
                     currentSlide.value = slideIndex;
                 }
             }
@@ -105,8 +130,8 @@ onUnmounted(() => {
 
 // DROP ZONE HANDLER
 
-const { isOverDropZone } = useDropZone(main, {
-    onDrop: store.filesUploaded,
+const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
+    onDrop: slideshowImagesStore.filesUploaded,
     dataTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/*'],
     multiple: true
 })
@@ -125,12 +150,21 @@ const { isOverDropZone } = useDropZone(main, {
                         @mouseleave="shouldShowControls = false">
 
                         <TransitionGroup name="slide">
-                            <img v-for="(image, index) in store.images" :key="image.name" :src="image.url"
-                                v-show="index === currentSlide">
+                            <img class="carousel-slide" v-for="(image, index) in slideshowImagesStore.images"
+                                :key="image.name" :src="image.url" v-show="index === currentSlide">
+                            <FilmsPlaying class="carousel-slide" v-if="movieOmdbList?.length"
+                                v-show="currentSlide === numSlides - 1" :movies="movieOmdbList">
+                                <template #date v-if="'flags' in tmsScheduleStore.metadata">
+                                    {{ tmsScheduleStore.metadata.flags.includes('times-only')
+                                        ? 'Datum onbekend'
+                                        : format(tmsScheduleStore.table[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
+                                </template>
+                            </FilmsPlaying>
                         </TransitionGroup>
 
-                        <p v-if="['sending', 'receiving'].includes(store.status)" class="message">Laden...</p>
-                        <p v-else-if="!store.images?.length" class="message">Leeg</p>
+                        <p v-if="['sending', 'receiving'].includes(slideshowImagesStore.status)" class="message">
+                            Laden...</p>
+                        <p v-else-if="!slideshowImagesStore.images?.length" class="message">Leeg</p>
 
                         <button class="control fullscreen" @click="toggleFullscreen">
                             <Icon v-if="isFullscreen || fakeFullscreen">fullscreen_exit</Icon>
@@ -144,9 +178,13 @@ const { isOverDropZone } = useDropZone(main, {
                         </button>
                         <div class="control dotnav" ref="dotnav"
                             :class="{ hoverNearby: shouldExpandDotnav && shouldShowControls }">
-                            <button class="dot" v-for="(url, index) in store.images" @click="currentSlide = index"
-                                :class="{ active: index === currentSlide }">
+                            <button class="dot" v-for="(url, index) in slideshowImagesStore.images"
+                                @click="currentSlide = index" :class="{ active: index === currentSlide }">
                                 <img :src="url.url" />
+                            </button>
+                            <button class="dot" v-if="movieOmdbList?.length" @click="currentSlide = numSlides - 1"
+                                :class="{ active: currentSlide === numSlides - 1 }">
+                                <Icon fill>theaters</Icon>
                             </button>
                         </div>
                     </div>
@@ -186,6 +224,7 @@ const { isOverDropZone } = useDropZone(main, {
 
     width: 100%;
     aspect-ratio: 16 / 9;
+    container: size;
 
     background-color: #000;
     border: 1px solid #ffffff33;
@@ -210,7 +249,7 @@ const { isOverDropZone } = useDropZone(main, {
         z-index: 1000;
     }
 
-    img {
+    .carousel-slide {
         width: 100%;
         height: 100%;
         object-fit: contain;
@@ -300,12 +339,25 @@ const { isOverDropZone } = useDropZone(main, {
             cursor: pointer;
             transition: width 150ms, height 150ms;
 
+            img,
+            .icon {
+                opacity: 0;
+                transition: opacity 150ms;
+            }
+
             img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                pointer-events: none;
                 position: absolute;
                 inset: 0;
                 object-fit: cover;
-                opacity: 0;
-                transition: opacity 150ms;
+            }
+
+            .icon {
+                --size: 32px;
+                color: #000;
             }
 
             &.active {
@@ -323,7 +375,8 @@ const { isOverDropZone } = useDropZone(main, {
                 width: calc(50px * 16 / 9);
                 outline: 1px solid #ffffff33;
 
-                img {
+                img,
+                .icon {
                     opacity: 1;
                 }
 

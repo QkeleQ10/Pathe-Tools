@@ -219,7 +219,8 @@ div.footer {
         margin-bottom: 0.8cm;
     }
 
-    .page, section.gray .page {
+    .page,
+    section.gray .page {
         background-color: transparent;
         border-radius: 0;
         box-shadow: none;

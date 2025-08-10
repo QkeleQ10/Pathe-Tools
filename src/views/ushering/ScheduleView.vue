@@ -31,7 +31,6 @@ const main = ref<HTMLElement>(null)
 const pages = computed<TimetableShow[][]>(() => {
     const plfRows = store.table?.filter(row => row.auditorium?.includes('4DX')) || []
     let arr = store.table?.map((show: Show, i: number) => {
-        console.log(show.title.trim(), 'hasCreditsStinger:', stingersStore.stingers.includes(show.title?.trim()))
         const hasCreditsStinger = stingersStore.stingers.includes(show.title?.trim())
         const overlapWithPlf = plfRows.some(plf =>
             show.creditsTime.getTime() - plf.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&

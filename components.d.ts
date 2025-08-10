@@ -16,6 +16,7 @@ declare module 'vue' {
     ContextMenu: typeof import('./src/components/ContextMenu.vue')['default']
     FileUploadBlock: typeof import('./src/components/FileUploadBlock.vue')['default']
     FileUploadButton: typeof import('./src/components/FileUploadButton.vue')['default']
+    FilmsPlaying: typeof import('./src/components/narrowcasting/slideshow/FilmsPlaying.vue')['default']
     HeroImage: typeof import('./src/components/HeroImage.vue')['default']
     Icon: typeof import('./src/components/Icon.vue')['default']
     Icon4dx: typeof import('./src/components/symbols/Icon4dx.vue')['default']
