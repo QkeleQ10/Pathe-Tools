@@ -256,6 +256,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             .replace("Originele versie", "OV")
             .replace(" IMX", " IMAX")
             .replace(" PAUZE", '')
+            .replace(/(.*)\.$/, "$1 .")
             .replace(/^\.(.*)/, "$1 .")
 
         let extraString = transformedString
