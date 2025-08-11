@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { format, parse } from 'date-fns';
+import { nl } from 'date-fns/locale';
 import { OmdbResponse } from '@/stores/slideshowImages';
 import { FastAverageColor } from 'fast-average-color';
+import { Show } from '@/classes/classes';
 
 const props = defineProps<{
-    movies: OmdbResponse[];
+    omdbMovies: OmdbResponse[];
+    shows?: Show[];
 }>();
 
 const colors = ref<string[]>([]);
@@ -13,7 +17,7 @@ const fac = new FastAverageColor();
 
 async function updateColors() {
     colors.value = await Promise.all(
-        props.movies.map(async (movie) => {
+        props.omdbMovies.map(async (movie) => {
             if (movie?.Poster?.startsWith('http')) {
                 try {
                     const result = await fac.getColorAsync(movie.Poster, {
@@ -24,7 +28,6 @@ async function updateColors() {
                     return result.hex;
                 } catch (e) {
                     console.warn(e);
-                    console.log(movie)
                     return '';
                 }
             }
@@ -35,6 +38,26 @@ async function updateColors() {
 }
 
 updateColors();
+
+function formatDuration(duration: string): string {
+    const m = duration.match(/(\d+)/);
+    if (!m) return duration;
+    const mins = +m[1];
+    return mins < 60 ? duration : `${Math.floor(mins / 60)}h${mins % 60 ? `${String(mins % 60).padStart(2, '0')}` : ''}`;
+}
+
+function formatDate(date: string) {
+    try {
+        // Parse the input date string (assuming "DD MMM YYYY" format)
+        const parsedDate = parse(date, 'dd MMM yyyy', new Date());
+
+        // Format the date according to the specified pattern and locale
+        return format(parsedDate, 'dd MMM yyyy', { locale: nl });
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return date; // Return original string if parsing fails
+    }
+}
 </script>
 
 <template>
@@ -45,16 +68,18 @@ updateColors();
                 <slot name="date"></slot>
             </small>
         </div>
-        <div class="showcase-item" v-for="(movie, i) in props.movies.slice(0, 5)" :key="movie.imdbID"
-            :style="{ '--background-color': colors[i] }" :class="`i${i}`">
+        <div class="showcase-item" v-for="(movie, i) in props.omdbMovies.slice(0, 5)" :key="movie.imdbID"
+            :style="{ '--background-color': colors[i], '--animation-delay': `${0.2 * i + 0.2}s` }" :class="`i${i}`">
             <div class="image" :style="{ backgroundImage: `url(${movie.Poster})` }" alt="Movie Poster"></div>
             <div class="details">
                 <h4 class="title">{{ movie.Title }}</h4>
-                <p class="metadata miscellaneous">
-                    <b>{{ movie.Runtime }} &bull; {{ movie.Genre }}</b>
-                </p>
+                <p class="metadata miscellaneous"><b>
+                        {{shows.filter(s => s.title === movie.Title).length}}x &bull; {{ formatDuration(movie.Runtime)
+                        }}
+                        &bull; {{ movie.Genre }}
+                    </b></p>
                 <p class="metadata release">
-                    <em>Releasedatum: {{ movie.Released }}</em>
+                    <em>Releasedatum: {{ formatDate(movie.Released) }}</em>
                 </p>
                 <p class="metadata director-actors">
                     <em>Van</em> {{ movie.Director }} <em>met</em> {{ movie.Actors }}
@@ -69,6 +94,8 @@ updateColors();
                 <p class="plot">{{ movie.Plot }}</p>
             </div>
         </div>
+        <!-- <marquee>{{shows.filter(s => !omdbMovies.find(m => m.Title === s.title)).map(s => s.title).join(' • ')}}
+        </marquee> -->
     </div>
 </template>
 
@@ -76,7 +103,7 @@ updateColors();
 #films-playing {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
-    grid-template-rows: auto 3fr 2fr;
+    grid-template-rows: auto 3fr 2fr auto;
     gap: 2.5%;
 
     height: 100%;
@@ -118,6 +145,10 @@ h3 {
     border-radius: .25vmax;
     padding: 1vmax;
 
+    /* Fade-in animation */
+    animation: fadeInUp 0.6s ease-out both;
+    animation-delay: var(--animation-delay, 0s);
+
     .image {
         max-width: 100%;
         max-height: 100%;
@@ -139,7 +170,7 @@ h3 {
         margin-block: .25em;
         font-size: .5em;
         overflow: hidden;
-        /* text-wrap: nowrap; */
+        text-wrap: nowrap;
         text-overflow: ellipsis;
 
         em {
@@ -176,6 +207,22 @@ h3 {
     &.i1 {
         grid-column: span 4;
         font-size: 1.2em;
+    }
+}
+
+marquee {
+    grid-column: 1 / -1;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(20%);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
     }
 }
 </style>

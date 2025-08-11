@@ -256,10 +256,10 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             .replace("Originele versie", "OV")
             .replace(" IMX", " IMAX")
             .replace(" PAUZE", '')
-            .replace(/^\.(.*)/, "$1 altn")
+            .replace(/^\.(.*)/, "$1 .")
 
         let extraString = transformedString
-            .match(/(\s((altn)|(4DX)|(ATMOS)|(IMAX)|(SCREENX)|(3D)|(Music)|(KLEUTER)|(ROOFTOP)|(Pride)|(PrideNight)|(Ladies)|(Premiere)|(BESLOTEN)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
+            .match(/(\s((\.)|(4DX)|(ATMOS)|(IMAX)|(SCREENX)|(3D)|(Music)|(KLEUTER)|(ROOFTOP)|(Pride)|(PrideNight)|(Ladies)|(Premiere)|(BESLOTEN)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
 
         return {
             extras: extraString.length > 0 ? extraString.split(' ') : [],

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted, useTemplateRef, onMounted } from 'vue';
 import { useMouse, useDropZone, useFullscreen, useLocalStorage, useUrlSearchParams } from '@vueuse/core';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { OmdbResponse, useSlideshowImagesStore } from '@/stores/slideshowImages';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
@@ -26,7 +26,8 @@ async function fetchMovieOmdbList() {
     );
     movieOmdbList.value = results
         .filter(result => result.status === 'fulfilled' && result.value)
-        .map(result => (result as PromiseFulfilledResult<OmdbResponse>).value) as OmdbResponse[];
+        .map(result => (result as PromiseFulfilledResult<OmdbResponse>).value)
+        .sort((a, b) => parse(b.Released, 'dd MMM yyyy', new Date()).getTime() - parse(a.Released, 'dd MMM yyyy', new Date()).getTime()) as OmdbResponse[];
 }
 
 tmsScheduleStore.$subscribe(fetchMovieOmdbList);
@@ -153,7 +154,8 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                             <img class="carousel-slide" v-for="(image, index) in slideshowImagesStore.images"
                                 :key="image.name" :src="image.url" v-show="index === currentSlide">
                             <FilmsPlaying class="carousel-slide" v-if="movieOmdbList?.length"
-                                v-show="currentSlide === numSlides - 1" :movies="movieOmdbList">
+                                v-show="currentSlide === numSlides - 1" :omdbMovies="movieOmdbList"
+                                :shows="tmsScheduleStore.table">
                                 <template #date v-if="'flags' in tmsScheduleStore.metadata">
                                     {{ tmsScheduleStore.metadata.flags.includes('times-only')
                                         ? 'Datum onbekend'
