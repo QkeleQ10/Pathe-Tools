@@ -252,15 +252,14 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     function extractExtras(string: string): { extras: string[], title: string } {
         let transformedString = string
+            .replace(/^\.+|\.+$/, '')
             .replace("Nederlandse versie", "NL")
             .replace("Originele versie", "OV")
             .replace(" IMX", " IMAX")
             .replace(" PAUZE", '')
-            .replace(/(.*)\.$/, "$1 .")
-            .replace(/^\.(.*)/, "$1 .")
 
         let extraString = transformedString
-            .match(/(\s((\.)|(4DX)|(ATMOS)|(IMAX)|(SCREENX)|(3D)|(Music)|(KLEUTER)|(ROOFTOP)|(Pride)|(PrideNight)|(Ladies)|(Premiere)|(BESLOTEN)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
+            .match(/(\s((4DX)|(ATMOS)|(IMAX)|(SCREENX)|(3D)|(ROOFTOP)|(Music)|(Pride)|(PrideNight)|(Ladies)|(Premiere)|(Bollywood)|(BESLOTEN)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
 
         return {
             extras: extraString.length > 0 ? extraString.split(' ') : [],

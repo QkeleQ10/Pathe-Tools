@@ -420,12 +420,4 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
     transform: scale(0.9);
     opacity: 0;
 }
-
-@media (prefers-reduced-motion: reduce) {
-
-    .slide-enter-active,
-    .slide-leave-active {
-        transition: none;
-    }
-}
 </style>

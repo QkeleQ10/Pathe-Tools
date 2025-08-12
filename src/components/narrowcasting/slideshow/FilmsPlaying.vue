@@ -18,20 +18,18 @@ const fac = new FastAverageColor();
 async function updateColors() {
     colors.value = await Promise.all(
         props.omdbMovies.map(async (movie) => {
-            if (movie?.Poster?.startsWith('http')) {
-                try {
-                    const result = await fac.getColorAsync(movie.Poster, {
-                        ignoredColor: [
-                            [255, 255, 255, 255, 100]
-                        ]
-                    });
-                    return result.hex;
-                } catch (e) {
-                    console.warn(e);
-                    return '';
-                }
+            if (!movie?.Poster?.startsWith('http')) return '';
+            try {
+                const result = await fac.getColorAsync(movie.Poster, {
+                    ignoredColor: [
+                        [255, 255, 255, 255, 100]
+                    ]
+                });
+                return result.hex;
+            } catch (e) {
+                console.warn(e);
+                return '';
             }
-            return '';
         })
     );
     fac.destroy();
@@ -114,7 +112,7 @@ function formatDate(date: string) {
     background-repeat: no-repeat;
     background-size: 340px 100%;
     color: #ffffff;
-    font-size: 1.8rem;
+    font-size: 1.7rem;
 }
 
 #header {
@@ -126,7 +124,7 @@ function formatDate(date: string) {
 }
 
 h3 {
-    font: 3em "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    font: 2.5em "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
     text-transform: uppercase;
     margin: 0;
 }
@@ -170,7 +168,7 @@ h3 {
         margin-block: .25em;
         font-size: .5em;
         overflow: hidden;
-        text-wrap: nowrap;
+        /* text-wrap: nowrap; */
         text-overflow: ellipsis;
 
         em {
@@ -197,7 +195,7 @@ h3 {
 
     &.i0 {
         grid-column: span 5;
-        font-size: 1.5em;
+        font-size: 1.3em;
 
         .title {
             font-size: 1.25em;
@@ -206,7 +204,7 @@ h3 {
 
     &.i1 {
         grid-column: span 4;
-        font-size: 1.2em;
+        font-size: 1.15em;
     }
 }
 
