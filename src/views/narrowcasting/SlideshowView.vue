@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted, useTemplateRef, onMounted } from 'vue';
+import { ref, computed, onUnmounted, useTemplateRef, onMounted, inject, Ref } from 'vue';
 import { useMouse, useDropZone, useFullscreen, useLocalStorage, useUrlSearchParams } from '@vueuse/core';
 import { format, parse } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -8,9 +8,12 @@ import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 
 const slideshowImagesStore = useSlideshowImagesStore();
 const tmsScheduleStore = useTmsScheduleStore();
+const now = inject<Ref<Date>>('now');
+
 const currentSlide = ref(0);
 
 const movieOmdbList = ref<OmdbResponse[]>([]);
+const filmsPlayingSlideValid = computed(() => showFilmsPlayingSlide.value && movieOmdbList.value.length > 0);
 
 async function fetchMovieOmdbList() {
     const shows = tmsScheduleStore.table.map(row => row.title);
@@ -33,11 +36,12 @@ async function fetchMovieOmdbList() {
 tmsScheduleStore.$subscribe(fetchMovieOmdbList);
 onMounted(fetchMovieOmdbList);
 
-const numSlides = computed(() => slideshowImagesStore.images.length + (movieOmdbList.value?.length ? 1 : 0));
+const numSlides = computed(() => slideshowImagesStore.images.length + (filmsPlayingSlideValid.value ? 1 : 0));
 
 // OPTIONS
 
 const slideDuration = useLocalStorage('slideshow-duration', 60);
+const showFilmsPlayingSlide = useLocalStorage('slideshow-films-playing', true);
 
 // FULLSCREEN TOGGLE
 
@@ -153,7 +157,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                         <TransitionGroup name="slide">
                             <img class="carousel-slide" v-for="(image, index) in slideshowImagesStore.images"
                                 :key="image.name" :src="image.url" v-show="index === currentSlide">
-                            <FilmsPlaying class="carousel-slide" v-if="movieOmdbList?.length"
+                            <FilmsPlaying class="carousel-slide" v-if="filmsPlayingSlideValid"
                                 v-show="currentSlide === numSlides - 1" :omdbMovies="movieOmdbList"
                                 :shows="tmsScheduleStore.table">
                                 <template #date v-if="'flags' in tmsScheduleStore.metadata">
@@ -168,6 +172,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                             Laden...</p>
                         <p v-else-if="!slideshowImagesStore.images?.length" class="message">Leeg</p>
 
+                        <span class="clock">{{ format(now, 'HH:mm:ss') }}</span>
                         <button class="control fullscreen" @click="toggleFullscreen">
                             <Icon v-if="isFullscreen || fakeFullscreen">fullscreen_exit</Icon>
                             <Icon v-else>fullscreen</Icon>
@@ -184,7 +189,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                                 @click="currentSlide = index" :class="{ active: index === currentSlide }">
                                 <img :src="url.url" />
                             </button>
-                            <button class="dot" v-if="movieOmdbList?.length" @click="currentSlide = numSlides - 1"
+                            <button class="dot" v-if="filmsPlayingSlideValid" @click="currentSlide = numSlides - 1"
                                 :class="{ active: currentSlide === numSlides - 1 }">
                                 <Icon fill>theaters</Icon>
                             </button>
@@ -195,12 +200,19 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                 <SidePanel>
                     <h2>Opties</h2>
                     <fieldset>
-                        <legend>Automatische weergave</legend>
+                        <legend>Algemeen</legend>
                         <InputGroup type="number" id="slideDuration" v-model.number="slideDuration"
                             @change="startSlideshow" step="1" min="1" max="240">
                             <template #label>Volgende dia elke</template>
                             <span class="unit">seconden</span>
                         </InputGroup>
+                        <div>
+                            <div class="label">Extra dia's</div>
+                            <InputCheckbox class="enclose-box" v-model="showFilmsPlayingSlide"
+                                identifier="filmsPlaying">
+                                Wat draait er?
+                            </InputCheckbox>
+                        </div>
                         <Button class="secondary full" @click="currentSlide = 0; startSlideshow(); toggleFullscreen()">
                             <Icon>play_arrow</Icon>Automatische weergave starten
                         </Button>
@@ -255,7 +267,14 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        pointer-events: none;
+    }
+
+    &>.clock {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        color: #ffffffb3;
+        font-size: 1.2em;
     }
 
     &>.control {

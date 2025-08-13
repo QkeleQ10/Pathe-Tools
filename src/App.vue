@@ -3,8 +3,6 @@ import { provide, ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { format } from 'date-fns';
 
-import router from '@/router/index';
-
 const now = ref(new Date())
 setInterval(updateNowValue, 1000)
 updateNowValue()

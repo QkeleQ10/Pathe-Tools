@@ -67,7 +67,7 @@ function formatDate(date: string) {
             </small>
         </div>
         <div class="showcase-item" v-for="(movie, i) in props.omdbMovies.slice(0, 5)" :key="movie.imdbID"
-            :style="{ '--background-color': colors[i], '--animation-delay': `${0.2 * i + 0.2}s` }" :class="`i${i}`">
+            :style="{ '--accent': colors[i], '--animation-delay': `${0.2 * i + 0.2}s` }" :class="`i${i}`">
             <div class="image" :style="{ backgroundImage: `url(${movie.Poster})` }" alt="Movie Poster"></div>
             <div class="details">
                 <h4 class="title">{{ movie.Title }}</h4>
@@ -130,6 +130,8 @@ h3 {
 }
 
 .showcase-item {
+    --accent: transparent;
+
     position: relative;
     overflow: hidden;
 
@@ -139,9 +141,10 @@ h3 {
     grid-template-columns: auto 1fr;
     gap: .7em;
 
-    background-color: var(--background-color);
-    border-radius: .25vmax;
+    background-color: var(--accent);
+    border-radius: .35vmax;
     padding: 1vmax;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 
     /* Fade-in animation */
     animation: fadeInUp 0.6s ease-out both;
@@ -154,6 +157,7 @@ h3 {
         background-size: cover;
         background-position: center;
         border-radius: .25vmax;
+        box-shadow: 0 0 0 1px #fff3, 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
     .details {
@@ -182,7 +186,7 @@ h3 {
     }
 
     .plot {
-        font-size: .6em;
+        font-size: .5em;
         display: none;
     }
 

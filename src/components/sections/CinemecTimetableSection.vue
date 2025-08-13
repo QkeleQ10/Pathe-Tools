@@ -420,7 +420,7 @@ onBeforeUnmount(() => {
 });
 
 function showFormattingInfo() {
-    const dialog = showDialog([
+    showDialog([
         h('h3', "Opmaak"),
         h('p', [
             "In invoervelden zoals deze kunnen de volgende codes worden gebruikt:", h('br'), h('br'),
