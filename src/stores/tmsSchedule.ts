@@ -108,6 +108,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
             const parsedTable = json.timetable.map(obj => ({
                 ...obj,
+                /* TODO */ title: extractExtras(obj.playlist).title, extras: extractExtras(obj.playlist).extras, /* TODO */
                 scheduledTime: obj.scheduledTime && new Date(obj.scheduledTime),
                 showTime: obj.showTime && new Date(obj.showTime),
                 mainShowTime: obj.mainShowTime && new Date(obj.mainShowTime),
