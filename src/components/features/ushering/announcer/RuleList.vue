@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { AnnouncementRule } from '@/classes/classes';
-import { getSoundInfo } from '@/utils/voices';
+import { AnnouncementRule } from '@/scripts/types.ts';
+import { getSoundInfo } from '@/scripts/voices';
+import AnnouncementBuilder from './AnnouncementBuilder.vue';
 
 const showAnnouncementBuilder = ref(false);
 const showFilterDialog = ref(false);

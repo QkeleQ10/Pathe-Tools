@@ -3,10 +3,13 @@ import { ref, onMounted, computed, useTemplateRef } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { useCreditsStingersStore } from '@/stores/creditsStingers'
-import { Show, TimetableShow } from '@/classes/classes'
+import { Show, TimetableShow } from '@/scripts/types.ts'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import { useVueToPrint } from 'vue-to-print'
+import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue'
+import SchedulePage from '@features/ushering/schedule/SchedulePage.vue'
+import UserGuide from '@/components/features/ushering/schedule/UserGuide.vue'
 
 const store = useTmsScheduleStore()
 const stingersStore = useCreditsStingersStore()
@@ -121,6 +124,14 @@ onMounted(() => {
 <template>
     <main ref="main">
         <TimetableUploadSection />
+        <!-- <InvokableModalDialog>
+            <template #button-content>
+                <Icon>help</Icon> Gebruiksaanwijzing
+            </template>
+            <template #dialog-content>
+                <UserGuide />
+            </template>
+        </InvokableModalDialog> -->
         <section id="edit" :class="{ gray: trueColours }">
             <div class="section-content flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex: 210mm 0 0;">
@@ -152,7 +163,8 @@ onMounted(() => {
                                     v-model="displayIntermissionTime">Pauze
                                 </InputCheckbox>
                                 <InputCheckbox class="enclose-box" identifier="displayCreditsTime"
-                                    v-model="displayCreditsTime">Aftiteling
+                                    v-model="displayCreditsTime">
+                                    Aftiteling
                                 </InputCheckbox>
                                 <InputCheckbox class="enclose-box" identifier="displayEndTime" v-model="displayEndTime">
                                     Einde voorstelling
@@ -237,7 +249,7 @@ onMounted(() => {
                             Alles
                         </Button>
                         <Button v-for="(page, i) in pages" :key="i" @click="schedulePageRefs[i]?.handlePrint()"
-                            class="secondary full">
+                            class="full" :class="{ 'secondary': pages.length > 1 }">
                             <Icon>print</Icon>
                             {{ pages.length > 1
                                 ? 'Deel ' + (i + 1)

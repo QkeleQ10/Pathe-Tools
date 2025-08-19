@@ -1,9 +1,9 @@
-import chimes from '@/assets/sounds/chimes.ogg';
-import voiceDefault from '@/assets/sounds/voices/rosetta.ogg';
-import voiceGerwim from '@/assets/sounds/voices/gerwim.ogg';
-import voiceJaron from '@/assets/sounds/voices/jaron.ogg';
-import voiceDanique from '@/assets/sounds/voices/danique.ogg';
-import voiceQuinten from '@/assets/sounds/voices/quinten.ogg';
+import chimes from '@assets/sounds/chimes.ogg';
+import voiceDefault from '@assets/sounds/voices/rosetta.ogg';
+import voiceGerwim from '@assets/sounds/voices/gerwim.ogg';
+import voiceJaron from '@assets/sounds/voices/jaron.ogg';
+import voiceDanique from '@assets/sounds/voices/danique.ogg';
+import voiceQuinten from '@assets/sounds/voices/quinten.ogg';
 
 interface SpriteMap {
     [key: string]: [number, number];

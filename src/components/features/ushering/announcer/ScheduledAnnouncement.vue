@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, inject, Ref, onMounted, watch, watchEffect } from 'vue';
 import { format } from 'date-fns';
-import { Announcement } from '@/classes/classes';
-import { getSoundInfo } from '@/utils/voices';
+import { Announcement } from '@/scripts/types.ts';
+import { getSoundInfo } from '@/scripts/voices';
 
 const now = inject<Ref<Date>>('now');
 

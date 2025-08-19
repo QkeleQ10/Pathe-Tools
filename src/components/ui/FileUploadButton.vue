@@ -23,7 +23,7 @@ function onUpload(e: Event): void {
 
 <template>
     <Button class="secondary file-upload-area" @click="fileInput.click()">
-        <Icon>folder_open</Icon> Bladeren
+        <Icon>upload</Icon> Bladeren
         <slot></slot>
         <input type="file" ref="fileInput" :accept="props.accept" :multiple="props.multiple || null"
             style="display: none" @change="onUpload" />

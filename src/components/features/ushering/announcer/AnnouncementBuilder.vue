@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getSoundInfo, voices } from '@/utils/voices';
+import { getSoundInfo, voices } from '@/scripts/voices';
 
 const model = defineModel<{ spriteName: string; offset: number }[]>();
 const showAnnouncementBuilder = defineModel<boolean>('show', { default: false });

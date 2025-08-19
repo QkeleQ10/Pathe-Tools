@@ -2,8 +2,9 @@
 import { ref } from 'vue';
 import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
-import { TimetableShow } from '@/classes/classes';
+import { TimetableShow } from '@/scripts/types.ts';
 import { useCreditsStingersStore } from '@/stores/creditsStingers.ts';
+import Icon4dx from '@/assets/symbols/Icon4dx.vue';
 
 defineProps<{ show: TimetableShow }>();
 
@@ -80,7 +81,7 @@ async function toggleCreditsStinger(title: string) {
             </span>
         </td>
         <td nowrap class="td-credits">
-            <Icon4dx class="plf-icon" src="@/assets/symbols/icon-4dx.svg" v-if="show.isNearPlf" />
+            <Icon4dx class="plf-icon" src="@assets/symbols/icon-4dx.svg" v-if="show.isNearPlf" />
             <div class="double-usherout"
                 v-if="show.timeToNextUsherout <= shortGapInterval * 60000 && shortGapInterval > 0">
             </div>

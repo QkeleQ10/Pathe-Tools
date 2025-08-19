@@ -2,34 +2,34 @@
     font-family: Heebo;
     font-style: normal;
     font-weight: 400;
-    src: url('./Heebo-Regular.woff2') format("woff2")
+    src: url('@assets/typefaces/Heebo-Regular.woff2') format("woff2")
 }
 
 @font-face {
     font-family: Heebo;
     font-style: normal;
     font-weight: 500;
-    src: url('./Heebo-Medium.woff2') format("woff2")
+    src: url('@assets/typefaces/Heebo-Medium.woff2') format("woff2")
 }
 
 @font-face {
     font-family: Heebo;
     font-style: normal;
     font-weight: 700;
-    src: url('./Heebo-Bold.woff2') format("woff2")
+    src: url('@assets/typefaces/Heebo-Bold.woff2') format("woff2")
 }
 
 @font-face {
     font-family: Heebo;
     font-style: normal;
     font-weight: 800;
-    src: url('./Heebo-ExtraBold.woff2') format("woff2")
+    src: url('@assets/typefaces/Heebo-ExtraBold.woff2') format("woff2")
 }
 
 @font-face {
     font-family: 'Trade Gothic Bold Condensed 20';
-    src: url('./TradeGothicLTPro-BdCn20.woff') format('woff'),
-        url('./TradeGothicLTPro-BdCn20.woff2') format('woff2');
+    src: url('@assets/typefaces/TradeGothicLTPro-BdCn20.woff') format('woff'),
+        url('@assets/typefaces/TradeGothicLTPro-BdCn20.woff2') format('woff2');
 }
 
 * {

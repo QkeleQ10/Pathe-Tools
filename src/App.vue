@@ -17,7 +17,7 @@ provide('now', now)
     <header ref="header" v-if="$route.meta.showHeader ?? true">
         <div class="wrapper">
             <RouterLink to="/" id="logo-wrapper">
-                <img alt="Pathé logo" class="logo" src="@/assets/logo-international-white.svg" height="46" />
+                <img alt="Pathé logo" class="logo" src="@assets/logo-international-white.svg" height="46" />
             </RouterLink>
 
             <nav v-if="$route.meta.showNavigation ?? true">

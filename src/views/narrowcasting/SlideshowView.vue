@@ -5,6 +5,8 @@ import { format, parse } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { OmdbResponse, useSlideshowImagesStore } from '@/stores/slideshowImages';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
+import FilmsPlaying from '@features/narrowcasting/slideshow/FilmsPlaying.vue';
+import SlideshowUploadSection from '@features/sections/SlideshowUploadSection.vue';
 
 const slideshowImagesStore = useSlideshowImagesStore();
 const tmsScheduleStore = useTmsScheduleStore();

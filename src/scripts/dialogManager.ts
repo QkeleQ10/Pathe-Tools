@@ -1,6 +1,6 @@
 // utils/DialogManager.ts
 import { h, render, VNode, Component, isVNode, ref, watch } from 'vue';
-import ModalDialog from '@/components/ModalDialog.vue';
+import ModalDialog from '@ui/ModalDialog.vue';
 
 type DialogContent =
     | string

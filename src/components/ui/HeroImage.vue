@@ -5,7 +5,7 @@ import { FastAverageColor } from 'fast-average-color';
 const imageUrl = ref('');
 const color = ref('');
 
-const files = import.meta.glob('../assets/heroes/*.webp', { eager: true });
+const files = import.meta.glob('@assets/heroes/*.webp', { eager: true });
 const fileKeys = Object.keys(files);
 const randomKey = fileKeys[Math.floor(Math.random() * fileKeys.length)];
 imageUrl.value = new URL((files[randomKey] as { default: string }).default, import.meta.url).href;

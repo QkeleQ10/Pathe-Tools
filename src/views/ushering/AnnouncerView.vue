@@ -2,12 +2,16 @@
 import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, h } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
-import { Announcement, AnnouncementRule, Show } from '@/classes/classes';
-import { voices, getSoundInfo, Voice } from '@/utils/voices';
-import { assembleAudioClient } from '@/utils/assembleAudio';
+import { Announcement, AnnouncementRule, Show } from '@/scripts/types.ts';
+import { voices, getSoundInfo, Voice } from '@/scripts/voices';
+import { assembleAudioClient } from '@/scripts/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { showDialog } from '@/utils/dialogManager';
-import Button from '@/components/Button.vue';
+import { showDialog } from '@/scripts/dialogManager';
+import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
+import AnnouncementBuilder from '@features/ushering/announcer/AnnouncementBuilder.vue';
+import RuleList from '@features/ushering/announcer/RuleList.vue';
+import ScheduledAnnouncement from '@features/ushering/announcer/ScheduledAnnouncement.vue';
+import VoicesSelector from '@features/ushering/announcer/VoicesSelector.vue';
 
 const store = useTmsScheduleStore()
 const now = inject<Ref<Date>>('now');

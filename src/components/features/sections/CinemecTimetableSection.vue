@@ -2,9 +2,9 @@
 import { ref, computed, inject, nextTick, onBeforeUnmount, onMounted, Ref, h } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
-import * as qmln from '@/utils/qmln'
+import * as qmln from '@/scripts/qmln'
 import { format } from 'date-fns';
-import { showDialog } from '@/utils/dialogManager';
+import { showDialog } from '@/scripts/dialogManager';
 
 interface DisplayLine {
     fcolor: 0x00 | 0x01 | 0x02 | 0x03;

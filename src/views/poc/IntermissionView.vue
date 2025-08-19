@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsXmlStore } from '@/stores/tmsXml'
+import TmsXmlUploadSection from '@features/sections/TmsXmlUploadSection.vue'
 
 const store = useTmsXmlStore()
 

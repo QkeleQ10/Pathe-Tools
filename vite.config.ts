@@ -10,7 +10,10 @@ export default defineConfig({
     plugins: [
         vue(),
         vueDevTools(),
-        Components({ dts: true }),
+        Components({
+            dirs: ['src/components/ui'],
+            dts: true
+        }),
         ViteImageOptimizer({
             webp: {
                 lossless: false,
@@ -19,7 +22,10 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url))
+            '@': fileURLToPath(new URL('./src', import.meta.url)),
+            '@ui': fileURLToPath(new URL('./src/components/ui', import.meta.url)),
+            '@features': fileURLToPath(new URL('./src/components/features', import.meta.url)),
+            '@assets': fileURLToPath(new URL('./src/assets', import.meta.url))
         }
     },
     build: {

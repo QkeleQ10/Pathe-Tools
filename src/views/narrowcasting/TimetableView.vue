@@ -2,6 +2,8 @@
 import { useTemplateRef } from 'vue';
 import { useDropZone } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
+import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
+import CinemecTimetableSection from '@features/sections/CinemecTimetableSection.vue';
 
 const store = useTmsScheduleStore();
 

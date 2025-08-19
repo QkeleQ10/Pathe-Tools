@@ -4,7 +4,7 @@ import { format, parse } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { OmdbResponse } from '@/stores/slideshowImages';
 import { FastAverageColor } from 'fast-average-color';
-import { Show } from '@/classes/classes';
+import { Show } from '@/scripts/types.ts';
 
 const props = defineProps<{
     omdbMovies: OmdbResponse[];

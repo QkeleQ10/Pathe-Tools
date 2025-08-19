@@ -1,4 +1,4 @@
-import { Voice } from '@/utils/voices';
+import { Voice } from '@/scripts/voices';
 
 // Helper to encode an AudioBuffer as a simple WAV blob
 function audioBufferToWavBlob(buffer: AudioBuffer): Blob {

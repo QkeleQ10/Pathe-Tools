@@ -1,6 +1,6 @@
 import { ref, onMounted } from 'vue'
 import { defineStore } from 'pinia'
-import { FileMetadata, Show } from '@/classes/classes'
+import { FileMetadata, Show } from '@/scripts/types.ts'
 import { useServerStore } from './server';
 
 interface TmsScheduleJson {

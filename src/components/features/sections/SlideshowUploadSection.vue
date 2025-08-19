@@ -3,8 +3,8 @@ import { ref, h } from 'vue';
 import { useUrlSearchParams } from '@vueuse/core';
 import { useSlideshowImagesStore } from '@/stores/slideshowImages';
 import { httpStatuses, useServerStore } from '@/stores/server';
-import { showDialog } from '@/utils/dialogManager';
-import Button from '../Button.vue';
+import { showDialog } from '@/scripts/dialogManager';
+import Button from '@ui/Button.vue';
 
 const params = useUrlSearchParams('history');
 
