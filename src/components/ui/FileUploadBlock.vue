@@ -16,27 +16,16 @@ const props = defineProps<{
 				:accept="props.accept" :multiple="props.multiple">
 			</FileUploadButton>
 			<slot name="buttons">
-				<small>Of sleep een bestand naar deze pagina</small>
 			</slot>
 		</div>
 	</div>
 </template>
 
 <style scoped>
-.block {
-	text-align: center;
-	line-height: 2;
-}
-
-#file-upload-area>div>small {
-	font: small Arial, Helvetica, sans-serif;
-	text-transform: none;
-}
-
 .buttons {
 	display: flex;
-	flex-direction: column;
 	justify-content: center;
+	align-items: center;
 	gap: 8px;
 }
 </style>

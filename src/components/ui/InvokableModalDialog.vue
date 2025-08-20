@@ -13,13 +13,15 @@ const active = defineModel<boolean>('active', {
             </slot>
         </Button>
     </slot>
-    <Transition>
-        <slot name="dialog">
-            <ModalDialog v-if="active" @dismiss="active = false">
-                <slot name="dialog-content">
-                    <p>Dialog</p>
-                </slot>
-            </ModalDialog>
-        </slot>
-    </Transition>
+    <Teleport to="body">
+        <Transition>
+            <slot name="dialog">
+                <ModalDialog v-if="active" @dismiss="active = false">
+                    <slot name="dialog-content">
+                        <p>Dialog</p>
+                    </slot>
+                </ModalDialog>
+            </slot>
+        </Transition>
+    </Teleport>
 </template>

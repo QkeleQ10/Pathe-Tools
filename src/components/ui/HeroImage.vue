@@ -62,7 +62,7 @@ fac.getColorAsync(imageUrl.value, {
         height: 750px;
         z-index: -1;
 
-        mask-image: linear-gradient(to bottom, #00000031 60%, transparent);
+        mask-image: linear-gradient(to bottom, #00000045 60%, transparent);
     }
 
     &.large {

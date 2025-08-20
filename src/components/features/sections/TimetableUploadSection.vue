@@ -28,18 +28,16 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                 <!-- </h2> -->
             </div>
             <FileUploadBlock @files-uploaded="store.filesUploaded" accept="text/csv,.csv,text/tsv,.tsv">
-                <p v-if="'name' in store.metadata" style="flex-grow: 1;">
-                    {{ store.metadata.name }}
+                <p v-if="'name' in store.metadata" style="margin: 0; flex-grow: 1;"
+                    :title="[`Bestandsnaam: ${store.metadata.name}`, `Gewijzigd op: ${format(store.metadata.lastModified, 'PPpp', { locale: nl })}`, `Geüpload op: ${format(store.metadata.uploadedDate, 'PPpp', { locale: nl })}`].join('\n')">
+                    <span v-if="store.metadata.flags.includes('times-only')">{{ store.metadata.name }}</span>
+                    <span v-else>
+                        Tijdenlijst {{ format(store.table[0].scheduledTime, 'PPPP', { locale: nl }) }}
+                    </span>
                     <br>
                     <small>
-                        {{ store.table.length }} voorstellingen
+                        Bevat {{ store.table.length }} voorstellingen
                         {{store.table.some(show => show.intermissionTime) ? 'met pauzes' : ''}}
-                        <span v-if="store.metadata.flags.includes('times-only')">zonder datum</span>
-                        <span v-else>op {{ format(store.table[0].scheduledTime, 'PP', { locale: nl }) }}</span>
-                        •
-                        Laatst gewijzigd op {{ format(store.metadata.lastModified, 'PPpp', { locale: nl }) }}
-                        •
-                        Geüpload op {{ format(store.metadata.uploadedDate, 'PPpp', { locale: nl }) }}
                     </small>
                 </p>
                 <p v-else style="flex-grow: 1;">
@@ -50,20 +48,23 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                         hem
                         hierheen te slepen.</small>
                 </p>
+                <template #buttons>
+                    <slot name="buttons"></slot>
+                </template>
             </FileUploadBlock>
         </div>
 
         <Transition>
             <ModalDialog v-if="showOptions" @dismiss="showOptions = false">
-                <h3>Opslag op server</h3>
+                <h3>Cloudopslag</h3>
                 <p>
                     Als je een geldige gebruikersnaam en wachtwoord hebt opgegeven, dan worden de door jou ingelezen
-                    gegevens bewaard op de server.
+                    gegevens bewaard op de cloud.
                     <br><br>
                     Je kunt vervolgens later (eventueel vanaf een ander apparaat) de gegevens downloaden als je daar ook
                     je gebruikersnaam opgeeft.
                     <br><br>
-                    Er is altijd maar één set gegevens op de server beschikbaar. Als je dus nieuwe gegevens inleest, dan
+                    Er is altijd maar één set gegevens op de cloud beschikbaar. Als je dus nieuwe gegevens inleest, dan
                     worden de oude gewist.
                 </p>
                 <div id="server-options">
@@ -256,5 +257,21 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
 #file-upload-notice i {
     font-style: normal;
     color: #d78787;
+}
+
+.hover-text {
+    .text-alt {
+        display: none;
+    }
+
+    &:hover {
+        .text-norm {
+            display: none;
+        }
+
+        .text-alt {
+            display: unset;
+        }
+    }
 }
 </style>

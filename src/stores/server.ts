@@ -14,39 +14,39 @@ export const useServerStore = defineStore('server', () => {
 
 export const httpStatuses = {
     'sending': {
-        short: 'Uploaden...',
-        long: 'Er worden gegevens geüpload naar de server...'
+        short: 'Versturen naar cloud...',
+        long: 'Er worden gegevens geüpload naar de cloudserver...'
     },
     'sent': {
-        short: 'Geüpload naar server',
-        long: 'De ingelezen gegevens zijn succesvol geüpload naar de server.'
+        short: 'Verstuurd naar cloud',
+        long: 'De ingelezen gegevens zijn succesvol geüpload naar de cloudserver.'
     },
     'send-error': {
-        short: 'Fout bij uploaden naar server',
-        long: 'De ingelezen gegevens konden niet worden geüpload naar de server. Controleer de inloggegevens en of de server bereikbaar is.'
+        short: 'Fout bij versturen naar cloud',
+        long: 'De ingelezen gegevens konden niet worden geüpload naar de cloudserver. Controleer de inloggegevens en of de cloudserver bereikbaar is.'
     },
     'no-credentials': {
-        short: 'Niet geüpload',
-        long: 'De ingelezen gegevens zijn niet geüpload naar de server, omdat de benodigde inloggegevens niet ingevoerd zijn.'
+        short: 'Niet verstuurd naar cloud',
+        long: 'De ingelezen gegevens zijn niet geüpload naar de cloudserver, omdat de benodigde inloggegevens niet ingevoerd zijn.'
     },
     'receiving': {
-        short: 'Downloaden...',
-        long: 'Er worden gegevens gedownload van de server...'
+        short: 'Ophalen van cloud...',
+        long: 'Er worden gegevens gedownload van de cloudserver...'
     },
     'received': {
-        short: 'Gedownload van server',
-        long: 'De gegevens zijn succesvol gedownload van de server.'
+        short: 'Opgehaald van cloud',
+        long: 'De gegevens zijn succesvol gedownload van de cloudserver.'
     },
     'receive-error': {
-        short: 'Fout bij downloaden van server',
-        long: 'De gegevens konden niet worden gedownload van de server. Controleer de inloggegevens en of de server bereikbaar is.'
+        short: 'Fout bij downloaden van cloud',
+        long: 'De gegevens konden niet worden gedownload van de cloudserver. Controleer de inloggegevens en of de cloudserver bereikbaar is.'
     },
     'no-connection': {
-        short: 'Niet verbonden',
-        long: 'Er is geen verbinding met de server. Controleer de inloggegevens en of de server bereikbaar is.'
+        short: 'Niet verbonden met cloud',
+        long: 'Er is geen verbinding met de cloudserver. Controleer de inloggegevens en of de cloudserver bereikbaar is.'
     },
     'error': {
         short: 'Fout',
-        long: 'Er is een fout opgetreden bij het verbinden met de server. Controleer de inloggegevens en of de server bereikbaar is.'
+        long: 'Er is een fout opgetreden bij het verbinden met de cloudserver. Controleer de inloggegevens en of de cloudserver bereikbaar is.'
     }
 };

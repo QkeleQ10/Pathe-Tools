@@ -123,15 +123,18 @@ onMounted(() => {
 
 <template>
     <main ref="main">
-        <TimetableUploadSection />
-        <!-- <InvokableModalDialog>
-            <template #button-content>
-                <Icon>help</Icon> Gebruiksaanwijzing
+        <TimetableUploadSection>
+            <template #buttons>
+                <InvokableModalDialog>
+                    <template #button-content>
+                        <Icon>help</Icon> Gebruiksaanwijzing
+                    </template>
+                    <template #dialog-content>
+                        <UserGuide />
+                    </template>
+                </InvokableModalDialog>
             </template>
-            <template #dialog-content>
-                <UserGuide />
-            </template>
-        </InvokableModalDialog> -->
+        </TimetableUploadSection>
         <section id="edit" :class="{ gray: trueColours }">
             <div class="section-content flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex: 210mm 0 0;">
@@ -315,11 +318,5 @@ onMounted(() => {
     padding-top: 16px;
     margin: -8px;
     gap: 4px;
-}
-
-section.gray {
-    #print-buttons {
-        /* background-color: #f7f7f7; */
-    }
 }
 </style>
