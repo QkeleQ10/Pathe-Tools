@@ -191,6 +191,7 @@ const chimeAReplacement = useStorage('chimea-replacement', 7);
 const chimeBReplacement = useStorage('chimeb-replacement', 7);
 
 const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true });
+const voiceBehaviour = useStorage('voice-behaviour', 'roundrobin', localStorage);
 
 const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chimea', offset: -1600 },]);
 const customAnnouncementDate = ref<Date>(new Date());
@@ -475,8 +476,14 @@ function showFeedbackDialog() {
                     </fieldset>
 
                     <fieldset>
-                        <legend>Stemmen</legend>
+                        <legend>Stem</legend>
                         <VoicesSelector v-model="preferredVoices" @click="optionsChanged = true" />
+                        <!-- <InputGroup type="select" id="voiceBehaviour" v-model="voiceBehaviour">
+                            <template #label>Gedrag bij meerdere stemmen</template>
+                            <template #input>
+                                <option value="roundrobin">Willekeurig kiezen</option>
+                            </template>
+                        </InputGroup> -->
                     </fieldset>
 
                     <fieldset style="position: relative;">

@@ -127,7 +127,7 @@ onMounted(() => {
             <template #buttons>
                 <InvokableModalDialog>
                     <template #button-content>
-                        <Icon>help</Icon> Gebruiksaanwijzing
+                        <Icon>help</Icon> Handleiding
                     </template>
                     <template #dialog-content>
                         <UserGuide />
@@ -273,6 +273,7 @@ onMounted(() => {
         </Button>
         <ModalDialog v-if="showStingersModal" @dismiss="showStingersModal = false">
             <h3>Films met post-credits-scènes</h3>
+            <small>Bewerken alleen mogelijk indien correcte inloggegevens zijn opgegeven!</small>
             <ul v-if="stingersStore.stingers.length > 0" class="scrollable-list">
                 <li v-for="stinger in stingersStore.stingers" :key="stinger" style="display: flex;
                     justify-content: space-between; align-items: center;">

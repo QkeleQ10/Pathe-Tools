@@ -54,7 +54,7 @@ function deleteAllImages() {
 				</button>
 			</div>
 			<FileUploadBlock @files-uploaded="store.filesUploaded" accept="image/*" multiple>
-				<div v-if="store.images?.length" class="pictures" style="flex-grow: 1;">
+				<div v-if="store.images?.length" class="pictures" style="margin: 0; flex-grow: 1;">
 					<TransitionGroup name="list">
 						<button v-for="image in store.images" :key="image.name" :title="image.name"
 							@click="deleteImage(image.name)">
@@ -63,7 +63,7 @@ function deleteAllImages() {
 						</button>
 					</TransitionGroup>
 				</div>
-				<p v-else style="flex-grow: 1;">
+				<p v-else style="margin: 0; flex-grow: 1;">
 					Geen afbeeldingen
 					<br>
 					<small>Upload afbeeldingen met de knop of door ze hierheen te slepen.</small>

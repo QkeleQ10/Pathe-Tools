@@ -30,15 +30,15 @@ export const httpStatuses = {
         long: 'De ingelezen gegevens zijn niet geüpload naar de cloudserver, omdat de benodigde inloggegevens niet ingevoerd zijn.'
     },
     'receiving': {
-        short: 'Ophalen van cloud...',
+        short: 'Ophalen uit cloud...',
         long: 'Er worden gegevens gedownload van de cloudserver...'
     },
     'received': {
-        short: 'Opgehaald van cloud',
+        short: 'Opgehaald uit cloud',
         long: 'De gegevens zijn succesvol gedownload van de cloudserver.'
     },
     'receive-error': {
-        short: 'Fout bij downloaden van cloud',
+        short: 'Fout bij ophalen uit cloud',
         long: 'De gegevens konden niet worden gedownload van de cloudserver. Controleer de inloggegevens en of de cloudserver bereikbaar is.'
     },
     'no-connection': {

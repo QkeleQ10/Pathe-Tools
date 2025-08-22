@@ -5,14 +5,14 @@ import { useTemplateRef } from 'vue';
 
 const { handlePrint } = useVueToPrint({
     content: useTemplateRef('print-component'),
-    documentTitle: "Gebruiksaanwijzing tijdenlijstje"
+    documentTitle: "Handleiding tijdenlijstje"
 })
 </script>
 
 <template>
-    <!-- <h3>Gebruiksaanwijzing</h3> -->
+    <!-- <h3>Handleiding</h3> -->
     <Tabs>
-        <Tab value="Gebruiksaanwijzing tijdenlijstje">
+        <Tab value="Handleiding tijdenlijstje">
             <div id="user-manual" ref="print-component" contenteditable spellcheck="false">
                 <p>
                     Het tijdenlijstje is op de werkvloer erg waardevol, omdat het op een overzichtelijke manier veel
@@ -42,7 +42,7 @@ const { handlePrint } = useVueToPrint({
                                 <div class="table-row">16:52:33</div>
                             </div>
                         </div>
-                        <span><b>Dubbele uitloop</b>: er zit minder dan 10 minuten tussen de uitlopen.</span>
+                        <span><b>Dubbele uitloop</b>: er zit minder dan 10 minuten tussen de uitlopen*.</span>
                     </li>
                     <li>
                         <div inert class="sample" id="long-gap">
@@ -51,7 +51,7 @@ const { handlePrint } = useVueToPrint({
                                 <div class="table-row">13:04:57</div>
                             </div>
                         </div>
-                        <span><b>Gat tussen uitlopen</b>: er zit meer dan 35 minuten tussen de uitlopen.</span>
+                        <span><b>Gat tussen uitlopen</b>: er zit meer dan 35 minuten tussen de uitlopen*.</span>
                     </li>
                     <li>
                         <div inert class="sample" id="post-credits"><span></span>
@@ -114,17 +114,17 @@ const { handlePrint } = useVueToPrint({
                         <span><b>16+ en 18+</b>: worden vetgedrukt weergegeven.</span>
                     </li>
                 </ul>
-                <p>Als een film is gemarkeerd met een post-credits-scène, dan worden de berekeningen voor de tijd tussen uitlopen daar ook op aangepast.</p>
+                <small>*Als een film is gemarkeerd met een post-credits-scène, dan worden de berekeningen voor de tijd tussen uitlopen daar ook op aangepast.</small>
             </div>
             <br>
             <Button class="full" @click="handlePrint">
                 <Icon>print</Icon>
-                Gebruiksaanwijzing afdrukken
+                Handleiding afdrukken
             </Button>
             <br><br>
-            <small>Let op: deze gebruiksaanwijzing houdt geen rekening met verschillen in configuratie en tussen theaters. Zo nodig kan bovenstaande inhoud worden aangepast. Voel je vrij om het te verwerken in bijvoorbeeld een inwerkboekje als naslagwerk!</small>
+            <small>Let op: deze handleiding houdt geen rekening met verschillen in configuratie en tussen theaters. Zo nodig kan bovenstaande inhoud worden aangepast. Voel je vrij om het te verwerken in bijvoorbeeld een inwerkboekje als naslagwerk!</small>
         </Tab>
-        <Tab value="Gebruiksaanwijzing website">
+        <Tab value="Handleiding website">
             <p>
                 Om van de volledige functionaliteit gebruik te maken, moet er worden ingelogd met een account. Bij een
                 geslaagde verbinding verschijnt er een groene bol bij het uploadgedeelte.

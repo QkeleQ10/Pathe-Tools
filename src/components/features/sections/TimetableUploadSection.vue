@@ -40,7 +40,7 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                         {{store.table.some(show => show.intermissionTime) ? 'met pauzes' : ''}}
                     </small>
                 </p>
-                <p v-else style="flex-grow: 1;">
+                <p v-else style="margin: 0; flex-grow: 1;">
                     Geen gegevens
                     <br>
                     <small>Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) met de knop of
