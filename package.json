@@ -10,7 +10,6 @@
   "dependencies": {
     "@vueuse/core": "^13.1.0",
     "date-fns": "^4.1.0",
-    "fast-average-color": "^9.5.0",
     "pathe": "^2.0.3",
     "pinia": "^3.0.2",
     "typescript": "^5.8.3",

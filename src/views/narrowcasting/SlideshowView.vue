@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted, useTemplateRef, onMounted, inject, Ref } from 'vue';
 import { useMouse, useDropZone, useFullscreen, useLocalStorage, useUrlSearchParams } from '@vueuse/core';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { OmdbResponse, useSlideshowImagesStore } from '@/stores/slideshowImages';
+import { PatheApiShowDetails, PatheApiShow } from '@/scripts/types';
+import { useSlideshowImagesStore } from '@/stores/slideshowImages';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
-import FilmsPlaying from '@features/narrowcasting/slideshow/FilmsPlaying.vue';
+import FilmsShowcase from '@features/narrowcasting/slideshow/FilmsShowcase.vue';
 import SlideshowUploadSection from '@features/sections/SlideshowUploadSection.vue';
 
 const slideshowImagesStore = useSlideshowImagesStore();
@@ -14,36 +15,42 @@ const now = inject<Ref<Date>>('now');
 
 const currentSlide = ref(0);
 
-const movieOmdbList = ref<OmdbResponse[]>([]);
-const filmsPlayingSlideValid = computed(() => showFilmsPlayingSlide.value && movieOmdbList.value.length > 0);
+const movieList = ref<(PatheApiShow & { frequency: number } & Pick<PatheApiShowDetails, 'synopsis' | 'feelings'>)[]>([]);
+const FilmsShowcaseSlideValid = computed(() => showFilmsShowcaseSlide.value && movieList.value.length > 0);
 
-async function fetchMovieOmdbList() {
-    const shows = tmsScheduleStore.table.map(row => row.title);
-    const freqMap = new Map<string, number>();
-    shows.forEach(title => {
-        freqMap.set(title, (freqMap.get(title) || 0) + 1);
-    });
-    const sortedTitles = Array.from(freqMap.entries())
-        .sort((a, b) => b[1] - a[1])
-        .map(([title]) => title);
-    const results = await Promise.allSettled(
-        sortedTitles.map(title => slideshowImagesStore.omdb(title))
-    );
-    movieOmdbList.value = results
-        .filter(result => result.status === 'fulfilled' && result.value)
-        .map(result => (result as PromiseFulfilledResult<OmdbResponse>).value)
-        .sort((a, b) => parse(b.Released, 'dd MMM yyyy', new Date()).getTime() - parse(a.Released, 'dd MMM yyyy', new Date()).getTime()) as OmdbResponse[];
+async function fetchMovieList() {
+    const apiShows = (await slideshowImagesStore.fetchPatheApi()).shows as PatheApiShow[];
+    const tmsShows = tmsScheduleStore.table.map(row => row.title);
+    const matchedShows: Record<string, PatheApiShow & { frequency: number } & Pick<PatheApiShowDetails, 'synopsis' | 'feelings'>> = {};
+
+    for (const tmsTitle of tmsShows) {
+        // Find best match by checking if apiShow title includes tmsShow title (case-insensitive)
+        const bestMatch = apiShows.find(apiShow =>
+            apiShow.title.toLowerCase().includes(tmsTitle.toLowerCase())
+        );
+        if (bestMatch) {
+            const key = bestMatch.slug || bestMatch.title;
+            if (!matchedShows[key]) {
+                const showDetails = (await slideshowImagesStore.fetchPatheApi(`show/${bestMatch.slug}`)) as PatheApiShowDetails;
+                matchedShows[key] = { ...bestMatch, frequency: 1, synopsis: showDetails.synopsis, feelings: showDetails.feelings };
+            } else {
+                matchedShows[key].frequency += 1;
+            }
+        }
+    }
+
+    movieList.value = Object.values(matchedShows);
 }
 
-tmsScheduleStore.$subscribe(fetchMovieOmdbList);
-onMounted(fetchMovieOmdbList);
+tmsScheduleStore.$subscribe(fetchMovieList);
+onMounted(fetchMovieList);
 
-const numSlides = computed(() => slideshowImagesStore.images.length + (filmsPlayingSlideValid.value ? 1 : 0));
+const numSlides = computed(() => slideshowImagesStore.images.length + (FilmsShowcaseSlideValid.value ? 1 : 0));
 
 // OPTIONS
 
 const slideDuration = useLocalStorage('slideshow-duration', 60);
-const showFilmsPlayingSlide = useLocalStorage('slideshow-films-playing', true);
+const showFilmsShowcaseSlide = useLocalStorage('slideshow-films-playing', true);
 
 // FULLSCREEN TOGGLE
 
@@ -159,20 +166,20 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                         <TransitionGroup name="slide">
                             <img class="carousel-slide" v-for="(image, index) in slideshowImagesStore.images"
                                 :key="image.name" :src="image.url" v-show="index === currentSlide">
-                            <FilmsPlaying class="carousel-slide" v-if="filmsPlayingSlideValid"
-                                v-show="currentSlide === numSlides - 1" :omdbMovies="movieOmdbList"
+                            <FilmsShowcase class="carousel-slide" v-if="FilmsShowcaseSlideValid"
+                                v-show="currentSlide === numSlides - 1" :movies="movieList"
                                 :shows="tmsScheduleStore.table">
                                 <template #date v-if="'flags' in tmsScheduleStore.metadata">
                                     {{ tmsScheduleStore.metadata.flags.includes('times-only')
                                         ? 'Datum onbekend'
                                         : format(tmsScheduleStore.table[0]?.scheduledTime || 0, 'PPPP', { locale: nl }) }}
                                 </template>
-                            </FilmsPlaying>
+                            </FilmsShowcase>
                         </TransitionGroup>
 
                         <p v-if="['sending', 'receiving'].includes(slideshowImagesStore.status)" class="message">
                             Laden...</p>
-                        <p v-else-if="!slideshowImagesStore.images?.length" class="message">Leeg</p>
+                        <p v-else-if="!numSlides" class="message">Leeg</p>
 
                         <span class="clock">{{ format(now, 'HH:mm:ss') }}</span>
                         <button class="control fullscreen" @click="toggleFullscreen">
@@ -191,7 +198,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                                 @click="currentSlide = index" :class="{ active: index === currentSlide }">
                                 <img :src="url.url" />
                             </button>
-                            <button class="dot" v-if="filmsPlayingSlideValid" @click="currentSlide = numSlides - 1"
+                            <button class="dot" v-if="FilmsShowcaseSlideValid" @click="currentSlide = numSlides - 1"
                                 :class="{ active: currentSlide === numSlides - 1 }">
                                 <Icon fill>theaters</Icon>
                             </button>
@@ -210,8 +217,8 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                         </InputGroup>
                         <div>
                             <div class="label">Extra dia's</div>
-                            <InputCheckbox class="enclose-box" v-model="showFilmsPlayingSlide"
-                                identifier="filmsPlaying">
+                            <InputCheckbox class="enclose-box" v-model="showFilmsShowcaseSlide"
+                                identifier="FilmsShowcase">
                                 Wat draait er?
                             </InputCheckbox>
                         </div>
@@ -269,6 +276,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
         width: 100%;
         height: 100%;
         object-fit: contain;
+        pointer-events: none;
     }
 
     &>.clock {

@@ -2,37 +2,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useUrlSearchParams } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { useServerStore } from './server';
-
-export type OmdbResponse = {
-    Title: string;
-    Year: string;
-    Rated: string;
-    Released: string;
-    Runtime: string;
-    Genre: string;
-    Director: string;
-    Writer: string;
-    Actors: string;
-    Plot: string;
-    Language: string;
-    Country: string;
-    Awards: string;
-    Poster: string;
-    Ratings: {
-        Source: string;
-        Value: string;
-    }[];
-    Metascore: string;
-    imdbRating: string;
-    imdbVotes: string;
-    imdbID: string;
-    Type: string;
-    DVD: string;
-    BoxOffice: string;
-    Production: string;
-    Website: string;
-    Response: string;
-};
+import { PatheApiShow } from '@/scripts/types';
 
 export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
     const images = ref<{ name: string, url: string }[]>([]);
@@ -188,15 +158,15 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
         return URL.createObjectURL(blob);
     }
 
-    async function omdb(t: string, y?: string): Promise<OmdbResponse> {
+    async function fetchPatheApi(endpoint?: string): Promise<any> {
         return new Promise(async (resolve, reject) => {
             try {
-                const response = await fetch(`${url.value}/omdb?t=${encodeURIComponent(t.replace('’', "'"))}${y ? `&y=${encodeURIComponent(y)}` : ''}`, {
+                const response = await fetch(`${url.value}/pathe-api?endpoint=${endpoint||'shows'}`, {
                     headers: {
                         'ngrok-skip-browser-warning': 'true'
                     }
                 });
-                if (!response.ok) throw new Error(`OMDb API responded with ${response.status} ${response.statusText}`);
+                if (!response.ok) throw new Error(`Pathe API responded with ${response.status} ${response.statusText}`);
 
                 const data = await response.json();
                 resolve(data);
@@ -206,5 +176,5 @@ export const useSlideshowImagesStore = defineStore('slideshowImages', () => {
         });
     }
 
-    return { images, filesUploaded, deleteAll, deleteImage, fetchImage, status, connect, omdb };
+    return { images, filesUploaded, deleteAll, deleteImage, fetchImage, status, connect, fetchPatheApi };
 });
