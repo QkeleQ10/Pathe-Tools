@@ -37,6 +37,10 @@ function formatDate(date: string) {
 function formatSentenceCase(text: string): string {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+function formatSynopsis(synopsis: string): string {
+    return synopsis.replace(/<br\s*\/?>/g, '\n');
+}
 </script>
 
 <template>
@@ -59,7 +63,7 @@ function formatSentenceCase(text: string): string {
                 <em>Releasedatum: {{ formatDate(movie.releaseAt[0]) }}</em>
             </p>
             <div class="plot-wrapper">
-                <p class="plot">{{ movie.synopsis }}</p>
+                <p class="plot">{{ formatSynopsis(movie.synopsis) }}</p>
             </div>
             <div class="feelings" v-if="cumulativeFeeling > 10">
                 <div class="feeling"
