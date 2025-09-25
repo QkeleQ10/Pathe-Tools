@@ -1,4 +1,5 @@
 import { ref, onMounted } from 'vue'
+import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { FileMetadata, Show } from '@/scripts/types.ts'
 import { useServerStore } from './server';
@@ -15,6 +16,8 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     const flags = ref<string[]>([]);
 
     const serverStore = useServerStore();
+
+    const intermissionDuration = useStorage('intermission-duration', 10) // duration of intermissions in minutes
 
     onMounted(connect);
 
@@ -161,9 +164,9 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     };
                     const featureTime = timeStringToDate(obj.FEATURE_TIME);
 
-                    // If the difference between SCHEDULED_TIME and FEATURE_TIME is more than 30 minutes, then FEATURE_TIME is probably the end of the intermission (so subtract 10 minutes for the intermission time). Otherwise, it's probably the main show time.
+                    // If the difference between SCHEDULED_TIME and FEATURE_TIME is more than 30 minutes, then FEATURE_TIME is probably the end of the intermission (so subtract {intermissionDuration} minutes for the intermission time). Otherwise, it's probably the main show time.
                     if (featureTime.getTime() - show.scheduledTime.getTime() > 1800000)
-                        show.intermissionTime = new Date(featureTime.getTime() - 600000);
+                        show.intermissionTime = new Date(featureTime.getTime() - (intermissionDuration.value * 60000));
                     else show.mainShowTime = featureTime;
 
                     return show;

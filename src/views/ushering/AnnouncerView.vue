@@ -190,6 +190,8 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStor
 const chimeAReplacement = useStorage('chimea-replacement', 7);
 const chimeBReplacement = useStorage('chimeb-replacement', 7);
 
+const intermissionDuration = useStorage('intermission-duration', 10) // duration of intermissions in minutes
+
 const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true });
 const voiceBehaviour = useStorage('voice-behaviour', 'roundrobin', localStorage);
 
@@ -469,7 +471,7 @@ function showFeedbackDialog() {
                                 <span>Regels bewerken
                                     <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
                                         {{customRules.filter(r =>
-                                            r.enabled).length}} actief)</small>
+                                        r.enabled).length}} actief)</small>
                                 </span>
                             </Button>
                         </div>
@@ -537,6 +539,15 @@ function showFeedbackDialog() {
                         </div>
                         <a @click="showFeedbackDialog" style="text-decoration: underline; cursor: pointer;">Klik hier
                             voor informatie</a>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Overig</legend>
+                        <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration"
+                            min="0" max="30">
+                            <template #label>Duur filmpauzes</template>
+                            <span class="unit">minuten</span>
+                        </InputGroup>
                     </fieldset>
                 </SidePanel>
             </div>
