@@ -17,7 +17,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     const serverStore = useServerStore();
 
-    const intermissionDuration = useStorage('intermission-duration', 10) // duration of intermissions in minutes
+    const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
 
     onMounted(connect);
 

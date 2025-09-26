@@ -190,7 +190,7 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStor
 const chimeAReplacement = useStorage('chimea-replacement', 7);
 const chimeBReplacement = useStorage('chimeb-replacement', 7);
 
-const intermissionDuration = useStorage('intermission-duration', 10) // duration of intermissions in minutes
+const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
 
 const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true });
 const voiceBehaviour = useStorage('voice-behaviour', 'roundrobin', localStorage);

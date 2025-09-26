@@ -29,7 +29,7 @@ const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 1
 const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
 const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
 
-const intermissionDuration = useStorage('intermission-duration', 10) // duration of intermissions in minutes
+const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
 
 const main = ref<HTMLElement>(null)
 
