@@ -192,7 +192,7 @@ const chimeBReplacement = useStorage('chimeb-replacement', 7);
 
 const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
 
-const preferredVoices = useStorage('preferred-voices', ['default'], localStorage, { mergeDefaults: true });
+const preferredVoices = useStorage<(keyof typeof voices)[]>('preferred-voices', ['quinten'], localStorage, { mergeDefaults: true });
 const voiceBehaviour = useStorage('voice-behaviour', 'roundrobin', localStorage);
 
 const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chimea', offset: -1600 },]);
@@ -470,8 +470,7 @@ function showFeedbackDialog() {
                                 <Icon>edit</Icon>
                                 <span>Regels bewerken
                                     <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
-                                        {{customRules.filter(r =>
-                                        r.enabled).length}} actief)</small>
+                                        {{customRules.filter(r => r.enabled).length}} actief)</small>
                                 </span>
                             </Button>
                         </div>
