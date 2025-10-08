@@ -3,7 +3,7 @@ import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, h 
 import { useDropZone, useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { Announcement, AnnouncementRule, Show } from '@/scripts/types.ts';
-import { voices, getSoundInfo, Voice } from '@/scripts/voices';
+import { voices, getSoundInfo, Voice, defaultVoice, defaultVoiceKey } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { showDialog } from '@/scripts/dialogManager';
@@ -26,7 +26,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'plfStart',
         name: '4DX-inloop',
         segments: [
-            { spriteName: 'chimea', offset: -1600 },
+            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'start', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -47,7 +47,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'start',
         name: 'Start',
         segments: [
-            { spriteName: 'chimea', offset: -1600 },
+            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'start', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -68,7 +68,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'mainShow',
         name: 'Start hoofdfilm',
         segments: [
-            { spriteName: 'chimea', offset: -1600 },
+            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'mainshow', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -89,7 +89,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'intermission',
         name: 'Pauze',
         segments: [
-            { spriteName: 'chimea', offset: -1600 },
+            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'intermission', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -110,7 +110,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'credits',
         name: 'Aftiteling',
         segments: [
-            { spriteName: 'chimeb', offset: -1600 },
+            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'credits', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -131,7 +131,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'end',
         name: 'Einde voorstelling',
         segments: [
-            { spriteName: 'chimea', offset: -1600 },
+            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'end', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -152,7 +152,7 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'finalMainShowStart',
         name: 'Start laatste hoofdfilm',
         segments: [
-            { spriteName: 'chimea', offset: -1600 },
+            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'finalshow', offset: 0 }
         ],
         enabled: false,
@@ -187,15 +187,12 @@ watch(presetRules, () => {
 
 const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true });
 
-const chimeAReplacement = useStorage('chimea-replacement', 7);
-const chimeBReplacement = useStorage('chimeb-replacement', 7);
-
 const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
 
-const preferredVoices = useStorage<(keyof typeof voices)[]>('preferred-voices', ['quinten'], localStorage, { mergeDefaults: true });
+const preferredVoices = useStorage<(keyof typeof voices)[]>('preferred-voices', [defaultVoiceKey], localStorage, { mergeDefaults: true });
 const voiceBehaviour = useStorage('voice-behaviour', 'roundrobin', localStorage);
 
-const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chimea', offset: -1600 },]);
+const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chime0', offset: -1600 },]);
 const customAnnouncementDate = ref<Date>(new Date());
 
 const scheduledAnnouncements = ref<Announcement[]>([])
@@ -254,15 +251,7 @@ async function scheduleAnnouncements() {
     scheduledAnnouncements.value = array;
 
     for (const announcement of [...scheduledAnnouncements.value].sort((a, b) => a.time.getTime() - b.time.getTime())) {
-        const segmentsWithVoices = selectVoices(announcement.segments.map(segment => {
-            if (segment.spriteName === 'chimea') {
-                return { offset: chimeAReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeAReplacement.value}` };
-            }
-            if (segment.spriteName === 'chimeb') {
-                return { offset: chimeBReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeBReplacement.value}` };
-            }
-            return segment;
-        }), preferredVoices.value.map(s => voices[s]));
+        const segmentsWithVoices = selectVoices(announcement.segments, preferredVoices.value.map(s => voices[s]));
         announcement.audio = await assembleAudio(segmentsWithVoices);
     }
 
@@ -277,15 +266,7 @@ async function enqueueProximateAnnouncements() {
         const timeUntilAnnouncement = announcement.time.getTime() - Date.now() - 1000;
         if (timeUntilAnnouncement > -60000 && timeUntilAnnouncement < 10000 && !announcement.scheduled) {
             if (!announcement.audio) {
-                const segmentsWithVoices = selectVoices(announcement.segments.map(segment => {
-                    if (segment.spriteName === 'chimea') {
-                        return { offset: chimeAReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeAReplacement.value}` };
-                    }
-                    if (segment.spriteName === 'chimeb') {
-                        return { offset: chimeBReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeBReplacement.value}` };
-                    }
-                    return segment;
-                }), preferredVoices.value.map(s => voices[s]));
+                const segmentsWithVoices = selectVoices(announcement.segments, preferredVoices.value.map(s => voices[s]));
                 announcement.audio = await assembleAudio(segmentsWithVoices);
             }
 
@@ -334,10 +315,10 @@ function selectVoices(segments: { spriteName: string; offset: number }[], select
     // Loop through the preferred voices in random order to find one that has all the required sprites
     for (const voice of preferredVoices) {
         // Check if the voice has all the required sprites
-        if (segments.every(segment => segment.spriteName === 'chime' || voice.sprite[segment.spriteName])) {
+        if (segments.every(segment => segment.spriteName.startsWith('chime') || voice.sprite[segment.spriteName])) {
             return segments.map(segment => ({
                 ...segment,
-                voice: segment.spriteName === 'chime' ? voices.default : voice
+                voice: segment.spriteName.startsWith('chime') ? voices.chimes : voice
             }));
         }
     }
@@ -347,7 +328,7 @@ function selectVoices(segments: { spriteName: string; offset: number }[], select
         const voice = [...preferredVoices, ...allVoices].find(v => v.sprite[segment.spriteName]);
         return {
             ...segment,
-            voice: (segment.spriteName === 'chime' ? voices.default : voice) || voices.default
+            voice: (segment.spriteName.startsWith('chime') ? voices.chimes : voice) || defaultVoice
         };
     });
 }
@@ -361,15 +342,6 @@ function assembleAudio(segments: { voice: Voice; spriteName: string; offset: num
 }
 
 async function previewAnnouncement(segments: { spriteName: string; offset: number }[], selectedVoices: Voice[] = preferredVoices.value.map(s => voices[s])) {
-    segments = segments.map(segment => {
-        if (segment.spriteName === 'chimea') {
-            return { offset: chimeAReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeAReplacement.value}` };
-        }
-        if (segment.spriteName === 'chimeb') {
-            return { offset: chimeBReplacement.value === 0 ? segment.offset + 800 : segment.offset, spriteName: `chime${chimeBReplacement.value}` };
-        }
-        return segment;
-    });
     const segmentsWithVoices = selectVoices(segments, selectedVoices);
     const audio = await assembleAudio(segmentsWithVoices);
     audio.play();
@@ -380,27 +352,6 @@ const { isOverDropZone } = useDropZone(main, {
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
     multiple: false
 })
-
-function showFeedbackDialog() {
-    const dialog = showDialog([
-        h('h3', "Ik heb feedback nodig!"),
-        h('p', [
-            "Het geluid dat Pathé al jaren in Rosetta gebruikt blijkt ", h('a', { href: 'https://www.youtube.com/watch?v=6HNvZ93dYHg&list=PLbpXvhGLBsTgPyl_yDHlqT7QW10Rz6-dg&index=1', target: '_blank', style: 'color: #feb91e' }, "afkomstig te zijn van Российские железные дороги — de Russische spoorwegmaatschappij"), ". Daarom wil ik een ander geluid vinden. Maar dat blijkt niet zo makkelijk te zijn. ",
-            h('br'),
-            h('br'),
-            "Ik heb een aantal nieuwe geluiden geüpload. Je kunt die rechtsonderin bij 'Handmatige omroep' beluisteren.",
-            h('br'),
-            h('br'),
-            "Beluister ze eens op de portofoon en beslis samen welke het fijnste is. Is het geluid niet te hoog of luid? Is het lang genoeg om de portofoon te activeren?",
-            h('br'),
-            h('br'),
-            "Kies daarna bij 'Regels' welke geluiden het beste werken. Laat mij ook even weten wat prettig is en wat er beter kan.",
-            h('br'),
-            h('br'),
-            "Bedankt, ", h('br'), "Quinten"
-        ])
-    ])
-}
 </script>
 
 <template>
@@ -446,7 +397,7 @@ function showFeedbackDialog() {
                         <TransitionGroup name="list">
                             <ScheduledAnnouncement
                                 v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
-                                :announcement="announcement" :key="announcement.time.getTime()"
+                                :announcement="announcement" :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
                                 @preview="previewAnnouncement"
                                 @delete="scheduledAnnouncements.splice(scheduledAnnouncements.indexOf(announcement), 1)" />
                             <p v-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
@@ -490,9 +441,9 @@ function showFeedbackDialog() {
                     <fieldset style="position: relative;">
                         <legend>Handmatige omroep</legend>
                         <div class="manual-sounds-list" v-for="ids in [
-                            voices.chimes.sounds,
-                            voices.default.sounds.filter(id => !id.startsWith('auditorium')),
-                            voices.default.sounds.filter(id => id.startsWith('auditorium')),
+                            [...voices.chimes.sounds,
+                            ...defaultVoice.sounds.filter(id => !id.startsWith('auditorium'))],
+                            defaultVoice.sounds.filter(id => id.startsWith('auditorium')),
                             ...preferredVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
                         ]" v-show="ids?.length > 0">
                             <Button class="secondary manual-sound-button" v-for="id of ids"
@@ -503,41 +454,6 @@ function showFeedbackDialog() {
                                 </span>
                             </Button>
                         </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Geluiden</legend>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;"
-                            @click="optionsChanged = true">
-                            <InputGroup type="select" id="chime2Replacement" v-model="chimeBReplacement">
-                                <template #label>Aftiteling</template>
-                                <template #input>
-                                    <option :value="1">♪ 1a</option>
-                                    <option :value="2">♪ 1b</option>
-                                    <option :value="3">♪ 2a</option>
-                                    <option :value="4">♪ 2b</option>
-                                    <option :value="5">♪ 3a</option>
-                                    <option :value="6">♪ 3b</option>
-                                    <option :value="7">♪ 4</option>
-                                    <option :value="8">♪ 5</option>
-                                </template>
-                            </InputGroup>
-                            <InputGroup type="select" id="chime1Replacement" v-model="chimeAReplacement">
-                                <template #label>Overige gebeurtenissen</template>
-                                <template #input>
-                                    <option :value="1">♪ 1a</option>
-                                    <option :value="2">♪ 1b</option>
-                                    <option :value="3">♪ 2a</option>
-                                    <option :value="4">♪ 2b</option>
-                                    <option :value="5">♪ 3a</option>
-                                    <option :value="6">♪ 3b</option>
-                                    <option :value="7">♪ 4</option>
-                                    <option :value="8">♪ 5</option>
-                                </template>
-                            </InputGroup>
-                        </div>
-                        <a @click="showFeedbackDialog" style="text-decoration: underline; cursor: pointer;">Klik hier
-                            voor informatie</a>
                     </fieldset>
 
                     <fieldset>

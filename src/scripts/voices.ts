@@ -38,7 +38,7 @@ export const voices = {
     chimes: new Voice({
         file: chimes,
         sprite: {
-            "chime1": [0, 3372.5170068027214], "chime2": [4200, 3372.5623582766443], "chime3": [8400, 3282.1541950113387], "chime4": [12600.000000000002, 3265.578231292517], "chime5": [16800, 3362.6303854875273], "chime6": [21000, 3355.2380952380963], "chime7": [25200.000000000004, 3356.235827664399], "chime8": [29400.000000000004, 3317.414965986398]
+            "chime0": [0, 3300]
         }
     }),
     default: new Voice({
@@ -89,8 +89,11 @@ export const voices = {
     })
 };
 
+export const defaultVoiceKey: keyof typeof voices = 'quinten';
+export const defaultVoice = voices[defaultVoiceKey];
+
 export function getSoundInfo(string) {
-    const soundNames = { start: "start", mainshow: "start hoofdfilm", intermission: "pauze", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime0: '♪ oud', chime1: '♪ 1a', chime2: '♪ 1b', chime3: '♪ 2a', chime4: '♪ 2b', chime5: '♪ 3a', chime6: '♪ 3b', chime7: '♪ 4', chime8: '♪ 5', chimea: '♪', chimeb: '♪' };
+    const soundNames = { start: "start", mainshow: "start hoofdfilm", intermission: "pauze", credits: "aftiteling", end: "einde voorstelling", preshow: "start voorprogramma", finalshow: "laatste voorstelling", chime0: '♪', };
 
     string = string.toLowerCase().trim();
     let id = string.replace(/\?+/g, '');
