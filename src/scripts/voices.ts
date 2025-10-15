@@ -30,7 +30,7 @@ export class Voice {
     }
 
     get additionalSounds() {
-        return this.sounds.filter(sound => !voices.default.sounds.includes(sound));
+        return this.sounds.filter(sound => !defaultVoice.sounds.includes(sound));
     }
 }
 

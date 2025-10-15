@@ -196,7 +196,7 @@ const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>
 const customAnnouncementDate = ref<Date>(new Date());
 
 const scheduledAnnouncements = ref<Announcement[]>([])
-store.$subscribe(scheduleAnnouncements, { deep: true })
+store.$subscribe(() => scheduleAnnouncements(), { deep: true })
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
 /**
  * Schedule all announcements based on the rules and the imported timetable
  */
-async function scheduleAnnouncements() {
+async function scheduleAnnouncements(debug: boolean = false) {
     optionsChanged.value = false;
     let array: Announcement[] = [];
 
@@ -232,7 +232,7 @@ async function scheduleAnnouncements() {
                     })),
                     audio: null,
                 };
-                if (announcement.time.getTime() > Date.now()) {
+                if (debug || announcement.time.getTime() > Date.now()) {
                     arr.push(announcement);
                 }
             }
@@ -248,9 +248,11 @@ async function scheduleAnnouncements() {
         array.push(...arr);
     }
 
-    scheduledAnnouncements.value = array;
+    scheduledAnnouncements.value = array.sort((a, b) => a.time.getTime() - b.time.getTime());
 
-    for (const announcement of [...scheduledAnnouncements.value].sort((a, b) => a.time.getTime() - b.time.getTime())) {
+    if (debug) console.log(scheduledAnnouncements.value);
+
+    for (const announcement of scheduledAnnouncements.value) {
         const segmentsWithVoices = selectVoices(announcement.segments, preferredVoices.value.map(s => voices[s]));
         announcement.audio = await assembleAudio(segmentsWithVoices);
     }
@@ -395,9 +397,9 @@ const { isOverDropZone } = useDropZone(main, {
                     </Transition>
                     <ul id="upcoming-announcements" class="scrollable-list" style="max-height: 700px;">
                         <TransitionGroup name="list">
-                            <ScheduledAnnouncement
-                                v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
-                                :announcement="announcement" :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
+                            <ScheduledAnnouncement v-for="announcement in scheduledAnnouncements"
+                                :announcement="announcement"
+                                :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
                                 @preview="previewAnnouncement"
                                 @delete="scheduledAnnouncements.splice(scheduledAnnouncements.indexOf(announcement), 1)" />
                             <p v-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
@@ -413,7 +415,7 @@ const { isOverDropZone } = useDropZone(main, {
                     <fieldset>
                         <legend>Algemeen</legend>
                         <div class="flex buttons">
-                            <Button class="full" @click="scheduleAnnouncements">
+                            <Button class="full" @click="scheduleAnnouncements()" @contextmenu="scheduleAnnouncements(true)">
                                 <Icon>refresh</Icon>
                                 <span>Omroepen voorbereiden</span>
                             </Button>
