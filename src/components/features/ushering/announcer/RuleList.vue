@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { AnnouncementRule } from '@/scripts/types.ts';
 import { getSoundInfo } from '@/scripts/voices';
 import AnnouncementBuilder from './AnnouncementBuilder.vue';
@@ -8,6 +8,10 @@ const showAnnouncementBuilder = ref(false);
 const showFilterDialog = ref(false);
 
 const rules = defineModel<AnnouncementRule[]>()
+const emit = defineEmits(['change']);
+
+// Emit a 'change' event whenever the rules array or its items change
+watch(rules, (newVal) => emit('change', newVal), { deep: true });
 const props = defineProps({
     toggleOnly: {
         type: Boolean,

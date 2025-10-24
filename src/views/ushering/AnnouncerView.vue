@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, h } from 'vue';
+import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
-import { format } from 'date-fns';
 import { Announcement, AnnouncementRule, Show } from '@/scripts/types.ts';
 import { voices, getSoundInfo, Voice, defaultVoice, defaultVoiceKey } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
-import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { showDialog } from '@/scripts/dialogManager';
+import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
 import AnnouncementBuilder from '@features/ushering/announcer/AnnouncementBuilder.vue';
 import RuleList from '@features/ushering/announcer/RuleList.vue';
@@ -19,7 +17,6 @@ const now = inject<Ref<Date>>('now');
 const main = useTemplateRef('main');
 
 const showRuleEditor = ref(false);
-const optionsChanged = ref(false);
 
 const presetRulesDefault: AnnouncementRule[] = [
     {
@@ -198,22 +195,44 @@ const customAnnouncementDate = ref<Date>(new Date());
 const scheduledAnnouncements = ref<Announcement[]>([])
 store.$subscribe(() => scheduleAnnouncements(), { deep: true })
 
-let intervalId: ReturnType<typeof setInterval> | null = null;
+let interval: NodeJS.Timeout | null = null;
 
 onMounted(() => {
     scheduleAnnouncements();
-    intervalId = setInterval(enqueueProximateAnnouncements, 10000);
+    interval = setInterval(() => generateAndEnqueue(), 10000);
 })
 
 onBeforeUnmount(() => {
-    if (intervalId) clearInterval(intervalId);
+    if (interval) clearInterval(interval);
+    cleanupAnnouncements();
 })
+
+/**
+ * Clean up all scheduled announcements and audio elements
+ */
+function cleanupAnnouncements() {
+    for (const announcement of scheduledAnnouncements.value) {
+        // Clear any pending timeouts
+        if (announcement.scheduled) {
+            clearTimeout(announcement.scheduled);
+            announcement.scheduled = null;
+        }
+        // Remove audio elements from DOM
+        if (announcement.audio) {
+            announcement.audio.pause();
+            announcement.audio.remove();
+            announcement.audio = null;
+        }
+    }
+}
 
 /**
  * Schedule all announcements based on the rules and the imported timetable
  */
 async function scheduleAnnouncements(debug: boolean = false) {
-    optionsChanged.value = false;
+    // Clean up previously scheduled announcements before creating new ones
+    cleanupAnnouncements();
+
     let array: Announcement[] = [];
 
     for (const rule of [...presetRules.value, ...customRules.value]) {
@@ -252,49 +271,57 @@ async function scheduleAnnouncements(debug: boolean = false) {
 
     if (debug) console.log(scheduledAnnouncements.value);
 
-    for (const announcement of scheduledAnnouncements.value) {
-        const segmentsWithVoices = selectVoices(announcement.segments, preferredVoices.value.map(s => voices[s]));
-        announcement.audio = await assembleAudio(segmentsWithVoices);
-    }
+    generateAndEnqueue();
+}
 
-    enqueueProximateAnnouncements();
+async function regenerate() {
+    for (const announcement of scheduledAnnouncements.value.filter(announcement => announcement.audio)) {
+        announcement.audio?.remove();
+        announcement.audio = null;
+    }
+    generateAndEnqueue();
 }
 
 /**
- * Queue all announcements that are scheduled to play in the next 10 seconds
+ * Generate and enqueue all announcements in the next 30 seconds
  */
-async function enqueueProximateAnnouncements() {
-    for (const announcement of scheduledAnnouncements.value) {
+async function generateAndEnqueue() {
+    for (const announcement of scheduledAnnouncements.value.filter(announcement => {
         const timeUntilAnnouncement = announcement.time.getTime() - Date.now() - 1000;
-        if (timeUntilAnnouncement > -60000 && timeUntilAnnouncement < 10000 && !announcement.scheduled) {
-            if (!announcement.audio) {
-                const segmentsWithVoices = selectVoices(announcement.segments, preferredVoices.value.map(s => voices[s]));
-                announcement.audio = await assembleAudio(segmentsWithVoices);
-            }
+        return timeUntilAnnouncement > -10000 && timeUntilAnnouncement < 30000 && !announcement.scheduled;
+    })) {
+        await generateAudio(announcement);
+        await enqueueAnnouncement(announcement);
+    }
+}
 
-            setTimeout(() => {
-                waitForOtherAnnouncementsToFinish(() => {
-                    if (!announcement.audio) return;
-                    announcement.audio.play();
-                    announcement.audio.addEventListener('ended', () => {
-                        announcement.audio.remove();
-                        announcement.audio = null; // Clear the audio reference after playing
-                    }, { once: true });
-                });
-            }, Math.max(0, timeUntilAnnouncement));
+async function generateAudio(announcement: Announcement) {
+    if (announcement.audio) return;
+    const segmentsWithVoices = selectVoices(announcement.segments, preferredVoices.value.map(s => voices[s]));
+    announcement.audio = await assembleAudio(segmentsWithVoices);
+}
 
-            announcement.scheduled = true; // Mark the announcement as scheduled
+async function enqueueAnnouncement(announcement: Announcement) {
+    if (announcement.scheduled) return;
+    const timeUntilAnnouncement = announcement.time.getTime() - Date.now() - 1000;
 
-            // TODO: this is broken lol
-            function waitForOtherAnnouncementsToFinish(callback: () => void) {
-                // Check if there is any other announcements playing. If so, wait for it to finish before calling callback().
-                if (!scheduledAnnouncements.value.some(a => a.audio && !a.audio.paused)) {
-                    callback();
-                } else {
-                    setTimeout(() => waitForOtherAnnouncementsToFinish(callback), 500);
-                }
-            }
-        }
+    const timeout = setTimeout(() => {
+        if (!announcement.audio) return;
+        console.debug("Playing announcement: ", announcement);
+        announcement.audio.play();
+        announcement.audio.addEventListener('ended', () => {
+            announcement.audio?.remove();
+            announcement.audio = null; // Clear the audio reference after playing
+        }, { once: true });
+    }, Math.max(0, timeUntilAnnouncement));
+
+    announcement.scheduled = timeout; // Mark the announcement as scheduled
+}
+
+async function playAnnouncement(announcement: Announcement) {
+    await generateAudio(announcement);
+    if (announcement.audio) {
+        announcement.audio.play();
     }
 }
 
@@ -387,20 +414,12 @@ const { isOverDropZone } = useDropZone(main, {
                             </template>
                         </AnnouncementBuilder>
                     </div>
-                    <Transition name="list">
-                        <div class="banner" v-if="optionsChanged" key="optionsChangedWarning"
-                            style="background-color: #d53232; padding: 4px 16px; border-radius: 5px; margin-bottom: 16px;">
-                            <h3 style="margin-bottom: 0;">Let op: opties gewijzigd</h3>
-                            <p style="margin-top: 4px;">Bereid de omroepen opnieuw voor om de wijzigingen toe te passen.
-                            </p>
-                        </div>
-                    </Transition>
                     <ul id="upcoming-announcements" class="scrollable-list" style="max-height: 700px;">
                         <TransitionGroup name="list">
                             <ScheduledAnnouncement v-for="announcement in scheduledAnnouncements"
                                 :announcement="announcement"
                                 :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
-                                @preview="previewAnnouncement"
+                                @preview="playAnnouncement(announcement)"
                                 @delete="scheduledAnnouncements.splice(scheduledAnnouncements.indexOf(announcement), 1)" />
                             <p v-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
                                 key="0">Er zijn geen omroepen gepland.</p>
@@ -415,11 +434,12 @@ const { isOverDropZone } = useDropZone(main, {
                     <fieldset>
                         <legend>Algemeen</legend>
                         <div class="flex buttons">
-                            <Button class="full" @click="scheduleAnnouncements()" @contextmenu="scheduleAnnouncements(true)">
+                            <Button class="full" @click="scheduleAnnouncements()"
+                                @contextmenu="scheduleAnnouncements(true)">
                                 <Icon>refresh</Icon>
                                 <span>Omroepen voorbereiden</span>
                             </Button>
-                            <Button class="secondary full" @click="showRuleEditor = true; optionsChanged = true">
+                            <Button class="secondary full" @click="showRuleEditor = true">
                                 <Icon>edit</Icon>
                                 <span>Regels bewerken
                                     <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
@@ -431,7 +451,7 @@ const { isOverDropZone } = useDropZone(main, {
 
                     <fieldset>
                         <legend>Stem</legend>
-                        <VoicesSelector v-model="preferredVoices" @click="optionsChanged = true" />
+                        <VoicesSelector v-model="preferredVoices" @click="regenerate()" />
                         <!-- <InputGroup type="select" id="voiceBehaviour" v-model="voiceBehaviour">
                             <template #label>Gedrag bij meerdere stemmen</template>
                             <template #input>
@@ -474,10 +494,10 @@ const { isOverDropZone } = useDropZone(main, {
             <ModalDialog v-if="showRuleEditor" @dismiss="showRuleEditor = false">
                 <Tabs>
                     <Tab value="Standaardregels">
-                        <RuleList v-model="presetRules" :toggleOnly="true" />
+                        <RuleList v-model="presetRules" :toggleOnly="true" @change="scheduleAnnouncements" />
                     </Tab>
                     <Tab value="Eigen regels">
-                        <RuleList v-model="customRules" :toggleOnly="false" />
+                        <RuleList v-model="customRules" :toggleOnly="false" @change="scheduleAnnouncements" />
                     </Tab>
                 </Tabs>
             </ModalDialog>
