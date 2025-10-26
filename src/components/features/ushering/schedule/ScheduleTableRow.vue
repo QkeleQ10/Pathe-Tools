@@ -46,7 +46,8 @@ async function toggleCreditsStinger(title: string) {
     <tr :class="{
         targeting: displayContextMenu,
         'no-print': !printRow,
-        italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18'
+        italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
+        'no-next-show': !show.nextStartTime
     }" @contextmenu.prevent="displayContextMenu = true">
         <td nowrap class="td-auditorium">
             <span contenteditable>
@@ -186,8 +187,8 @@ td {
     .plf-icon {
         position: absolute;
         top: 0;
-        left: -14px;
-        height: 11px;
+        left: -1.12em;
+        height: .88em;
         translate: 0 -50%;
         fill: var(--color);
     }
@@ -195,20 +196,20 @@ td {
     .double-usherout {
         position: absolute;
         top: 50%;
-        left: 25px;
+        left: 2em;
         height: 100%;
-        width: 22px;
+        width: 1.76em;
         border-radius: 50%;
         outline: 2px solid var(--color);
-        clip-path: inset(-3px calc(100% - 5px) -3px -3px);
+        clip-path: inset(-.24em calc(100% - 5px) -.24em -.24em);
         opacity: .5;
     }
 
     .long-gap {
         position: absolute;
         bottom: -1px;
-        left: 26px;
-        width: 62px;
+        left: 2.08em;
+        width: 4.96em;
         border-bottom: 2px dotted var(--color);
         opacity: .5;
     }
@@ -217,7 +218,7 @@ td {
         position: absolute;
         top: 0;
         bottom: 0;
-        left: 18px;
+        left: 1.44em;
         border-left: 2px dashed var(--color);
         opacity: .5;
     }
@@ -231,7 +232,7 @@ td {
 
     &.age-rating {
         text-align: end;
-        min-width: 21px;
+        min-width: 1.68em;
     }
 
     .nicam-icon {
@@ -240,8 +241,8 @@ td {
         top: 50%;
         left: 50%;
         translate: -50% -50%;
-        width: 16px;
-        height: 16px;
+        width: 1.28em;
+        height: 1.28em;
     }
 }
 
@@ -251,8 +252,14 @@ td {
     opacity: .5;
 }
 
+tr.no-next-show .td-auditorium {
+    color: var(--inverse-color);
+    background-color: var(--header-color);
+
+}
+
 .td-credits {
-    padding-left: 32px;
+    padding-left: 2.56em;
 }
 
 .td-title {

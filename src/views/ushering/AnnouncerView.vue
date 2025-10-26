@@ -416,7 +416,7 @@ const { isOverDropZone } = useDropZone(main, {
                     </div>
                     <ul id="upcoming-announcements" class="scrollable-list" style="max-height: 700px;">
                         <TransitionGroup name="list">
-                            <ScheduledAnnouncement v-for="announcement in scheduledAnnouncements"
+                            <ScheduledAnnouncement v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
                                 :announcement="announcement"
                                 :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
                                 @preview="playAnnouncement(announcement)"

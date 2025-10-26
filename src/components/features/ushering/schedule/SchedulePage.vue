@@ -19,6 +19,7 @@ const props = defineProps<{
     };
     pageNum: number;
     numPages: number;
+    fontSize: number;
 }>();
 
 const displayScheduledTime = useStorage('display-scheduled-time', true);
@@ -46,7 +47,7 @@ defineExpose({
 <template>
     <div class="page" v-if="shows.length > 0">
         <div class="print-component-wrapper">
-            <div class="print-component" ref="printComponent">
+            <div class="print-component" ref="printComponent" :style="`font-size: ${fontSize}px;`">
                 <div class="header" v-if="'flags' in metadata">
                     {{
                         (metadata.flags.includes('times-only')
@@ -193,7 +194,7 @@ div.header {
     right: 0;
     color: var(--color);
     opacity: 0.5;
-    font-size: 10px;
+    font-size: .8em;
     text-align: center;
 
     &::first-letter {
@@ -208,7 +209,7 @@ div.footer {
     right: 0;
     color: var(--color);
     opacity: 0.1;
-    font-size: 10px;
+    font-size: .8em;
     text-align: center;
 }
 
@@ -279,8 +280,8 @@ table.timetable {
     border-collapse: collapse;
     color: var(--color);
     font-family: Arial, Helvetica, sans-serif;
-    --row-height: 21.5px;
-    font-size: 12.5px;
+    font-size: inherit;
+    --row-height: 1.72em;
 
     thead>tr {
         background-color: var(--header-color);
@@ -296,11 +297,11 @@ table.timetable {
 
     td {
         position: relative;
-        padding: 2px 6px;
+        padding: .16em .48em;
     }
 
     .td-credits {
-        padding-left: 32px;
+        padding-left: 2.56em;
     }
 }
 </style>

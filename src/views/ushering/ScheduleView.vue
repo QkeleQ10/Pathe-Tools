@@ -29,6 +29,8 @@ const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 1
 const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
 const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
 
+const fontSize = useStorage('schedule-font-size', 12.5) // font size in pixels
+
 const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
 
 const main = ref<HTMLElement>(null)
@@ -68,7 +70,7 @@ const pages = computed<TimetableShow[][]>(() => {
 
     const transformed = arr || [];
     // Split the transformed shows into two pages for display
-    const MAX_PAGE_SIZE = 46
+    const MAX_PAGE_SIZE = -(14 / 3) * fontSize.value + 105
     const overlap = 2
 
     const numPages = Math.ceil(transformed.length / MAX_PAGE_SIZE)
@@ -147,7 +149,7 @@ onMounted(() => {
                     <p id="upload-hint" v-if="!pages?.[0]?.length">Upload eerst een bestand.</p>
                     <div id="pages" ref="pages">
                         <SchedulePage v-for="(page, i) in pages" :ref="el => schedulePageRefs[i] = el" :shows="page"
-                            :metadata="store.metadata" :page-num="i" :num-pages="pages.length" />
+                            :metadata="store.metadata" :page-num="i" :num-pages="pages.length" :fontSize="fontSize" />
                     </div>
                 </div>
                 <SidePanel style="flex: 150px 1 0;">
@@ -245,9 +247,18 @@ onMounted(() => {
                                 <option :value="2">Altijd tonen</option>
                             </template>
                         </InputGroup>
-                        <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration" min="0" max="30">
+                        <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration"
+                            min="0" max="30">
                             <template #label>Duur filmpauzes</template>
                             <span class="unit">minuten</span>
+                        </InputGroup>
+                        <InputGroup type="select" id="animation" v-model="fontSize">
+                            <template #label>Lettergrootte</template>
+                            <template #input>
+                                <option :value="11">Kleiner</option>
+                                <option :value="12.5">Normaal</option>
+                                <option :value="14">Groter</option>
+                            </template>
                         </InputGroup>
                     </fieldset>
 
@@ -261,8 +272,8 @@ onMounted(() => {
                             class="full" :class="{ 'secondary': pages.length > 1 }">
                             <Icon>print</Icon>
                             {{ pages.length > 1
-                            ? 'Deel ' + (i + 1)
-                            : 'Afdrukken' }}
+                                ? 'Deel ' + (i + 1)
+                                : 'Afdrukken' }}
                         </Button>
                     </fieldset>
                 </SidePanel>
