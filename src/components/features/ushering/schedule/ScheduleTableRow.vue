@@ -47,7 +47,7 @@ async function toggleCreditsStinger(title: string) {
         targeting: displayContextMenu,
         'no-print': !printRow,
         italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
-        'no-next-show': !show.nextStartTime
+        'final-show': !show.nextStartTime
     }" @contextmenu.prevent="displayContextMenu = true">
         <td nowrap class="td-auditorium">
             <span contenteditable>
@@ -90,7 +90,8 @@ async function toggleCreditsStinger(title: string) {
             </div>
             <div class="plf-overlap" v-if="show.overlapWithPlf"></div>
             <span class="credits-time">
-                <span contenteditable>
+                <span contenteditable
+                    :style="{ opacity: show.creditsTime.getTime() === show.endTime.getTime() ? '.5' : '1' }">
                     {{ displayCreditsTime && show.creditsTime
                         ? format(show.creditsTime, 'HH:mm:ss')
                         : '' }}
@@ -101,10 +102,11 @@ async function toggleCreditsStinger(title: string) {
                         60000) }}
                 </span>
             </span>
+            <Icon v-if="!show.nextStartTime" class="final-show">dark_mode</Icon>
         </td>
         <td nowrap class="td-end">
             <span contenteditable>
-                {{ displayEndTime && show.endTime
+                {{ (displayEndTime) && show.endTime
                     ? format(show.endTime, 'HH:mm')
                     : '' }}
             </span>
@@ -244,6 +246,13 @@ td {
         width: 1.28em;
         height: 1.28em;
     }
+
+    .final-show {
+        position: absolute;
+        right: -6px;
+        --size: 12px;
+        opacity: .5;
+    }
 }
 
 .td-main,
@@ -252,14 +261,8 @@ td {
     opacity: .5;
 }
 
-tr.no-next-show .td-auditorium {
-    color: var(--inverse-color);
-    background-color: var(--header-color);
-
-}
-
 .td-credits {
-    padding-left: 2.56em;
+    padding-left: 32px;
 }
 
 .td-title {

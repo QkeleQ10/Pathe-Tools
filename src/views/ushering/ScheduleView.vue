@@ -40,8 +40,8 @@ const pages = computed<TimetableShow[][]>(() => {
     let arr = store.table?.map((show: Show, i: number) => {
         const hasCreditsStinger = stingersStore.stingers.includes(show.title?.trim())
         const overlapWithPlf = plfRows.some(plf =>
-            show.creditsTime.getTime() - plf.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&
-            show.creditsTime.getTime() - (plf.mainShowTime?.getTime() ?? (plf.showTime.getTime() + 900000)) <= 0
+            (show.creditsTime || show.endTime).getTime() - plf.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&
+            (show.creditsTime || show.endTime).getTime() - (plf.mainShowTime?.getTime() ?? (plf.showTime.getTime() + 900000)) <= 0
         )
         const nextShow = store.table.slice(i + 1).find(s => s.auditorium === show.auditorium)
         return {
@@ -49,7 +49,7 @@ const pages = computed<TimetableShow[][]>(() => {
             overlapWithPlf,
             hasCreditsStinger,
             timeToNextUsherout: store.table[i + 1]
-                ? store.table[i + 1].creditsTime.getTime() - (hasCreditsStinger ? show.endTime : show.creditsTime).getTime()
+                ? (store.table[i + 1].creditsTime || store.table[i + 1].endTime).getTime() - (hasCreditsStinger ? show.endTime : (show.creditsTime || show.endTime)).getTime()
                 : undefined,
             nextStartTime: nextShow?.scheduledTime
         } as TimetableShow
@@ -59,7 +59,7 @@ const pages = computed<TimetableShow[][]>(() => {
         let index: number = 0;
         for (let i = 0; i < arr.length; i++) {
             const row = arr[i]
-            let difference = row.creditsTime.getTime() - plfRow.scheduledTime.getTime()
+            let difference = (row.creditsTime || row.endTime).getTime() - plfRow.scheduledTime.getTime()
             if (difference > 0) {
                 index = i
                 break

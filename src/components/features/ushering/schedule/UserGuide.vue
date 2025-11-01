@@ -113,8 +113,22 @@ const { handlePrint } = useVueToPrint({
                         </div>
                         <span><b>16+ en 18+</b>: worden vetgedrukt weergegeven.</span>
                     </li>
+                    <li>
+                        <div inert class="sample" id="final-show"><span></span>
+                            <div class="mini-table"><span></span>
+                                <div class="table-row">00:04:58<Icon>dark_mode</Icon>
+                                </div>
+                                <div class="table-row">00:26:52<Icon>dark_mode</Icon>
+                                </div>
+                                <div class="table-row">00:38:24<Icon>dark_mode</Icon>
+                                </div>
+                            </div>
+                        </div>
+                        <span><b>Sluitzalen</b>: worden aangeduid met een maan-pictogram.</span>
+                    </li>
                 </ul>
-                <small>*Als een film is gemarkeerd met een post-credits-scène, dan worden de berekeningen voor de tijd tussen uitlopen daar ook op aangepast.</small>
+                <small>*Als een film is gemarkeerd met een post-credits-scène, dan worden de berekeningen voor de tijd
+                    tussen uitlopen daar ook op aangepast.</small>
             </div>
             <br>
             <Button class="full" @click="handlePrint">
@@ -122,7 +136,9 @@ const { handlePrint } = useVueToPrint({
                 Handleiding afdrukken
             </Button>
             <br><br>
-            <small>Let op: deze handleiding houdt geen rekening met verschillen in configuratie en tussen theaters. Zo nodig kan bovenstaande inhoud worden aangepast. Voel je vrij om het te verwerken in bijvoorbeeld een inwerkboekje als naslagwerk!</small>
+            <small>Let op: deze handleiding houdt geen rekening met verschillen in configuratie en tussen theaters. Zo
+                nodig kan bovenstaande inhoud worden aangepast. Voel je vrij om het te verwerken in bijvoorbeeld een
+                inwerkboekje als naslagwerk!</small>
         </Tab>
         <Tab value="Handleiding website">
             <p>
@@ -282,6 +298,21 @@ const { handlePrint } = useVueToPrint({
     &>.mini-table>.table-row {
         text-align: right;
         padding-right: 6px;
+    }
+}
+
+#final-show {
+    &>.mini-table>.table-row {
+        position: relative;
+
+        .icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            translate: 0 -50%;
+            --size: 12px;
+            opacity: .5;
+        }
     }
 }
 

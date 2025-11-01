@@ -158,7 +158,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                         auditoriumNumber: obj.AUDITORIUM === "IMAX" ? 1 : parseInt(obj.AUDITORIUM?.replace("Rooftop", "10").replace(/^\w+\s/, '')?.split(' ')[0]) || 0,
                         scheduledTime: timeStringToDate(obj.SCHEDULED_TIME),
                         showTime: timeStringToDate(obj.SHOW_TIME),
-                        creditsTime: timeStringToDate(obj.CREDITS_TIME),
+                        creditsTime: timeStringToDate(obj.CREDITS_TIME) || timeStringToDate(obj.END_TIME),
                         endTime: timeStringToDate(obj.END_TIME),
                         duration: obj.DURATION
                     };
@@ -232,7 +232,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     function timeStringToDate(timeString: string): Date {
         try {
-            if (!timeString) return new Date(0); // No string provided
+            if (!timeString) return null; // No string provided
 
             const date = new Date(timeString);
 
@@ -246,11 +246,13 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                 const date = new Date(`${now.toDateString()} ${timeString}`);
                 if (date.getHours() < 6) date.setDate(date.getDate() + 1);
 
+                if (date.getTime() === 0) return null;
+
                 return date;
             }
         } catch (error) {
             console.error("Error converting time string to date:", error);
-            return new Date(0);
+            return null;
         }
     }
 
