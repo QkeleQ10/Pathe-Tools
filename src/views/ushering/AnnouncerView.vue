@@ -14,6 +14,8 @@ import VoicesSelector from '@features/ushering/announcer/VoicesSelector.vue';
 const store = useTmsScheduleStore()
 const now = inject<Ref<Date>>('now');
 
+const userHasInteracted = inject<Ref<boolean>>('userHasInteracted');
+
 const main = useTemplateRef('main');
 
 const showRuleEditor = ref(false);
@@ -416,7 +418,8 @@ const { isOverDropZone } = useDropZone(main, {
                     </div>
                     <ul id="upcoming-announcements" class="scrollable-list" style="max-height: 700px;">
                         <TransitionGroup name="list">
-                            <ScheduledAnnouncement v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
+                            <ScheduledAnnouncement
+                                v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
                                 :announcement="announcement"
                                 :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
                                 @preview="playAnnouncement(announcement)"
@@ -507,6 +510,14 @@ const { isOverDropZone } = useDropZone(main, {
             Laat los om bestand te uploaden
         </div>
     </main>
+    <Transition>
+        <div class="snackbar warning" v-if="!userHasInteracted">
+            <h3>Let op: klik om geluid te activeren</h3>
+            <p>
+                De browser blokkeert geluiden tot er op de pagina is geklikt.
+            </p>
+        </div>
+    </Transition>
 </template>
 
 <style scoped>

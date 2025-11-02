@@ -9,8 +9,11 @@ updateNowValue()
 function updateNowValue() {
     now.value = new Date();
 }
+provide('now', now);
 
-provide('now', now)
+const userHasInteracted = ref(false);
+document.addEventListener('click', () => userHasInteracted.value = true, { once: true });
+provide('userHasInteracted', userHasInteracted);
 </script>
 
 <template>
@@ -40,7 +43,8 @@ provide('now', now)
         </div>
     </header>
 
-    <HeroImage v-if="$route.meta.showHero !== false" :class="{ large: $route.meta.largeHero, small: $route.meta.smallHero, 'zero-height': $route.meta.heroZeroHeight }" />
+    <HeroImage v-if="$route.meta.showHero !== false"
+        :class="{ large: $route.meta.largeHero, small: $route.meta.smallHero, 'zero-height': $route.meta.heroZeroHeight }" />
 
     <RouterView />
 
