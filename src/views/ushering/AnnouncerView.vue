@@ -148,13 +148,13 @@ const presetRulesDefault: AnnouncementRule[] = [
         }
     },
     {
-        id: 'finalMainShowStart',
+        id: 'finalMainShow',
         name: 'Start laatste hoofdfilm',
         segments: [
             { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'finalshow', offset: 0 }
         ],
-        enabled: false,
+        enabled: true,
         trigger: {
             property: 'mainShowTime',
             preponeMinutes: 0,
