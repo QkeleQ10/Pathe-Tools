@@ -1,39 +1,39 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { FastAverageColor } from 'fast-average-color';
+// import { ref } from 'vue';
+// import { FastAverageColor } from 'fast-average-color';
 
-const imageUrl = ref('');
-const color = ref('');
+// const imageUrl = ref('');
+// const color = ref('');
 
-const files = import.meta.glob('@assets/heroes/*.webp', { eager: true });
-const fileKeys = Object.keys(files);
-const randomKey = fileKeys[Math.floor(Math.random() * fileKeys.length)];
-imageUrl.value = new URL((files[randomKey] as { default: string }).default, import.meta.url).href;
+// const files = import.meta.glob('@assets/heroes/*.webp', { eager: true });
+// const fileKeys = Object.keys(files);
+// const randomKey = fileKeys[Math.floor(Math.random() * fileKeys.length)];
+// imageUrl.value = new URL((files[randomKey] as { default: string }).default, import.meta.url).href;
 
-const fac = new FastAverageColor();
+// const fac = new FastAverageColor();
 
-fac.getColorAsync(imageUrl.value, {
-    ignoredColor: [
-        [255, 255, 255, 255, 100]
-    ]
-})
-    .then(result => {
-        color.value = result.hex;
-        fac.destroy();
-    })
-    .catch(console.error);
+// fac.getColorAsync(imageUrl.value, {
+//     ignoredColor: [
+//         [255, 255, 255, 255, 100]
+//     ]
+// })
+//     .then(result => {
+//         color.value = result.hex;
+//         fac.destroy();
+//     })
+//     .catch(console.error);
 </script>
 
 <template>
-    <div id="hero">
+    <!-- <div id="hero">
         <div class="color-bleed" :style="{ backgroundColor: color }">{{ color }}</div>
         <div class="image" :style="`background-image: url(${imageUrl})`">
         </div>
-    </div>
+    </div> -->
 </template>
 
 <style scoped>
-#hero {
+/* #hero {
     height: 70px;
     pointer-events: none;
 
@@ -92,7 +92,7 @@ fac.getColorAsync(imageUrl.value, {
     &.zero-height {
         height: 0;
     }
-}
+} */
 
 /* @media (prefers-reduced-motion) {
     #hero {

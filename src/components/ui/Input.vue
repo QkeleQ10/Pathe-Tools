@@ -19,6 +19,6 @@ input {
 }
 
 input:focus-visible {
-    outline: 2px solid #feb91e;
+    outline: 2px solid var(--yellow2);
 }
 </style>

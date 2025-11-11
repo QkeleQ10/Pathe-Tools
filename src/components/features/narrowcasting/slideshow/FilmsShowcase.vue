@@ -53,7 +53,7 @@ const sortedMovies = computed(() => {
 }
 
 h3 {
-    font: 2.5em "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    font: 2.5em "Special Gothic Condensed One", Arial, Helvetica, sans-serif;
     text-transform: uppercase;
     margin: 0;
 }

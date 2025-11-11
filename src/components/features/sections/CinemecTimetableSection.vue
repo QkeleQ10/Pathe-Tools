@@ -506,7 +506,7 @@ function showFormattingInfo() {
                                         value="Nieuw: ervaar ~C2;filmtitel 1~C1; & ~C2;filmtitel 2~C1; nu in ~C2;IMAX~C1;!">
                                         IMAX Utrecht - films</option>
                                 </datalist>
-                                <Icon style="position: absolute;top:0;right:0;color: #ffc426; cursor: pointer;"
+                                <Icon style="position: absolute;top:0;right:0;color: var(--yellow1); cursor: pointer;"
                                     @click="showFormattingInfo">info
                                 </Icon>
                             </InputGroup>
@@ -594,7 +594,7 @@ function showFormattingInfo() {
                     </Tab>
 
                     <Tab value="Voorstellingen">
-                        <Icon style="position: absolute;top:0;right:0;color: #ffc426; cursor: pointer;"
+                        <Icon style="position: absolute;top:0;right:0;color: var(--yellow1); cursor: pointer;"
                             @click="showFormattingInfo">info
                         </Icon>
                         <p v-if="walkIns.some(walkIn => walkIn.title.length > 38)">
@@ -676,7 +676,7 @@ function showFormattingInfo() {
                         </fieldset>
 
                         <fieldset v-if="!autoConfigure">
-                            <Icon style="position: absolute;top:0;right:0;color: #ffc426; cursor: pointer;"
+                            <Icon style="position: absolute;top:0;right:0;color: var(--yellow1); cursor: pointer;"
                                 @click="showFormattingInfo">info
                             </Icon>
                             <legend>Configuratie</legend>
@@ -913,7 +913,7 @@ pre {
     position: absolute;
     top: 16px;
     left: 20px;
-    font: 28px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    font: 28px "Special Gothic Condensed One", Arial, Helvetica, sans-serif;
     text-transform: uppercase;
 }
 

@@ -3,7 +3,6 @@
 
 import { createRouter, createWebHistory, RouteRecordRaw, RouterScrollBehavior } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
-import SplitscreenView from '../views/SplitscreenView.vue';
 import UsheringScheduleView from '../views/ushering/ScheduleView.vue';
 import UsheringAnnouncerView from '../views/ushering/AnnouncerView.vue';
 import NarrowcastingTimetableView from '../views/narrowcasting/TimetableView.vue';
@@ -77,18 +76,6 @@ const routes: RouteRecordRaw[] = [
         component: PocIntermissionView,
         meta: {
             title: 'Filmpauze',
-        }
-    },
-    {
-        path: '/splitscreen',
-        name: 'splitscreen',
-        component: SplitscreenView,
-        meta: {
-            title: 'Filmpauze',
-            showNavigation: false,
-            showFooter: false,
-            smallHero: true,
-            heroZeroHeight: true,
         }
     }
 ];

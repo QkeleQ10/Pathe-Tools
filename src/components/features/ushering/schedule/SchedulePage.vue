@@ -156,7 +156,7 @@ defineExpose({
     --inverse-color: #000;
 }
 
-section.gray {
+.gray {
     .page {
         background-color: #ffffff;
         color: #000000;
@@ -222,7 +222,7 @@ div.footer {
     }
 
     .page,
-    section.gray .page {
+    .gray .page {
         background-color: transparent;
         border-radius: 0;
         box-shadow: none;
@@ -269,7 +269,7 @@ div.footer {
 }
 
 [contenteditable]:focus-visible {
-    outline: 1px solid #ffc426;
+    outline: 1px solid var(--yellow1);
     outline-offset: -1px;
     background-color: #ffc52631;
 }

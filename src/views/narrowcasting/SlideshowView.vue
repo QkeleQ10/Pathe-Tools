@@ -412,7 +412,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                 }
 
                 &.active {
-                    outline-color: #feb91e;
+                    outline-color: var(--yellow2);
                     outline-width: 2px;
                 }
             }

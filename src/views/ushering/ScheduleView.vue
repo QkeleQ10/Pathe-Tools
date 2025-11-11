@@ -139,7 +139,7 @@ onMounted(() => {
                 </InvokableModalDialog>
             </template>
         </TimetableUploadSection>
-        <section id="edit" :class="{ gray: trueColours }">
+        <section id="edit">
             <div class="section-content flex" style="flex-wrap: wrap-reverse;">
                 <div style="flex: 210mm 0 0;">
                     <div class="flex" style="justify-content: space-between; align-items: center; padding-right: 16px;">
@@ -147,7 +147,7 @@ onMounted(() => {
                         <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch>
                     </div>
                     <p id="upload-hint" v-if="!pages?.[0]?.length">Upload eerst een bestand.</p>
-                    <div id="pages" ref="pages">
+                    <div id="pages" ref="pages" :class="{ gray: trueColours }">
                         <SchedulePage v-for="(page, i) in pages" :ref="el => schedulePageRefs[i] = el" :shows="page"
                             :metadata="store.metadata" :page-num="i" :num-pages="pages.length" :fontSize="fontSize" />
                     </div>

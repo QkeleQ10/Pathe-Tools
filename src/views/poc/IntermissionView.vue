@@ -372,6 +372,6 @@ td {
     top: -6px;
     bottom: -6px;
     width: 2px;
-    background-color: #ffc426;
+    background-color: var(--yellow1);
 }
 </style>

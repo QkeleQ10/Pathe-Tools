@@ -27,9 +27,19 @@
 }
 
 @font-face {
-    font-family: 'Trade Gothic Bold Condensed 20';
-    src: url('@assets/typefaces/TradeGothicLTPro-BdCn20.woff') format('woff'),
-        url('@assets/typefaces/TradeGothicLTPro-BdCn20.woff2') format('woff2');
+    font-family: 'Special Gothic Condensed One';
+    src: url('@assets/typefaces/SpecialGothicCondensedOne-Regular.ttf') format('truetype');
+}
+
+:root {
+    --yellow1: hsl(194, 100%, 57%);
+    /* #ffc426 */
+    --yellow2: hsl(192, 99%, 56%);
+    /* #feb91e */
+    --yellow3: hsl(196, 100%, 72%);
+    /* #ffdc6e */
+    --yellow4: hsl(192, 99%, 69%);
+    /* #fece61 */
 }
 
 * {
@@ -50,7 +60,7 @@ body {
     font-family: Heebo, arial, sans-serif;
     font-size: 16px;
     color: #ffffff;
-    background: #090a0b;
+    background: #111316;
 }
 
 main {
@@ -147,11 +157,11 @@ section>.section-content {
 }
 
 .colour {
-    color: #ffc426;
+    color: var(--yellow1);
 }
 
 em.label {
-    color: #feb91e;
+    color: var(--yellow2);
     text-transform: uppercase;
     font-size: .75rem;
     line-height: 1.25rem;

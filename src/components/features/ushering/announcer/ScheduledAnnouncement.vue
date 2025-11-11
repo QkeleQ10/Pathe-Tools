@@ -127,7 +127,7 @@ watchEffect(() => {
                 left: 0;
                 height: 3px;
                 width: var(--progress);
-                background: #feb91e;
+                background: var(--yellow2);
                 z-index: -1;
                 border-radius: 6px;
                 transition: --progress 250ms linear, width 250ms linear, opacity 150ms 150ms;

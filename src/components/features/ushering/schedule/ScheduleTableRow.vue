@@ -279,7 +279,7 @@ td {
 }
 
 [contenteditable]:focus-visible {
-    outline: 1px solid #ffc426;
+    outline: 1px solid var(--yellow1);
     outline-offset: -1px;
     background-color: #ffc52631;
 }

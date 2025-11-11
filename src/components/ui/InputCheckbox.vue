@@ -91,15 +91,15 @@ label:hover input[type="checkbox"]::before {
 }
 
 input[type="checkbox"]:checked::before {
-    background-color: #feb91e;
+    background-color: var(--yellow2);
 }
 
 label:hover input[type="checkbox"]:checked::before {
-    background-color: #fece61;
+    background-color: var(--yellow4);
 }
 
 input[type="checkbox"]:focus-visible::before {
-    outline: 2px solid #feb91e;
+    outline: 2px solid var(--yellow2);
     outline-offset: 2px;
 }
 

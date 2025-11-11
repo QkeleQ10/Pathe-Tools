@@ -36,7 +36,7 @@ button {
     }
 
     &:focus-visible {
-        outline: 2px solid #feb91e;
+        outline: 2px solid var(--yellow2);
         outline-offset: 2px;
     }
 
@@ -64,11 +64,11 @@ button.large {
 
 button.primary {
     color: #090a0b;
-    background-color: #feb91e;
+    background-color: var(--yellow2);
 
     &:hover,
     &[data-drag-active=true] {
-        background-color: #ffdc6e;
+        background-color: var(--yellow3);
     }
 }
 

@@ -51,13 +51,13 @@ onMounted((): void => {
     transition: color 150ms;
 
     &:focus-visible {
-        outline: 2px solid #feb91e;
+        outline: 2px solid var(--yellow2);
         outline-offset: 2px;
     }
 }
 
 .tabs button.active {
-    color: #ffc426;
+    color: var(--yellow1);
 }
 
 .tabs button:after {

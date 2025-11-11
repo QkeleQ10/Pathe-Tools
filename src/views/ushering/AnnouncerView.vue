@@ -558,7 +558,7 @@ const { isOverDropZone } = useDropZone(main, {
         align-items: center;
         text-align: center;
         overflow: hidden;
-        font: 18px/34px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+        font: 18px/34px "Special Gothic Condensed One", Arial, Helvetica, sans-serif;
     }
 
     .title {
@@ -586,7 +586,7 @@ const { isOverDropZone } = useDropZone(main, {
         background-color: #ffffff14;
 
         .word.announcing {
-            background-color: #ffc426;
+            background-color: var(--yellow1);
             color: #000;
         }
 
