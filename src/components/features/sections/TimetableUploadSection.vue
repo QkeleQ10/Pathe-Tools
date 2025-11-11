@@ -3,11 +3,8 @@ import { ref, watch } from 'vue';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
-import { httpStatuses, useServerStore } from '@/stores/server';
 
 const store = useTmsScheduleStore();
-
-const serverStore = useServerStore();
 
 const showOptions = ref<boolean>(false);
 const hideFileTypeNotice = ref<boolean>(false);
@@ -18,15 +15,6 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
 <template>
     <section id="upload">
         <div class="section-content">
-            <div class="floating">
-                <!-- <h2>Gegevensbestand -->
-                <button id="upload-status" @click="showOptions = true"
-                    :title="httpStatuses[store.status].long || store.status + '\nKlik om serveropties te wijzigen'">
-                    <div id="upload-status-light" :class="store.status"></div>
-                    {{ httpStatuses[store.status].short || store.status }}
-                </button>
-                <!-- </h2> -->
-            </div>
             <FileUploadBlock @files-uploaded="store.filesUploaded" accept="text/csv,.csv,text/tsv,.tsv">
                 <p v-if="'name' in store.metadata" style="margin: 0; flex-grow: 1;"
                     :title="[`Bestandsnaam: ${store.metadata.name}`, `Gewijzigd op: ${format(store.metadata.lastModified, 'PPpp', { locale: nl })}`, `Geüpload op: ${format(store.metadata.uploadedDate, 'PPpp', { locale: nl })}`].join('\n')">
@@ -55,56 +43,6 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
         </div>
 
         <Transition>
-            <ModalDialog v-if="showOptions" @dismiss="showOptions = false">
-                <h3>Cloudopslag</h3>
-                <p>
-                    Als je een geldige gebruikersnaam en wachtwoord hebt opgegeven, dan worden de door jou ingelezen
-                    gegevens bewaard op de cloud.
-                    <br><br>
-                    Je kunt vervolgens later (eventueel vanaf een ander apparaat) de gegevens downloaden als je daar ook
-                    je gebruikersnaam opgeeft.
-                    <br><br>
-                    Er is altijd maar één set gegevens op de cloud beschikbaar. Als je dus nieuwe gegevens inleest, dan
-                    worden de oude gewist.
-                </p>
-                <div id="server-options">
-                    <em class="label">Status</em>
-                    <div class="server-options-container">
-                        <p>
-                            <span id="upload-status-light" :class="store.status"></span>
-                            <strong>{{ httpStatuses[store.status].short || store.status }}</strong>
-                        </p>
-                        <p>{{ httpStatuses[store.status].long }}</p>
-                    </div>
-
-                    <em class="label">Configuratie</em>
-                    <div class="server-options-container">
-                        <p>
-                            Serveradres
-                            <span style="float: right; opacity: .5;">
-                                {{ serverStore.url }}
-                            </span>
-                        </p>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-                            <InputGroup type="text" id="username" v-model="serverStore.username">
-                                <template #label>Gebruikersnaam</template>
-                            </InputGroup>
-                            <InputGroup type="text" id="password" v-model="serverStore.password">
-                                <template #label>Wachtwoord</template>
-                            </InputGroup>
-                        </div>
-                    </div>
-                    <small v-if="['send-error', 'no-credentials', 'no-connection'].includes(store.status)"
-                        style="display: block; margin-block: 12px;">Let op: als je gegevens vernieuwt, dan gaan
-                        niet-geüploade wijzigingen verloren.</small>
-                    <Button class="primary full" @click="showOptions = false; store.connect();">
-                        <Icon>check</Icon>Vernieuwen
-                    </Button>
-                </div>
-            </ModalDialog>
-        </Transition>
-
-        <Transition>
             <ModalDialog
                 v-if="(('type' in store.metadata && store.metadata.type.includes('csv')) || ('flags' in store.metadata && store.metadata.flags.includes('times-only'))) && !hideFileTypeNotice"
                 @dismiss="hideFileTypeNotice = true">
@@ -125,10 +63,6 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                         <em>TSV</em> in plaats van <i>CSV</i>.
                     </span>
                     Dankjewel!
-                    <br><br>
-                    Groetjes,
-                    <br>
-                    Quinten
                 </p>
             </ModalDialog>
         </Transition>

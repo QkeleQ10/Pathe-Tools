@@ -142,16 +142,8 @@ const { handlePrint } = useVueToPrint({
         </Tab>
         <Tab value="Handleiding website">
             <p>
-                Om van de volledige functionaliteit gebruik te maken, moet er worden ingelogd met een account. Bij een
-                geslaagde verbinding verschijnt er een groene bol bij het uploadgedeelte.
-                <br><br>
                 Download een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) en upload hem door deze te
                 slepen naar de pagina of middels de knop <b>Bladeren</b>.
-                <br><br>
-                Ga vervolgens naar een werkplek waarvandaan geprint kan worden. Bezoek daar deze zelfde pagina en zorg
-                ervoor dat er is ingelogd met hetzelfde account. Het zojuist geüploade bestand is nu ook hier
-                beschikbaar.
-                Controleer of de voorstellingen voor de correcte dag zijn ingeladen!
                 <br><br>
                 Pas eventueel de instellingen aan om de gewenste informatie weer te geven. Alle tekst op het
                 tijdenlijstje kan ook handmatig worden aangepast en er is ruimte voor extra opmerkingen onderin.

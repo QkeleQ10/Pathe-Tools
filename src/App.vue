@@ -29,7 +29,6 @@ const dismissedNotification = useStorage('dismissedNotification', false);
                 <RouterLink to="/ushering/schedule">Tijdenlijstje</RouterLink>
                 <RouterLink to="/ushering/announcer">Omroepen</RouterLink>
                 <RouterLink to="/narrowcasting/timetable">Timetable</RouterLink>
-                <RouterLink to="/narrowcasting/slideshow">Diavoorstelling</RouterLink>
                 <RouterLink to="/poc/intermission">Filmpauze</RouterLink>
             </nav>
             <nav v-else>
@@ -72,7 +71,6 @@ const dismissedNotification = useStorage('dismissedNotification', false);
 
     <Transition>
         <ModalDialog v-if="!dismissedNotification" @dismiss="dismissedNotification = true">
-            <h3>Opmerking</h3>
             <p>
                 Beste collega,<br>
                 <br>
@@ -81,6 +79,8 @@ const dismissedNotification = useStorage('dismissedNotification', false);
                 <br>
                 Ook ontbreekt de cloudfunctionaliteit. Dit om te verzekeren dat interne gegevens (zoals tijdenlijsten)
                 nooit met derden kunnen worden gedeeld.<br>
+                <br>
+                Sommige voorkeuren zijn gereset en synchronisatie werkt niet meer.<br>
                 <br>
                 Het genereren van tijdenlijstjes en omroepen werkt nog steeds. Sorry voor het ongemak.<br>
                 <br>

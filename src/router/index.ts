@@ -6,7 +6,6 @@ import HomeView from '../views/HomeView.vue';
 import UsheringScheduleView from '../views/ushering/ScheduleView.vue';
 import UsheringAnnouncerView from '../views/ushering/AnnouncerView.vue';
 import NarrowcastingTimetableView from '../views/narrowcasting/TimetableView.vue';
-import NarrowcastingSlideshowView from '../views/narrowcasting/SlideshowView.vue';
 import PocIntermissionView from '../views/poc/IntermissionView.vue';
 
 const routes: RouteRecordRaw[] = [
@@ -57,14 +56,6 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/slideshow',
         redirect: '/narrowcasting/slideshow'
-    },
-    {
-        path: '/narrowcasting/slideshow',
-        name: 'narrowcasting-slideshow',
-        component: NarrowcastingSlideshowView,
-        meta: {
-            title: 'Diavoorstelling',
-        }
     },
     {
         path: '/intermission-finder',

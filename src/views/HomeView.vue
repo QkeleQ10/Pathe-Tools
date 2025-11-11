@@ -28,11 +28,6 @@ import { RouterLink } from 'vue-router';
                                 <Icon>dvr</Icon>CineMec-timetable
                             </Button>
                         </RouterLink>
-                        <RouterLink to="/narrowcasting/slideshow" style="text-decoration: none;">
-                            <Button class="secondary">
-                                <Icon>present_to_all</Icon>Diavoorstelling
-                            </Button>
-                        </RouterLink>
                     </div>
                 </div>
                 <div style="flex: 50%">

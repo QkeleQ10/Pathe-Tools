@@ -2,7 +2,6 @@
 import { ref, onMounted, computed, useTemplateRef } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { useCreditsStingersStore } from '@/stores/creditsStingers'
 import { Show, TimetableShow } from '@/scripts/types.ts'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
@@ -12,7 +11,7 @@ import SchedulePage from '@features/ushering/schedule/SchedulePage.vue'
 import UserGuide from '@/components/features/ushering/schedule/UserGuide.vue'
 
 const store = useTmsScheduleStore()
-const stingersStore = useCreditsStingersStore()
+const stingers = useStorage<string[]>('credits-stingers', [])
 
 const trueColours = useStorage('true-colours', false);
 
@@ -38,7 +37,7 @@ const main = ref<HTMLElement>(null)
 const pages = computed<TimetableShow[][]>(() => {
     const plfRows = store.table?.filter(row => row.auditorium?.includes('4DX')) || []
     let arr = store.table?.map((show: Show, i: number) => {
-        const hasCreditsStinger = stingersStore.stingers.includes(show.title?.trim())
+        const hasCreditsStinger = stingers.value.includes(show.title?.trim())
         const overlapWithPlf = plfRows.some(plf =>
             (show.creditsTime || show.endTime).getTime() - plf.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&
             (show.creditsTime || show.endTime).getTime() - (plf.mainShowTime?.getTime() ?? (plf.showTime.getTime() + 900000)) <= 0
@@ -91,7 +90,7 @@ const showStingersModal = ref(false)
 
 async function addStinger() {
     try {
-        await stingersStore.addStinger(prompt("Titel film invoeren:"))
+        await stingers.value.push(prompt("Titel film invoeren:"))
     } catch (error) {
         console.error('Failed to add stinger:', error)
     }
@@ -99,7 +98,7 @@ async function addStinger() {
 
 async function removeStinger(title: string) {
     try {
-        await stingersStore.deleteStinger(title)
+        await stingers.value.splice(stingers.value.indexOf(title), 1)
     } catch (error) {
         console.error('Failed to remove stinger:', error)
     }
@@ -118,10 +117,6 @@ const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
     multiple: false
-})
-
-onMounted(() => {
-    stingersStore.getStingers()
 })
 </script>
 
@@ -283,37 +278,6 @@ onMounted(() => {
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
         </div>
-
-        <Button class="secondary" @click="showStingersModal = true" style="opacity: .05;">
-            <Icon>movie</Icon>
-            Post-credits-scènes
-        </Button>
-        <ModalDialog v-if="showStingersModal" @dismiss="showStingersModal = false">
-            <h3>Films met post-credits-scènes</h3>
-            <small>Bewerken alleen mogelijk indien correcte inloggegevens zijn opgegeven!</small>
-            <ul v-if="stingersStore.stingers.length > 0" class="scrollable-list">
-                <li v-for="stinger in stingersStore.stingers" :key="stinger" style="display: flex;
-                    justify-content: space-between; align-items: center;">
-                    <span>{{ stinger }}</span>
-                    <Icon @click="removeStinger(stinger)" class="delete" title="Verwijderen">
-                        close
-                    </Icon>
-                </li>
-            </ul>
-            <div v-else style="text-align: center; padding: 32px; opacity: 0.5;">
-                Geen films in database
-            </div>
-            <div style="display: flex; gap: 8px; margin-top: 16px;">
-                <Button @click="stingersStore.getStingers()">
-                    <Icon>refresh</Icon>
-                    Vernieuwen
-                </Button>
-                <Button @click="addStinger">
-                    <Icon>add</Icon>
-                    Toevoegen
-                </Button>
-            </div>
-        </ModalDialog>
     </main>
 </template>
 

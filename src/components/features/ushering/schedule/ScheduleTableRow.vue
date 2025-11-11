@@ -3,12 +3,11 @@ import { ref } from 'vue';
 import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { TimetableShow } from '@/scripts/types.ts';
-import { useCreditsStingersStore } from '@/stores/creditsStingers.ts';
 import Icon4dx from '@/assets/symbols/Icon4dx.vue';
 
 defineProps<{ show: TimetableShow }>();
 
-const stingersStore = useCreditsStingersStore();
+const stingers = useStorage<string[]>('credits-stingers', []);
 
 const displayScheduledTime = useStorage('display-scheduled-time', true);
 const displayMainShowTime = useStorage('display-main-show-time', false);
@@ -25,15 +24,15 @@ const longGapInterval = useStorage('long-gap-interval', 35);
 const displayContextMenu = ref(false);
 const printRow = ref(true);
 
-async function toggleCreditsStinger(title: string) {
+function toggleCreditsStinger(title: string) {
     const trimmedTitle = title?.trim()
     if (!trimmedTitle) return
 
     try {
-        if (stingersStore.stingers.includes(trimmedTitle)) {
-            await stingersStore.deleteStinger(trimmedTitle)
+        if (stingers.value.includes(trimmedTitle)) {
+            stingers.value.splice(stingers.value.indexOf(trimmedTitle), 1)
         } else {
-            await stingersStore.addStinger(trimmedTitle)
+            stingers.value.push(trimmedTitle)
         }
     } catch (error) {
         console.error('Failed to toggle post-credits:', error)
@@ -139,7 +138,7 @@ async function toggleCreditsStinger(title: string) {
     <Transition>
         <ContextMenu v-if="displayContextMenu" class="dark" @click-outside="displayContextMenu = false">
             <button @click="toggleCreditsStinger(show.title); displayContextMenu = false">
-                <div class="check" :class="{ 'empty': !stingersStore.stingers.includes(show.title?.trim()) }">
+                <div class="check" :class="{ 'empty': !stingers.includes(show.title?.trim()) }">
                 </div>
                 Post-credits-scène bij {{ show.title }}
             </button>

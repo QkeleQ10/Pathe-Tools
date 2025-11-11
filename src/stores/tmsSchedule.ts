@@ -2,7 +2,6 @@ import { ref, onMounted } from 'vue'
 import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { FileMetadata, Show } from '@/scripts/types.ts'
-import { useServerStore } from './server';
 
 interface TmsScheduleJson {
     timetable: Show[],
@@ -15,69 +14,8 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     const status = ref<'no-connection' | 'no-credentials' | 'sending' | 'sent' | 'send-error' | 'receiving' | 'received' | 'receive-error' | 'error'>('no-connection');
     const flags = ref<string[]>([]);
 
-    const serverStore = useServerStore();
 
     const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
-
-    onMounted(connect);
-
-    async function connect() {
-        if (serverStore.username.length > 0) {
-            try {
-                status.value = 'receiving';
-                const json = await getFromServer();
-                if (Object.values(json)?.[0]) await importJson(json);
-                status.value = 'received';
-            } catch (error) {
-                status.value = serverStore.url === 'http://localhost:3541' ? 'no-connection' : 'receive-error';
-                console.error(error);
-            }
-        } else {
-            status.value = 'no-connection';
-        }
-    }
-
-    async function getFromServer(): Promise<TmsScheduleJson> {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const response = await fetch(`${serverStore.url}/users/${serverStore.username}/timetable`, {
-                    headers: {
-                        'ngrok-skip-browser-warning': 'true'
-                    }
-                });
-                if (!response.ok) throw new Error(`Server responded with ${response.status} ${response.statusText}`);
-
-                const json = await response.json();
-                if (!json) throw new Error('No data found');
-                resolve(json);
-            } catch (error) {
-                console.error("Error getting data from server:", error);
-                reject(error);
-            }
-        });
-    }
-
-    async function postToServer(json: TmsScheduleJson) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                const response = await fetch(`${serverStore.url}/users/${serverStore.username}/timetable`, {
-                    method: 'POST',
-                    headers: {
-                        Authorization: 'Basic ' + btoa(`${serverStore.username}:${serverStore.password}`),
-                        'Content-Type': 'application/json',
-                        'ngrok-skip-browser-warning': 'true'
-                    },
-                    body: JSON.stringify(json)
-                });
-                if (!response.ok) throw new Error(`Server responded with ${response.status} ${response.statusText}`);
-
-                resolve(await response.json());
-            } catch (error) {
-                console.error("Error sending data to server:", error);
-                reject(error);
-            }
-        });
-    }
 
     async function filesUploaded(files: FileList | File[]) {
         try {
@@ -86,19 +24,6 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
             const json = await transformToJson(file);
             await importJson(json);
-
-            if (serverStore.username.length > 0 && serverStore.password.length > 0) {
-                try {
-                    status.value = 'sending';
-                    await postToServer(json);
-                    status.value = 'sent';
-                } catch (error) {
-                    status.value = serverStore.url === 'http://localhost:3541' ? 'no-connection' : 'send-error';
-                    throw error;
-                }
-            } else {
-                status.value = 'no-credentials';
-            }
         } catch (error) {
             console.error("Error processing file:", error);
             throw error;
@@ -273,5 +198,5 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         };
     }
 
-    return { table, metadata, filesUploaded, status, connect };
+    return { table, metadata, filesUploaded, status };
 });
