@@ -1,7 +1,8 @@
-import { ref, onMounted } from 'vue'
+import { ref, h } from 'vue'
 import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { FileMetadata, Show } from '@/scripts/types.ts'
+import { showDialog } from '@/scripts/dialogManager';
 
 interface TmsScheduleJson {
     timetable: Show[],
@@ -22,10 +23,28 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             const file = Array.isArray(files) ? files[0] : files.item(0);
             if (!file) throw new Error("No file provided");
 
-            const json = await transformToJson(file);
-            await importJson(json);
+            let json: TmsScheduleJson;
+            try {
+                json = await transformToJson(file);
+            } catch (error) {
+                throw new Error("Error transforming file to JSON: " + error.message);
+            }
+            try {
+                await importJson(json);
+            } catch (error) {
+                throw new Error("Error importing JSON: " + error.message);
+            }
         } catch (error) {
             console.error("Error processing file:", error);
+            // alert(`Fout bij verwerken van bestand: ${error.message}`);
+
+            showDialog([
+                h('h3', "Fout"),
+                h('p', [
+                    "Fout bij verwerken van bestand.", h('br'),
+                    h('code', error.message)
+                ])
+            ])
             throw error;
         }
     }
