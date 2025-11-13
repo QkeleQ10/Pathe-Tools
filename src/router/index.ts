@@ -58,6 +58,14 @@ const routes: RouteRecordRaw[] = [
         redirect: '/narrowcasting/slideshow'
     },
     {
+        path: '/narrowcasting/slideshow',
+        name: 'narrowcasting-slideshow',
+        beforeEnter() {
+            window.location.href = 'https://QkeleQ10.github.io/Pathe-Tools-weekmemo/';
+        },
+        component: {} as any,
+    },
+    {
         path: '/intermission-finder',
         redirect: '/poc/intermission'
     },
