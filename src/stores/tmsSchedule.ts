@@ -109,7 +109,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     const featureTime = timeStringToDate(obj.FEATURE_TIME);
 
                     // If the difference between SCHEDULED_TIME and FEATURE_TIME is more than 30 minutes, then FEATURE_TIME is probably the end of the intermission (so subtract {intermissionDuration} minutes for the intermission time). Otherwise, it's probably the main show time.
-                    if (featureTime.getTime() - show.scheduledTime.getTime() > 1800000)
+                    if (featureTime && featureTime.getTime() - show.scheduledTime.getTime() > 1800000)
                         show.intermissionTime = new Date(featureTime.getTime() - (intermissionDuration.value * 60000));
                     else show.mainShowTime = featureTime;
 
