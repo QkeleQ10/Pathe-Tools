@@ -64,11 +64,11 @@ const presetRulesDefault: AnnouncementRule[] = [
         }
     },
     {
-        id: 'mainShow',
+        id: 'startmainshow',
         name: 'Start hoofdfilm',
         segments: [
             { spriteName: 'chime0', offset: -1600 },
-            { spriteName: 'mainshow', offset: 0 },
+            { spriteName: 'startmainshow', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
         enabled: false,
@@ -127,11 +127,11 @@ const presetRulesDefault: AnnouncementRule[] = [
         }
     },
     {
-        id: 'end',
+        id: 'endshow',
         name: 'Einde voorstelling',
         segments: [
             { spriteName: 'chime0', offset: -1600 },
-            { spriteName: 'end', offset: 0 },
+            { spriteName: 'endshow', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
         enabled: false,
@@ -148,15 +148,39 @@ const presetRulesDefault: AnnouncementRule[] = [
         }
     },
     {
-        id: 'finalMainShow',
+        id: 'startfinalmainshow',
         name: 'Start laatste hoofdfilm',
         segments: [
             { spriteName: 'chime0', offset: -1600 },
-            { spriteName: 'finalshow', offset: 0 }
+            { spriteName: 'start', offset: 0 },
+            { spriteName: 'final', offset: 0 },
+            { spriteName: 'mainshow', offset: 0 }
         ],
         enabled: true,
         trigger: {
             property: 'mainShowTime',
+            preponeMinutes: 0,
+        },
+        filter: {
+            plfOnly: false,
+            lastShowOnly: true,
+            firstShowOnly: false,
+            playlistTitleIncludes: '',
+            playlistTitleExcludes: '',
+        }
+    },
+    {
+        id: 'endfinalshow',
+        name: 'Einde laatste voorstelling',
+        segments: [
+            { spriteName: 'chime0', offset: -1600 },
+            { spriteName: 'end', offset: 0 },
+            { spriteName: 'final', offset: 0 },
+            { spriteName: 'show', offset: 0 }
+        ],
+        enabled: true,
+        trigger: {
+            property: 'endTime',
             preponeMinutes: 0,
         },
         filter: {
