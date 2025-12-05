@@ -121,6 +121,8 @@ function onDragEnd() {
 }
 
 function onResizeStart(e: MouseEvent, index: number) {
+    e.preventDefault();
+    e.stopPropagation();
     resizing.value = {
         index,
         startX: e.clientX,
@@ -194,7 +196,7 @@ onUnmounted(() => {
                     </select>
                     <span class="width-label">{{ col.width }}</span>
                     <button class="remove-btn" @click="removeColumn(i)">×</button>
-                    <div v-if="i < columns.length - 1" class="resize-handle" @mousedown="onResizeStart($event, i)"></div>
+                    <div v-if="i < columns.length - 1" class="resize-handle" @mousedown.stop.prevent="onResizeStart($event, i)"></div>
                 </div>
                 <button class="add-btn between" @click="addColumn(i + 1)" :disabled="!canAddColumn">+</button>
             </template>
