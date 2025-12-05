@@ -20,7 +20,6 @@ const colTypes = [
 
 const totalWidth = 183;
 const minColWidth = 5;
-const defaultNewColWidth = 20;
 
 const columns = ref<{ type: string; width: number }[]>(model.value || []);
 
@@ -44,49 +43,33 @@ const resizing = ref<{ index: number; startX: number; startWidthLeft: number; st
 // Check if we can add a column (either there's space or we can shrink existing columns)
 const canAddColumn = computed(() => {
     if (columns.value.length === 0) return true;
-    // Can we shrink existing columns to make room for minColWidth?
-    const shrinkableAmount = columns.value.reduce((sum, col) => sum + Math.max(0, col.width - minColWidth), 0);
-    return shrinkableAmount >= minColWidth;
+    // Can we have at least minColWidth per column after adding one more?
+    const newColumnCount = columns.value.length + 1;
+    return totalWidth >= newColumnCount * minColWidth;
 });
 
 function addColumn(atIndex: number) {
-    if (columns.value.length === 0) {
-        // First column takes all available width
-        columns.value.splice(atIndex, 0, { type: colTypes[0].value, width: totalWidth });
-        return;
-    }
+    // Add new column with placeholder width
+    columns.value.splice(atIndex, 0, { type: colTypes[0].value, width: 0 });
+    
+    // Redistribute all columns equally
+    distributeWidthsEqually();
+}
 
-    // Calculate how much we need and how much we can shrink
-    const desiredWidth = Math.min(defaultNewColWidth, totalWidth);
-    let neededWidth = desiredWidth;
+function distributeWidthsEqually() {
+    if (columns.value.length === 0) return;
     
-    // Try to shrink existing columns proportionally
-    const totalShrinkable = columns.value.reduce((sum, col) => sum + Math.max(0, col.width - minColWidth), 0);
+    const count = columns.value.length;
+    const baseWidth = Math.floor(totalWidth / count);
+    const remainder = totalWidth - (baseWidth * count);
     
-    if (totalShrinkable < minColWidth) return; // Can't add column
-    
-    const actualNewWidth = Math.min(neededWidth, totalShrinkable);
-    
-    // Shrink columns proportionally
-    let remainingToShrink = actualNewWidth;
-    for (const col of columns.value) {
-        const shrinkable = col.width - minColWidth;
-        if (shrinkable > 0 && remainingToShrink > 0) {
-            const shrinkAmount = Math.min(shrinkable, Math.ceil(remainingToShrink * (shrinkable / totalShrinkable)));
-            col.width -= shrinkAmount;
-            remainingToShrink -= shrinkAmount;
-        }
+    // Give each column the base width, distribute remainder to first columns
+    for (let i = 0; i < count; i++) {
+        columns.value[i].width = baseWidth + (i < remainder ? 1 : 0);
     }
-    
-    // Add the new column with the freed width
-    columns.value.splice(atIndex, 0, { type: colTypes[0].value, width: actualNewWidth + remainingToShrink });
-    
-    // Ensure total equals totalWidth
-    normalizeWidths();
 }
 
 function removeColumn(index: number) {
-    const removedWidth = columns.value[index].width;
     columns.value.splice(index, 1);
     
     // Redistribute the removed width to remaining columns
@@ -104,17 +87,6 @@ function removeColumn(index: number) {
         // Last column gets the remainder to ensure exact total
         columns.value[columns.value.length - 1].width = totalWidth - distributed;
     }
-}
-
-function normalizeWidths() {
-    if (columns.value.length === 0) return;
-    
-    const currentTotal = usedWidth.value;
-    if (currentTotal === totalWidth) return;
-    
-    const diff = totalWidth - currentTotal;
-    // Add/subtract the difference to the last column
-    columns.value[columns.value.length - 1].width += diff;
 }
 
 function onDragStart(e: DragEvent, index: number) {
