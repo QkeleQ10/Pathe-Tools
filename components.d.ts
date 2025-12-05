@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     Button: typeof import('./src/components/ui/Button.vue')['default']
     Chip: typeof import('./src/components/ui/Chip.vue')['default']
+    ColsBuilder: typeof import('./src/components/ui/ColsBuilder.vue')['default']
     ContextMenu: typeof import('./src/components/ui/ContextMenu.vue')['default']
     FileUploadBlock: typeof import('./src/components/ui/FileUploadBlock.vue')['default']
     FileUploadButton: typeof import('./src/components/ui/FileUploadButton.vue')['default']

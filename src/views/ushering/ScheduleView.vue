@@ -9,6 +9,7 @@ import { useVueToPrint } from 'vue-to-print'
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue'
 import SchedulePage from '@features/ushering/schedule/SchedulePage.vue'
 import UserGuide from '@/components/features/ushering/schedule/UserGuide.vue'
+import ColsBuilder from '@/components/features/ushering/schedule/ColsBuilder.vue'
 
 const store = useTmsScheduleStore()
 const stingers = useStorage<string[]>('credits-stingers', [])
@@ -150,6 +151,14 @@ const { isOverDropZone } = useDropZone(main, {
                 <SidePanel style="flex: 150px 1 0;">
                     <h2>Opties</h2>
 
+                    <InvokableModalDialog>
+                        <template #button-content>
+                            <Icon>help</Icon> Kolommen
+                        </template>
+                        <template #dialog-content>
+                            <ColsBuilder />
+                        </template>
+                    </InvokableModalDialog>
                     <fieldset>
                         <legend>Kolommen</legend>
                         <div>
