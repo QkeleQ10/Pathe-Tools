@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 
 const model = defineModel<{
     type: string;
@@ -20,6 +20,7 @@ const colTypes = [
 
 const totalWidth = 183;
 const minColWidth = 5;
+const RESIZE_SCALE_FACTOR = 5;
 
 const columns = ref<{ type: string; width: number }[]>(model.value || []);
 
@@ -40,10 +41,6 @@ const dragOverIndex = ref<number | null>(null);
 
 // Resize state
 const resizing = ref<{ index: number; startX: number; startWidth: number } | null>(null);
-
-function getLabel(type: string) {
-    return colTypes.find(c => c.value === type)?.label || type;
-}
 
 function addColumn(atIndex: number) {
     if (remainingWidth.value < minColWidth) return;
@@ -99,13 +96,15 @@ function onResizeStart(e: MouseEvent, index: number) {
 function onResizeMove(e: MouseEvent) {
     if (!resizing.value) return;
     const { index, startX, startWidth } = resizing.value;
-    const delta = Math.round((e.clientX - startX) / 5); // Approx scale
+    const delta = Math.round((e.clientX - startX) / RESIZE_SCALE_FACTOR);
     const col = columns.value[index];
     const nextCol = columns.value[index + 1];
 
     if (!nextCol) return;
 
-    const newWidth = Math.max(minColWidth, Math.min(startWidth + delta, startWidth + nextCol.width - minColWidth));
+    const maxAllowedWidth = startWidth + nextCol.width - minColWidth;
+    const requestedWidth = startWidth + delta;
+    const newWidth = Math.max(minColWidth, Math.min(requestedWidth, maxAllowedWidth));
     const diff = newWidth - col.width;
     if (nextCol.width - diff >= minColWidth) {
         col.width = newWidth;
@@ -119,9 +118,11 @@ function onResizeEnd() {
     document.removeEventListener('mouseup', onResizeEnd);
 }
 
-function onTypeChange(index: number, type: string) {
-    columns.value[index].type = type;
-}
+// Cleanup event listeners on unmount
+onUnmounted(() => {
+    document.removeEventListener('mousemove', onResizeMove);
+    document.removeEventListener('mouseup', onResizeEnd);
+});
 </script>
 
 <template>
@@ -140,7 +141,7 @@ function onTypeChange(index: number, type: string) {
                     @drop="onDrop($event, i)"
                     @dragend="onDragEnd"
                 >
-                    <select :value="col.type" @change="onTypeChange(i, ($event.target as HTMLSelectElement).value)">
+                    <select v-model="col.type">
                         <option v-for="opt in colTypes" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                     </select>
                     <span class="width-label">{{ col.width }}</span>
