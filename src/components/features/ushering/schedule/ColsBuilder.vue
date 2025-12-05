@@ -20,7 +20,7 @@ const colTypes = [
 
 const totalWidth = 183;
 const minColWidth = 5;
-const RESIZE_SCALE_FACTOR = 5;
+const defaultNewColWidth = 20;
 
 const columns = ref<{ type: string; width: number }[]>(model.value || []);
 
@@ -33,23 +33,88 @@ watch(columns, (newVal) => {
 }, { deep: true });
 
 const usedWidth = computed(() => columns.value.reduce((sum, col) => sum + col.width, 0));
-const remainingWidth = computed(() => totalWidth - usedWidth.value);
 
 // Drag state
 const dragIndex = ref<number | null>(null);
 const dragOverIndex = ref<number | null>(null);
 
 // Resize state
-const resizing = ref<{ index: number; startX: number; startWidth: number } | null>(null);
+const resizing = ref<{ index: number; startX: number; startWidthLeft: number; startWidthRight: number } | null>(null);
+
+// Check if we can add a column (either there's space or we can shrink existing columns)
+const canAddColumn = computed(() => {
+    if (columns.value.length === 0) return true;
+    // Can we shrink existing columns to make room for minColWidth?
+    const shrinkableAmount = columns.value.reduce((sum, col) => sum + Math.max(0, col.width - minColWidth), 0);
+    return shrinkableAmount >= minColWidth;
+});
 
 function addColumn(atIndex: number) {
-    if (remainingWidth.value < minColWidth) return;
-    const width = Math.min(remainingWidth.value, 20);
-    columns.value.splice(atIndex, 0, { type: colTypes[0].value, width });
+    if (columns.value.length === 0) {
+        // First column takes all available width
+        columns.value.splice(atIndex, 0, { type: colTypes[0].value, width: totalWidth });
+        return;
+    }
+
+    // Calculate how much we need and how much we can shrink
+    const desiredWidth = Math.min(defaultNewColWidth, totalWidth);
+    let neededWidth = desiredWidth;
+    
+    // Try to shrink existing columns proportionally
+    const totalShrinkable = columns.value.reduce((sum, col) => sum + Math.max(0, col.width - minColWidth), 0);
+    
+    if (totalShrinkable < minColWidth) return; // Can't add column
+    
+    const actualNewWidth = Math.min(neededWidth, totalShrinkable);
+    
+    // Shrink columns proportionally
+    let remainingToShrink = actualNewWidth;
+    for (const col of columns.value) {
+        const shrinkable = col.width - minColWidth;
+        if (shrinkable > 0 && remainingToShrink > 0) {
+            const shrinkAmount = Math.min(shrinkable, Math.ceil(remainingToShrink * (shrinkable / totalShrinkable)));
+            col.width -= shrinkAmount;
+            remainingToShrink -= shrinkAmount;
+        }
+    }
+    
+    // Add the new column with the freed width
+    columns.value.splice(atIndex, 0, { type: colTypes[0].value, width: actualNewWidth + remainingToShrink });
+    
+    // Ensure total equals totalWidth
+    normalizeWidths();
 }
 
 function removeColumn(index: number) {
+    const removedWidth = columns.value[index].width;
     columns.value.splice(index, 1);
+    
+    // Redistribute the removed width to remaining columns
+    if (columns.value.length > 0) {
+        // Distribute proportionally
+        const currentTotal = columns.value.reduce((sum, col) => sum + col.width, 0);
+        const scaleFactor = totalWidth / currentTotal;
+        
+        let distributed = 0;
+        for (let i = 0; i < columns.value.length - 1; i++) {
+            const newWidth = Math.round(columns.value[i].width * scaleFactor);
+            distributed += newWidth;
+            columns.value[i].width = newWidth;
+        }
+        // Last column gets the remainder to ensure exact total
+        columns.value[columns.value.length - 1].width = totalWidth - distributed;
+    }
+}
+
+function normalizeWidths() {
+    if (columns.value.length === 0) return;
+    
+    const currentTotal = usedWidth.value;
+    if (currentTotal === totalWidth) return;
+    
+    const diff = totalWidth - currentTotal;
+    // Add/subtract the difference to the last column
+    columns.value[columns.value.length - 1].width += diff;
 }
 
 function onDragStart(e: DragEvent, index: number) {
@@ -87,7 +152,8 @@ function onResizeStart(e: MouseEvent, index: number) {
     resizing.value = {
         index,
         startX: e.clientX,
-        startWidth: columns.value[index].width,
+        startWidthLeft: columns.value[index].width,
+        startWidthRight: columns.value[index + 1].width,
     };
     document.addEventListener('mousemove', onResizeMove);
     document.addEventListener('mouseup', onResizeEnd);
@@ -95,21 +161,31 @@ function onResizeStart(e: MouseEvent, index: number) {
 
 function onResizeMove(e: MouseEvent) {
     if (!resizing.value) return;
-    const { index, startX, startWidth } = resizing.value;
-    const delta = Math.round((e.clientX - startX) / RESIZE_SCALE_FACTOR);
-    const col = columns.value[index];
-    const nextCol = columns.value[index + 1];
-
-    if (!nextCol) return;
-
-    const maxAllowedWidth = startWidth + nextCol.width - minColWidth;
-    const requestedWidth = startWidth + delta;
-    const newWidth = Math.max(minColWidth, Math.min(requestedWidth, maxAllowedWidth));
-    const diff = newWidth - col.width;
-    if (nextCol.width - diff >= minColWidth) {
-        col.width = newWidth;
-        nextCol.width -= diff;
+    const { index, startX, startWidthLeft, startWidthRight } = resizing.value;
+    
+    // Calculate delta in pixels and convert to width units
+    // Use a reasonable scale: assume each width unit is about 5 pixels
+    const pixelDelta = e.clientX - startX;
+    const widthDelta = Math.round(pixelDelta / 5);
+    
+    const combinedWidth = startWidthLeft + startWidthRight;
+    
+    // Calculate new widths ensuring both stay within bounds
+    let newLeftWidth = startWidthLeft + widthDelta;
+    let newRightWidth = startWidthRight - widthDelta;
+    
+    // Clamp to minimum widths
+    if (newLeftWidth < minColWidth) {
+        newLeftWidth = minColWidth;
+        newRightWidth = combinedWidth - minColWidth;
     }
+    if (newRightWidth < minColWidth) {
+        newRightWidth = minColWidth;
+        newLeftWidth = combinedWidth - minColWidth;
+    }
+    
+    columns.value[index].width = newLeftWidth;
+    columns.value[index + 1].width = newRightWidth;
 }
 
 function onResizeEnd() {
@@ -127,7 +203,7 @@ onUnmounted(() => {
 
 <template>
     <div class="cols-builder">
-        <button class="add-btn" @click="addColumn(0)" :disabled="remainingWidth < minColWidth">+</button>
+        <button class="add-btn" @click="addColumn(0)" :disabled="!canAddColumn">+</button>
         <div class="columns">
             <template v-for="(col, i) in columns" :key="i">
                 <div
@@ -148,11 +224,11 @@ onUnmounted(() => {
                     <button class="remove-btn" @click="removeColumn(i)">×</button>
                     <div v-if="i < columns.length - 1" class="resize-handle" @mousedown="onResizeStart($event, i)"></div>
                 </div>
-                <button class="add-btn between" @click="addColumn(i + 1)" :disabled="remainingWidth < minColWidth">+</button>
+                <button class="add-btn between" @click="addColumn(i + 1)" :disabled="!canAddColumn">+</button>
             </template>
         </div>
         <div class="info">
-            Used: {{ usedWidth }} / {{ totalWidth }} (Remaining: {{ remainingWidth }})
+            Used: {{ usedWidth }} / {{ totalWidth }}
         </div>
     </div>
 </template>
