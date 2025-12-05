@@ -151,14 +151,7 @@ const { isOverDropZone } = useDropZone(main, {
                 <SidePanel style="flex: 150px 1 0;">
                     <h2>Opties</h2>
 
-                    <InvokableModalDialog>
-                        <template #button-content>
-                            <Icon>help</Icon> Kolommen
-                        </template>
-                        <template #dialog-content>
-                            <ColsBuilder />
-                        </template>
-                    </InvokableModalDialog>
+                    <!-- <ColsBuilder /> -->
                     <fieldset>
                         <legend>Kolommen</legend>
                         <div>
