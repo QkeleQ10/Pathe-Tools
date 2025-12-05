@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, useTemplateRef } from 'vue';
 
 interface Column {
     id: number;
@@ -18,6 +18,7 @@ const model = defineModel<number[]>({ default: () => [] });
 
 let nextId = 0;
 const columns = ref<Column[]>([]);
+let isInternalUpdate = false;
 
 // Initialize columns from model
 function initFromModel() {
@@ -30,15 +31,25 @@ initFromModel();
 
 // Sync model when columns change
 watch(columns, (newColumns) => {
+    isInternalUpdate = true;
     model.value = newColumns.map(col => col.width);
 }, { deep: true });
 
-// Watch for external model changes
-watch(() => model.value.length, () => {
-    if (model.value.length !== columns.value.length) {
+// Watch for external model changes (both length and values)
+watch(() => [...model.value], (newModel) => {
+    if (isInternalUpdate) {
+        isInternalUpdate = false;
+        return;
+    }
+    // Check if the model has actually changed from external source
+    const currentWidths = columns.value.map(col => col.width);
+    const hasChanged = newModel.length !== currentWidths.length ||
+        newModel.some((w, i) => Math.abs(w - currentWidths[i]) > 0.001);
+    
+    if (hasChanged) {
         initFromModel();
     }
-});
+}, { deep: true });
 
 const currentTotalWidth = computed(() => {
     return columns.value.reduce((sum, col) => sum + col.width, 0);
@@ -49,7 +60,7 @@ const isValidTotal = computed(() => {
 });
 
 function addColumn(index: number) {
-    const newWidth = Math.min(props.minColumnWidth, props.totalWidth);
+    const newWidth = Math.max(props.minColumnWidth, props.totalWidth / 10);
     
     if (columns.value.length === 0) {
         columns.value.push({
@@ -60,7 +71,9 @@ function addColumn(index: number) {
     }
     
     // Distribute the new column width proportionally from existing columns
-    const widthToTake = newWidth;
+    const widthToTake = Math.min(newWidth, props.totalWidth - columns.value.length * props.minColumnWidth);
+    if (widthToTake <= 0) return; // Cannot add more columns
+    
     const ratio = (props.totalWidth - widthToTake) / props.totalWidth;
     
     columns.value.forEach(col => {
@@ -81,16 +94,22 @@ function removeColumn(index: number) {
         return;
     }
     
-    const removedWidth = columns.value[index].width;
     columns.value.splice(index, 1);
     
     // Distribute removed width proportionally to remaining columns
     const currentTotal = columns.value.reduce((sum, col) => sum + col.width, 0);
-    const ratio = props.totalWidth / currentTotal;
-    
-    columns.value.forEach(col => {
-        col.width = col.width * ratio;
-    });
+    if (currentTotal > 0) {
+        const ratio = props.totalWidth / currentTotal;
+        columns.value.forEach(col => {
+            col.width = col.width * ratio;
+        });
+    } else {
+        // Edge case: all remaining columns have zero width, distribute evenly
+        const equalWidth = props.totalWidth / columns.value.length;
+        columns.value.forEach(col => {
+            col.width = equalWidth;
+        });
+    }
     
     normalizeWidths();
 }
@@ -151,6 +170,7 @@ function onDragEnd() {
 const resizingIndex = ref<number | null>(null);
 const resizeStartX = ref(0);
 const resizeStartWidths = ref<{ left: number; right: number }>({ left: 0, right: 0 });
+const previewRef = useTemplateRef<HTMLElement>('previewRef');
 
 function startResize(index: number, event: MouseEvent) {
     if (index >= columns.value.length - 1) return;
@@ -169,7 +189,7 @@ function startResize(index: number, event: MouseEvent) {
 function onResizeMove(event: MouseEvent) {
     if (resizingIndex.value === null) return;
     
-    const container = document.querySelector('.cols-builder-preview');
+    const container = previewRef.value;
     if (!container) return;
     
     const containerWidth = container.clientWidth;
@@ -207,7 +227,6 @@ function updateColumnWidth(index: number, newWidth: number) {
     }
     
     const oldWidth = columns.value[index].width;
-    const delta = newWidth - oldWidth;
     
     // Clamp to valid range
     const maxPossibleWidth = props.totalWidth - (columns.value.length - 1) * props.minColumnWidth;
@@ -222,11 +241,27 @@ function updateColumnWidth(index: number, newWidth: number) {
     const otherColumns = columns.value.filter((_, i) => i !== index);
     const otherTotal = otherColumns.reduce((sum, col) => sum + col.width, 0);
     
-    otherColumns.forEach(col => {
-        col.width = col.width - (actualDelta * (col.width / otherTotal));
-    });
+    if (otherTotal > 0) {
+        otherColumns.forEach(col => {
+            col.width = col.width - (actualDelta * (col.width / otherTotal));
+        });
+    } else {
+        // Edge case: distribute evenly among other columns
+        const equalAdjustment = actualDelta / otherColumns.length;
+        otherColumns.forEach(col => {
+            col.width = col.width - equalAdjustment;
+        });
+    }
     
     normalizeWidths();
+}
+
+function handleWidthInput(event: Event, index: number) {
+    const target = event.target;
+    if (target instanceof HTMLInputElement) {
+        const value = parseFloat(target.value);
+        updateColumnWidth(index, isNaN(value) ? props.minColumnWidth : value);
+    }
 }
 </script>
 
@@ -243,7 +278,7 @@ function updateColumnWidth(index: number, newWidth: number) {
             </button>
         </div>
 
-        <div class="cols-builder-preview" :class="{ 'is-valid': isValidTotal, 'is-invalid': !isValidTotal }">
+        <div ref="previewRef" class="cols-builder-preview" :class="{ 'is-valid': isValidTotal, 'is-invalid': !isValidTotal }">
             <template v-for="(column, index) in columns" :key="column.id">
                 <div
                     class="column"
@@ -268,7 +303,7 @@ function updateColumnWidth(index: number, newWidth: number) {
                             :min="minColumnWidth"
                             :max="totalWidth - (columns.length - 1) * minColumnWidth"
                             :step="0.1"
-                            @input="updateColumnWidth(index, parseFloat(($event.target as HTMLInputElement).value) || minColumnWidth)"
+                            @input="handleWidthInput($event, index)"
                         />
                         <button
                             class="remove-btn"
