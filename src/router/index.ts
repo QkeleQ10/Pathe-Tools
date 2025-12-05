@@ -7,6 +7,7 @@ import UsheringScheduleView from '../views/ushering/ScheduleView.vue';
 import UsheringAnnouncerView from '../views/ushering/AnnouncerView.vue';
 import NarrowcastingTimetableView from '../views/narrowcasting/TimetableView.vue';
 import PocIntermissionView from '../views/poc/IntermissionView.vue';
+import ColsBuilderDemo from '../views/ColsBuilderDemo.vue';
 
 const routes: RouteRecordRaw[] = [
     {
@@ -75,6 +76,14 @@ const routes: RouteRecordRaw[] = [
         component: PocIntermissionView,
         meta: {
             title: 'Filmpauze',
+        }
+    },
+    {
+        path: '/demo/cols-builder',
+        name: 'demo-cols-builder',
+        component: ColsBuilderDemo,
+        meta: {
+            title: 'ColsBuilder Demo',
         }
     }
 ];
