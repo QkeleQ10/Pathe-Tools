@@ -40,6 +40,9 @@ const dragOverIndex = ref<number | null>(null);
 // Resize state
 const resizing = ref<{ index: number; startX: number; startWidthLeft: number; startWidthRight: number } | null>(null);
 
+// Add column dropdown state
+const activeDropdown = ref<number | null>(null);
+
 // Check if we can add a column (either there's space or we can shrink existing columns)
 const canAddColumn = computed(() => {
     if (columns.value.length === 0) return true;
@@ -48,12 +51,61 @@ const canAddColumn = computed(() => {
     return totalWidth >= newColumnCount * minColWidth;
 });
 
-function addColumn(atIndex: number) {
-    // Add new column with placeholder width
-    columns.value.splice(atIndex, 0, { type: colTypes[0].value, width: 0 });
+function getLabel(type: string) {
+    return colTypes.find(c => c.value === type)?.label || type;
+}
+
+function toggleDropdown(index: number) {
+    if (activeDropdown.value === index) {
+        activeDropdown.value = null;
+    } else {
+        activeDropdown.value = index;
+    }
+}
+
+function addColumnWithType(atIndex: number, type: string) {
+    activeDropdown.value = null;
     
-    // Redistribute all columns equally
-    distributeWidthsEqually();
+    const n = columns.value.length + 1; // new column count
+    const newColWidth = Math.floor(totalWidth / n); // width for the new column
+    
+    if (columns.value.length === 0) {
+        // First column takes all available width
+        columns.value.splice(atIndex, 0, { type, width: totalWidth });
+        return;
+    }
+    
+    // Reduce existing columns proportionally to free up space for the new column
+    const reductionPerCol = newColWidth / (n - 1);
+    let totalReduced = 0;
+    
+    for (let i = 0; i < columns.value.length; i++) {
+        const reduction = Math.floor(reductionPerCol);
+        // Ensure column doesn't go below minimum width
+        const actualReduction = Math.min(reduction, columns.value[i].width - minColWidth);
+        columns.value[i].width -= actualReduction;
+        totalReduced += actualReduction;
+    }
+    
+    // Handle any rounding issues - the new column gets whatever was freed
+    const actualNewColWidth = totalReduced;
+    
+    // If we couldn't free enough space, take proportionally from all columns
+    if (actualNewColWidth < minColWidth) {
+        // Fall back to equal distribution
+        columns.value.splice(atIndex, 0, { type, width: 0 });
+        distributeWidthsEqually();
+        return;
+    }
+    
+    // Add the new column with the freed width
+    columns.value.splice(atIndex, 0, { type, width: actualNewColWidth });
+    
+    // Ensure total equals totalWidth (fix any rounding issues)
+    const currentTotal = columns.value.reduce((sum, col) => sum + col.width, 0);
+    if (currentTotal !== totalWidth) {
+        columns.value[columns.value.length - 1].width += totalWidth - currentTotal;
+    }
 }
 
 function distributeWidthsEqually() {
@@ -168,38 +220,78 @@ function onResizeEnd() {
     document.removeEventListener('mouseup', onResizeEnd);
 }
 
+// Close dropdown when clicking outside
+function onClickOutside(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.add-btn-container')) {
+        activeDropdown.value = null;
+    }
+}
+
 // Cleanup event listeners on unmount
 onUnmounted(() => {
     document.removeEventListener('mousemove', onResizeMove);
     document.removeEventListener('mouseup', onResizeEnd);
+    document.removeEventListener('click', onClickOutside);
 });
+
+// Add click outside listener
+document.addEventListener('click', onClickOutside);
+
+function getAddButtonPosition(index: number): string {
+    // Calculate position based on cumulative width of columns up to this index
+    let cumulativeWidth = 0;
+    for (let i = 0; i <= index; i++) {
+        cumulativeWidth += columns.value[i].width;
+    }
+    const percentage = (cumulativeWidth / totalWidth) * 100;
+    return `${percentage}%`;
+}
 </script>
 
 <template>
     <div class="cols-builder">
-        <button class="add-btn" @click="addColumn(0)" :disabled="!canAddColumn">+</button>
-        <div class="columns">
-            <template v-for="(col, i) in columns" :key="i">
-                <div
-                    class="column"
-                    :class="{ dragging: dragIndex === i, 'drag-over': dragOverIndex === i }"
-                    :style="{ flex: col.width }"
-                    draggable="true"
-                    @dragstart="onDragStart($event, i)"
-                    @dragover="onDragOver($event, i)"
-                    @dragleave="onDragLeave"
-                    @drop="onDrop($event, i)"
-                    @dragend="onDragEnd"
-                >
-                    <select v-model="col.type">
-                        <option v-for="opt in colTypes" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                    </select>
-                    <span class="width-label">{{ col.width }}</span>
-                    <button class="remove-btn" @click="removeColumn(i)">×</button>
-                    <div v-if="i < columns.length - 1" class="resize-handle" @mousedown.stop.prevent="onResizeStart($event, i)"></div>
+        <div class="columns-wrapper">
+            <div class="columns">
+                <template v-for="(col, i) in columns" :key="i">
+                    <div
+                        class="column"
+                        :class="{ dragging: dragIndex === i, 'drag-over': dragOverIndex === i }"
+                        :style="{ flex: col.width }"
+                        draggable="true"
+                        @dragstart="onDragStart($event, i)"
+                        @dragover="onDragOver($event, i)"
+                        @dragleave="onDragLeave"
+                        @drop="onDrop($event, i)"
+                        @dragend="onDragEnd"
+                    >
+                        <span class="col-label">{{ getLabel(col.type) }}</span>
+                        <span class="width-label">{{ col.width }}</span>
+                        <button class="remove-btn" @click="removeColumn(i)">×</button>
+                        <div v-if="i < columns.length - 1" class="resize-handle" @mousedown.stop.prevent="onResizeStart($event, i)"></div>
+                    </div>
+                </template>
+            </div>
+            <div class="add-buttons-row">
+                <div class="add-btn-container" :style="{ left: '0' }">
+                    <button class="add-btn teardrop" @click.stop="toggleDropdown(0)" :disabled="!canAddColumn"></button>
+                    <div v-if="activeDropdown === 0" class="dropdown">
+                        <button v-for="opt in colTypes" :key="opt.value" @click="addColumnWithType(0, opt.value)">
+                            {{ opt.label }}
+                        </button>
+                    </div>
                 </div>
-                <button class="add-btn between" @click="addColumn(i + 1)" :disabled="!canAddColumn">+</button>
-            </template>
+                <template v-for="(col, i) in columns" :key="'add-' + i">
+                    <div class="add-btn-container" :style="{ left: getAddButtonPosition(i) }">
+                        <button class="add-btn teardrop" @click.stop="toggleDropdown(i + 1)" :disabled="!canAddColumn"></button>
+                        <div v-if="activeDropdown === i + 1" class="dropdown">
+                            <button v-for="opt in colTypes" :key="opt.value" @click="addColumnWithType(i + 1, opt.value)">
+                                {{ opt.label }}
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
         <div class="info">
             Used: {{ usedWidth }} / {{ totalWidth }}
@@ -212,6 +304,10 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.columns-wrapper {
+    position: relative;
 }
 
 .columns {
@@ -246,9 +342,14 @@ onUnmounted(() => {
     background: #444;
 }
 
-.column select {
+.col-label {
+    font-size: 11px;
+    color: #fff;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     max-width: 100%;
-    font-size: 12px;
 }
 
 .width-label {
@@ -287,29 +388,71 @@ onUnmounted(() => {
     background: #666;
 }
 
-.add-btn {
-    width: 24px;
-    height: 24px;
+.add-buttons-row {
+    position: relative;
+    height: 28px;
+    margin-top: -8px;
+}
+
+.add-btn-container {
+    position: absolute;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+.add-btn.teardrop {
+    width: 20px;
+    height: 20px;
     padding: 0;
-    font-size: 16px;
+    font-size: 14px;
+    line-height: 18px;
     background: #555;
     color: #fff;
     border: none;
-    border-radius: 4px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
     cursor: pointer;
-    align-self: center;
 }
 
-.add-btn:disabled {
+.add-btn.teardrop::before {
+    content: '+';
+    display: block;
+    transform: rotate(45deg);
+}
+
+.add-btn.teardrop:disabled {
     opacity: 0.3;
     cursor: not-allowed;
 }
 
-.add-btn.between {
-    width: 20px;
-    height: 20px;
-    font-size: 14px;
-    margin: 0 2px;
+.dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #444;
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 140px;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.dropdown button {
+    display: block;
+    width: 100%;
+    padding: 6px 12px;
+    text-align: left;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.dropdown button:hover {
+    background: #555;
 }
 
 .info {
