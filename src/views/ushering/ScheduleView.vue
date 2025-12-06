@@ -16,12 +16,14 @@ const stingers = useStorage<string[]>('credits-stingers', [])
 
 const trueColours = useStorage('true-colours', false);
 
-const displayScheduledTime = useStorage('display-scheduled-time', true);
-const displayMainShowTime = useStorage('display-main-show-time', false);
-const displayIntermissionTime = useStorage('display-intermission-time', true);
-const displayCreditsTime = useStorage('display-credits-time', true);
-const displayEndTime = useStorage('display-end-time', false);
-const displayNextStartTime = useStorage('display-next-start-time', false);
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', [
+    { type: 'auditorium', width: 8 },
+    { type: 'scheduledTime', width: 8 },
+    { type: 'intermissionTime', width: 12 },
+    { type: 'creditsTime', width: 22 },
+    { type: 'title', width: 47 },
+    { type: 'ageRating', width: 3 },
+]);
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
 const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
@@ -153,31 +155,15 @@ const { isOverDropZone } = useDropZone(main, {
 
                     <fieldset>
                         <legend>Kolommen</legend>
-                        <ColsBuilder style="min-width: 600px;" />
-                        <!-- <div>
-                            <div class="label">Weergeven indien beschikbaar</div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                                <InputCheckbox class="enclose-box" identifier="displayScheduledTime"
-                                    v-model="displayScheduledTime">Inloop
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayMainShowTime"
-                                    v-model="displayMainShowTime">Start hoofdfilm
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayIntermissionTime"
-                                    v-model="displayIntermissionTime">Pauze
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayCreditsTime"
-                                    v-model="displayCreditsTime">
-                                    Aftiteling
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayEndTime" v-model="displayEndTime">
-                                    Einde voorstelling
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayNextStartTime"
-                                    v-model="displayNextStartTime">Volgende inloop
-                                </InputCheckbox>
-                            </div>
-                        </div> -->
+                        <ColsBuilder style="min-width: 600px;" v-model="columns" />
+                        <Button class="secondary" @click="columns = [
+                            { type: 'auditorium', width: 8 },
+                            { type: 'scheduledTime', width: 8 },
+                            { type: 'intermissionTime', width: 12 },
+                            { type: 'creditsTime', width: 22 },
+                            { type: 'title', width: 47 },
+                            { type: 'ageRating', width: 3 },
+                        ]">Standaardwaarden</Button>
                     </fieldset>
                     <fieldset>
                         <legend>Uitloop</legend>

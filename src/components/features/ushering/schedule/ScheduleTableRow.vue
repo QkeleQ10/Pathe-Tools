@@ -9,12 +9,62 @@ defineProps<{ show: TimetableShow }>();
 
 const stingers = useStorage<string[]>('credits-stingers', []);
 
-const displayScheduledTime = useStorage('display-scheduled-time', true);
-const displayMainShowTime = useStorage('display-main-show-time', false);
-const displayIntermissionTime = useStorage('display-intermission-time', true);
-const displayCreditsTime = useStorage('display-credits-time', true);
-const displayEndTime = useStorage('display-end-time', false);
-const displayNextStartTime = useStorage('display-next-start-time', false);
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', [
+    { type: 'auditorium', width: 8 },
+    { type: 'scheduledTime', width: 8 },
+    { type: 'intermissionTime', width: 12 },
+    { type: 'creditsTime', width: 22 },
+    { type: 'title', width: 47 },
+    { type: 'ageRating', width: 3 },
+]);
+
+const colTypes = [
+    {
+        content: (show) => {
+            show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '')
+        }, value: 'auditorium', icon: 'text_fields'
+    },
+    {
+        content: (show) => {
+            show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : ''
+        }, value: 'scheduledTime', icon: 'schedule'
+    },
+    {
+        content: (show) => {
+            show.mainShowTime ? format(show.mainShowTime, 'HH:mm:ss') : ''
+        }, value: 'mainShowTime', icon: 'schedule'
+    },
+    {
+        content: (show) => {
+            show.intermissionTime ? format(show.intermissionTime, 'HH:mm:ss') : ''
+        }, value: 'intermissionTime', icon: 'schedule'
+    },
+    {
+        content: (show) => {
+            show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : ''
+        }, value: 'creditsTime', icon: 'schedule'
+    },
+    {
+        content: (show) => {
+            show.endTime ? format(show.endTime, 'HH:mm:ss') : ''
+        }, value: 'endTime', icon: 'schedule'
+    },
+    {
+        content: (show) => {
+            show.nextStartTime ? format(show.nextStartTime, 'HH:mm') : ''
+        }, value: 'nextStartTime', icon: 'schedule'
+    },
+    {
+        content: (show) => {
+            show.title
+        }, value: 'title', icon: 'text_fields'
+    },
+    {
+        content: (show) => {
+            show.featureRating
+        }, value: 'ageRating', icon: 'text_fields'
+    },
+];
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1);
 const displayCreditsDuration = useStorage('show-credits-duration', 1);
@@ -48,91 +98,74 @@ function toggleCreditsStinger(title: string) {
         italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
         'final-show': !show.nextStartTime
     }" @contextmenu.prevent="displayContextMenu = true">
-        <td nowrap class="td-auditorium">
-            <span contenteditable>
-                {{ show.auditorium === 'Rooftop' ? 'RT' :
-                    show.auditorium.replace(/^\w+\s/, '') }}
-            </span>
-        </td>
-        <td nowrap class="td-scheduled">
-            <span contenteditable>
-                {{ displayScheduledTime && show.scheduledTime
-                    ? format(show.scheduledTime, 'HH:mm')
-                    : '' }}
-            </span>
-            <span class="preshow-duration" contenteditable
-                v-if="displayScheduledTime && (show.scheduledTime && show.mainShowTime) && ((displayPreshowDuration === 1 && show.auditorium?.includes('4DX')) || displayPreshowDuration === 2)">
-                +{{ Math.round((show.mainShowTime.getTime() - show.scheduledTime.getTime()) /
-                    60000) }}
-            </span>
-        </td>
-        <td nowrap class="td-main">
-            <span contenteditable>
-                {{ displayMainShowTime && show.mainShowTime
-                    ? format(show.mainShowTime, 'HH:mm:ss')
-                    : '' }}
-            </span>
-        </td>
-        <td nowrap class="td-intermission">
-            <span contenteditable>
-                {{ displayIntermissionTime && show.intermissionTime
-                    ? format(show.intermissionTime, 'HH:mm:ss')
-                    : '' }}
-            </span>
-        </td>
-        <td nowrap class="td-credits">
-            <Icon4dx class="plf-icon" src="@assets/symbols/icon-4dx.svg" v-if="show.isNearPlf" />
-            <div class="double-usherout"
-                v-if="show.timeToNextUsherout <= shortGapInterval * 60000 && shortGapInterval > 0">
-            </div>
-            <div class="long-gap" v-if="show.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
-            </div>
-            <div class="plf-overlap" v-if="show.overlapWithPlf"></div>
-            <span class="credits-time">
-                <span contenteditable
-                    :style="{ opacity: show.creditsTime.getTime() === show.endTime.getTime() ? '.5' : '1' }">
-                    {{ displayCreditsTime && show.creditsTime
-                        ? format(show.creditsTime, 'HH:mm:ss')
-                        : '' }}
-                </span>
-                <span class="credits-duration" contenteditable
-                    v-if="displayCreditsTime && (show.creditsTime && show.endTime) && ((displayCreditsDuration === 1 && show.hasCreditsStinger) || displayCreditsDuration === 2)">
-                    +{{ Math.round((show.endTime.getTime() - show.creditsTime.getTime()) /
-                        60000) }}
-                </span>
-            </span>
-            <Icon v-if="!show.nextStartTime" class="final-show">dark_mode</Icon>
-        </td>
-        <td nowrap class="td-end">
-            <span contenteditable>
-                {{ (displayEndTime) && show.endTime
-                    ? format(show.endTime, 'HH:mm')
-                    : '' }}
-            </span>
-        </td>
-        <td nowrap class="td-next" style="font-weight: normal; font-style: normal;">
-            <span contenteditable>
-                {{ displayNextStartTime && show.nextStartTime
-                    ? format(show.nextStartTime, 'HH:mm')
-                    : '' }}
-            </span>
-        </td>
-        <td nowrap class="td-title">
-            <span contenteditable>{{ show.title }}</span>
-            <span contenteditable>{{ show.extras.join(' ') }}</span>
-        </td>
-        <td nowrap class="age-rating"
-            :class="{ translucent: ['AL', '6', '9', '12', '14'].includes(show.featureRating) }">
-            <span contenteditable>{{ show.featureRating }}</span>
-            <!-- <IconNicamAL class="nicam-icon" v-if="show.featureRating === 'AL'" />
-                <IconNicam6 class="nicam-icon" v-else-if="show.featureRating === '6'" />
-                <IconNicam9 class="nicam-icon" v-else-if="show.featureRating === '9'" />
-                <IconNicam12 class="nicam-icon" v-else-if="show.featureRating === '12'" />
-                <IconNicam14 class="nicam-icon" v-else-if="show.featureRating === '14'" />
-                <IconNicam16 class="nicam-icon" v-else-if="show.featureRating === '16'" />
-                <IconNicam18 class="nicam-icon" v-else-if="show.featureRating === '18'" />
-                <span v-else>{{ show.featureRating }}</span> -->
-        </td>
+        <template v-for="col in columns" :key="col.type">
+            <td :class="{
+                ['td-' + col.type]: true,
+                translucent: col.type === 'ageRating' && ['AL', '6', '9', '12', '14'].includes(show.featureRating)
+            }" :style="col.type === 'nextStartTime' ? 'font-weight: normal; font-style: normal;' : ''">
+
+                <template v-if="col.type === 'scheduledTime'">
+
+                    <span contenteditable>
+                        {{ show.scheduledTime
+                            ? format(show.scheduledTime, 'HH:mm')
+                            : '' }}
+                    </span>
+                    <span class="preshow-duration" contenteditable
+                        v-if="(show.scheduledTime && show.mainShowTime) && ((displayPreshowDuration === 1 && show.auditorium?.includes('4DX')) || displayPreshowDuration === 2)">
+                        +{{ Math.round((show.mainShowTime.getTime() - show.scheduledTime.getTime()) /
+                            60000) }}
+                    </span>
+
+                </template>
+
+                <template v-else-if="col.type === 'creditsTime'">
+
+                    <Icon4dx class="plf-icon" src="@assets/symbols/icon-4dx.svg" v-if="show.isNearPlf" />
+                    <div class="double-usherout"
+                        v-if="show.timeToNextUsherout <= shortGapInterval * 60000 && shortGapInterval > 0">
+                    </div>
+                    <div class="long-gap"
+                        v-if="show.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
+                    </div>
+                    <div class="plf-overlap" v-if="show.overlapWithPlf"></div>
+                    <span class="credits-time">
+                        <span contenteditable
+                            :style="{ opacity: show.creditsTime.getTime() === show.endTime.getTime() ? '.5' : '1' }">
+                            {{ show.creditsTime
+                                ? format(show.creditsTime, 'HH:mm:ss')
+                                : '' }}
+                        </span>
+                        <span class="credits-duration" contenteditable
+                            v-if="(show.creditsTime && show.endTime) && ((displayCreditsDuration === 1 && show.hasCreditsStinger) || displayCreditsDuration === 2)">
+                            +{{ Math.round((show.endTime.getTime() - show.creditsTime.getTime()) /
+                                60000) }}
+                        </span>
+                    </span>
+                    <Icon v-if="!show.nextStartTime" class="final-show">dark_mode</Icon>
+
+                </template>
+
+                <template v-else-if="col.type === 'title'">
+
+                    <span contenteditable>
+                        {{colTypes.find(c => c.value === col.type).content(show)}}
+                    </span>
+
+                    <span contenteditable>
+                        {{ show.extras.join(' ') }}
+                    </span>
+
+                </template>
+
+                <template v-else>
+                    <span contenteditable>
+                        {{colTypes.find(c => c.value === col.type).content(show)}}
+                    </span>
+                </template>
+
+            </td>
+        </template>
     </tr>
 
     <Transition>
@@ -231,7 +264,7 @@ td {
         font-style: normal;
     }
 
-    &.age-rating {
+    &.td-ageRating {
         text-align: end;
         min-width: 1.68em;
     }

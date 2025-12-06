@@ -6,14 +6,7 @@ const model = defineModel<{
     type: string;
     width: number;
 }[]>({
-    default: () => [
-        { type: 'auditorium', width: 8 },
-        { type: 'scheduledTime', width: 8 },
-        { type: 'intermissionTime', width: 12 },
-        { type: 'creditsTime', width: 22 },
-        { type: 'title', width: 47 },
-        { type: 'ageRating', width: 3 },
-    ]
+    default: () => []
 });
 
 const colTypes = [
@@ -253,12 +246,12 @@ function getAddButtonPosition(index: number): string {
         <div class="columns-wrapper">
             <div class="columns" ref="columnsContainer">
                 <template v-for="(col, i) in columns" :key="i">
-                    <div class="column"
-                        :style="{ width: `${col.width / totalWidth * 100}%`, anchorName: `--column-${i}` }"
-                        @click.stop="toggleColumnDropdown(i)">
+                    <div class="column" :style="{ width: `${col.width / totalWidth * 100}%` }">
                         <span class="col-label">{{ getLabel(col.type) }}</span>
-                        <span class="width-label">{{ col.width }}</span>
+                        <span class="width-label">{{ col.width }}%</span>
                         <Icon class="delete" @click.stop="removeColumn(i)">close</Icon>
+                        <Icon class="edit" @click.stop="toggleColumnDropdown(i)"
+                            :style="{ anchorName: `--column-${i}` }">edit</Icon>
                         <div v-if="i < columns.length - 1" class="resize-handle"
                             @mousedown.stop.prevent="onResizeStart($event, i)"></div>
                         <!-- Column type dropdown -->
@@ -304,9 +297,6 @@ function getAddButtonPosition(index: number): string {
                 </template>
             </div>
         </div>
-        <div class="info">
-            Breedte: {{ usedWidth }} / {{ totalWidth }}
-        </div>
     </div>
 </template>
 
@@ -322,7 +312,7 @@ function getAddButtonPosition(index: number): string {
 .columns {
     display: flex;
     align-items: stretch;
-    min-height: 60px;
+    height: 50px;
 
     border-radius: 5px;
     border: 1px solid #ffffff14;
@@ -339,13 +329,8 @@ function getAddButtonPosition(index: number): string {
     font: 16px Heebo, arial, sans-serif;
     background-color: #ffffff06;
     color: currentColor;
-    cursor: pointer;
     user-select: none;
     transition: background-color 0.15s;
-}
-
-.column:hover {
-    background-color: #ffffff12;
 }
 
 .col-label {
@@ -365,9 +350,16 @@ function getAddButtonPosition(index: number): string {
 
 .delete {
     position: absolute;
-    top: 2px;
-    right: 2px;
+    top: 4px;
+    right: 8px;
     color: #ff6b6b;
+    cursor: pointer;
+}
+
+.edit {
+    position: absolute;
+    bottom: 4px;
+    right: 8px;
     cursor: pointer;
 }
 
@@ -428,7 +420,7 @@ function getAddButtonPosition(index: number): string {
 
 .dropdown {
     position: absolute;
-    position-area: bottom center;
+    position-area: left;
     position-try: most-width flip-inline;
     margin: 12px;
     border: 1px solid light-dark(#30343d, #9da1ac);
@@ -437,7 +429,7 @@ function getAddButtonPosition(index: number): string {
 }
 
 .column-dropdown {
-    position-area: bottom span-right;
+    position-area: left;
 }
 
 .dropdown button {
@@ -462,7 +454,8 @@ function getAddButtonPosition(index: number): string {
 }
 
 .dropdown button.active {
-    background-color: light-dark(#e0e0e0, #3a3e47);
+    background-color: var(--yellow2);
+    color: #090a0b;
 }
 
 .info {
