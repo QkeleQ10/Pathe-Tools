@@ -151,10 +151,10 @@ const { isOverDropZone } = useDropZone(main, {
                 <SidePanel style="flex: 150px 1 0;">
                     <h2>Opties</h2>
 
-                    <!-- <ColsBuilder /> -->
                     <fieldset>
                         <legend>Kolommen</legend>
-                        <div>
+                        <ColsBuilder style="min-width: 600px;" />
+                        <!-- <div>
                             <div class="label">Weergeven indien beschikbaar</div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                                 <InputCheckbox class="enclose-box" identifier="displayScheduledTime"
@@ -177,7 +177,7 @@ const { isOverDropZone } = useDropZone(main, {
                                     v-model="displayNextStartTime">Volgende inloop
                                 </InputCheckbox>
                             </div>
-                        </div>
+                        </div> -->
                     </fieldset>
                     <fieldset>
                         <legend>Uitloop</legend>
