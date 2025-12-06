@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, useTemplateRef } from 'vue';
-import { useElementSize, onClickOutside } from '@vueuse/core';
+import { ref, computed, watch, onUnmounted, useTemplateRef } from 'vue';
+import { useElementSize } from '@vueuse/core';
 
 const model = defineModel<{
     type: string;
@@ -31,119 +31,152 @@ const colTypes = [
 const totalWidth = 100;
 const minColWidth = 3;
 
-// Container element and sizing
-const columnsContainer = useTemplateRef('columnsContainer');
-const addButtonsRow = useTemplateRef('addButtonsRow');
-const { width: containerWidth } = useElementSize(columnsContainer);
+const columns = ref<{ type: string; width: number }[]>(model.value || []);
+
+watch(model, (newVal) => {
+    if (newVal) columns.value = newVal;
+}, { deep: true });
+
+watch(columns, (newVal) => {
+    model.value = newVal;
+}, { deep: true });
+
+const el = useTemplateRef('columnsContainer');
+const { width: containerWidth } = useElementSize(el)
 const scale = computed(() => containerWidth.value / totalWidth);
 
-// Computed width info
-const usedWidth = computed(() => model.value.reduce((sum, col) => sum + col.width, 0));
+const usedWidth = computed(() => columns.value.reduce((sum, col) => sum + col.width, 0));
 
-// Dropdown states
-const activeAddDropdown = ref<number | null>(null);
+// Resize state
+const resizing = ref<{ index: number; startX: number; startWidthLeft: number; startWidthRight: number } | null>(null);
+
+// Add column dropdown state
+const activeDropdown = ref<number | null>(null);
+
+// Column type dropdown state (separate from add dropdown)
 const activeColumnDropdown = ref<number | null>(null);
 
-// Close dropdowns when clicking outside
-onClickOutside(addButtonsRow, () => { activeAddDropdown.value = null; }, { ignore: [columnsContainer] });
-onClickOutside(columnsContainer, () => { activeColumnDropdown.value = null; }, { ignore: [addButtonsRow] });
-
-// Check if we can add a column
+// Check if we can add a column (either there's space or we can shrink existing columns)
 const canAddColumn = computed(() => {
-    if (model.value.length === 0) return true;
-    return totalWidth >= (model.value.length + 1) * minColWidth;
+    if (columns.value.length === 0) return true;
+    // Can we have at least minColWidth per column after adding one more?
+    const newColumnCount = columns.value.length + 1;
+    return totalWidth >= newColumnCount * minColWidth;
 });
 
 function getLabel(type: string) {
     return colTypes.find(c => c.value === type)?.label || type;
 }
 
-function toggleAddDropdown(index: number) {
-    activeColumnDropdown.value = null;
-    activeAddDropdown.value = activeAddDropdown.value === index ? null : index;
+function toggleDropdown(index: number) {
+    activeColumnDropdown.value = null; // Close column dropdown when opening add dropdown
+    if (activeDropdown.value === index) {
+        activeDropdown.value = null;
+    } else {
+        activeDropdown.value = index;
+    }
 }
 
 function toggleColumnDropdown(index: number) {
-    activeAddDropdown.value = null;
-    activeColumnDropdown.value = activeColumnDropdown.value === index ? null : index;
+    activeDropdown.value = null; // Close add dropdown when opening column dropdown
+    if (activeColumnDropdown.value === index) {
+        activeColumnDropdown.value = null;
+    } else {
+        activeColumnDropdown.value = index;
+    }
 }
 
 function changeColumnType(index: number, type: string) {
-    model.value[index].type = type;
+    columns.value[index].type = type;
     activeColumnDropdown.value = null;
 }
 
 function addColumnWithType(atIndex: number, type: string) {
-    activeAddDropdown.value = null;
+    activeDropdown.value = null;
 
-    const n = model.value.length + 1;
-    const newColWidth = Math.floor(totalWidth / n);
+    const n = columns.value.length + 1; // new column count
+    const newColWidth = Math.floor(totalWidth / n); // width for the new column
 
-    if (model.value.length === 0) {
-        model.value.splice(atIndex, 0, { type, width: totalWidth });
+    if (columns.value.length === 0) {
+        // First column takes all available width
+        columns.value.splice(atIndex, 0, { type, width: totalWidth });
         return;
     }
 
-    // Reduce existing columns proportionally
+    // Reduce existing columns proportionally to free up space for the new column
     const reductionPerCol = newColWidth / (n - 1);
     let totalReduced = 0;
 
-    for (let i = 0; i < model.value.length; i++) {
-        const reduction = Math.min(Math.floor(reductionPerCol), model.value[i].width - minColWidth);
-        model.value[i].width -= reduction;
-        totalReduced += reduction;
+    for (let i = 0; i < columns.value.length; i++) {
+        const reduction = Math.floor(reductionPerCol);
+        // Ensure column doesn't go below minimum width
+        const actualReduction = Math.min(reduction, columns.value[i].width - minColWidth);
+        columns.value[i].width -= actualReduction;
+        totalReduced += actualReduction;
     }
 
-    // Add new column with freed width, or fall back to equal distribution
-    if (totalReduced < minColWidth) {
-        model.value.splice(atIndex, 0, { type, width: 0 });
+    // Handle any rounding issues - the new column gets whatever was freed
+    const actualNewColWidth = totalReduced;
+
+    // If we couldn't free enough space, take proportionally from all columns
+    if (actualNewColWidth < minColWidth) {
+        // Fall back to equal distribution
+        columns.value.splice(atIndex, 0, { type, width: 0 });
         distributeWidthsEqually();
-    } else {
-        model.value.splice(atIndex, 0, { type, width: totalReduced });
-        // Fix rounding issues
-        const diff = totalWidth - model.value.reduce((sum, col) => sum + col.width, 0);
-        if (diff !== 0) model.value[model.value.length - 1].width += diff;
+        return;
+    }
+
+    // Add the new column with the freed width
+    columns.value.splice(atIndex, 0, { type, width: actualNewColWidth });
+
+    // Ensure total equals totalWidth (fix any rounding issues)
+    const currentTotal = columns.value.reduce((sum, col) => sum + col.width, 0);
+    if (currentTotal !== totalWidth) {
+        columns.value[columns.value.length - 1].width += totalWidth - currentTotal;
     }
 }
 
 function distributeWidthsEqually() {
-    const count = model.value.length;
-    if (count === 0) return;
+    if (columns.value.length === 0) return;
 
+    const count = columns.value.length;
     const baseWidth = Math.floor(totalWidth / count);
-    const remainder = totalWidth - baseWidth * count;
+    const remainder = totalWidth - (baseWidth * count);
 
-    model.value.forEach((col, i) => {
-        col.width = baseWidth + (i < remainder ? 1 : 0);
-    });
-}
-
-function removeColumn(index: number) {
-    model.value.splice(index, 1);
-
-    if (model.value.length > 0) {
-        const currentTotal = model.value.reduce((sum, col) => sum + col.width, 0);
-        const scaleFactor = totalWidth / currentTotal;
-
-        let distributed = 0;
-        for (let i = 0; i < model.value.length - 1; i++) {
-            const newWidth = Math.round(model.value[i].width * scaleFactor);
-            distributed += newWidth;
-            model.value[i].width = newWidth;
-        }
-        model.value[model.value.length - 1].width = totalWidth - distributed;
+    // Give each column the base width, distribute remainder to first columns
+    for (let i = 0; i < count; i++) {
+        columns.value[i].width = baseWidth + (i < remainder ? 1 : 0);
     }
 }
 
-// Resize state and handlers
-const resizing = ref<{ index: number; startX: number; startWidthLeft: number; startWidthRight: number } | null>(null);
+function removeColumn(index: number) {
+    columns.value.splice(index, 1);
+
+    // Redistribute the removed width to remaining columns
+    if (columns.value.length > 0) {
+        // Distribute proportionally
+        const currentTotal = columns.value.reduce((sum, col) => sum + col.width, 0);
+        const scaleFactor = totalWidth / currentTotal;
+
+        let distributed = 0;
+        for (let i = 0; i < columns.value.length - 1; i++) {
+            const newWidth = Math.round(columns.value[i].width * scaleFactor);
+            distributed += newWidth;
+            columns.value[i].width = newWidth;
+        }
+        // Last column gets the remainder to ensure exact total
+        columns.value[columns.value.length - 1].width = totalWidth - distributed;
+    }
+}
 
 function onResizeStart(e: MouseEvent, index: number) {
+    e.preventDefault();
+    e.stopPropagation();
     resizing.value = {
         index,
         startX: e.clientX,
-        startWidthLeft: model.value[index].width,
-        startWidthRight: model.value[index + 1].width,
+        startWidthLeft: columns.value[index].width,
+        startWidthRight: columns.value[index + 1].width,
     };
     document.addEventListener('mousemove', onResizeMove);
     document.addEventListener('mouseup', onResizeEnd);
@@ -153,15 +186,28 @@ function onResizeMove(e: MouseEvent) {
     if (!resizing.value) return;
     const { index, startX, startWidthLeft, startWidthRight } = resizing.value;
 
+    // Calculate delta in pixels and convert to width units
     const pixelDelta = e.clientX - startX;
     const widthDelta = Math.round(pixelDelta / scale.value);
+
     const combinedWidth = startWidthLeft + startWidthRight;
 
-    let newLeftWidth = Math.max(minColWidth, Math.min(startWidthLeft + widthDelta, combinedWidth - minColWidth));
-    let newRightWidth = combinedWidth - newLeftWidth;
+    // Calculate new widths ensuring both stay within bounds
+    let newLeftWidth = startWidthLeft + widthDelta;
+    let newRightWidth = startWidthRight - widthDelta;
 
-    model.value[index].width = newLeftWidth;
-    model.value[index + 1].width = newRightWidth;
+    // Clamp to minimum widths
+    if (newLeftWidth < minColWidth) {
+        newLeftWidth = minColWidth;
+        newRightWidth = combinedWidth - minColWidth;
+    }
+    if (newRightWidth < minColWidth) {
+        newRightWidth = minColWidth;
+        newLeftWidth = combinedWidth - minColWidth;
+    }
+
+    columns.value[index].width = newLeftWidth;
+    columns.value[index + 1].width = newRightWidth;
 }
 
 function onResizeEnd() {
@@ -170,28 +216,35 @@ function onResizeEnd() {
     document.removeEventListener('mouseup', onResizeEnd);
 }
 
+// Close dropdown when clicking outside
+function onClickOutside(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.add-btn-container')) {
+        activeDropdown.value = null;
+    }
+    if (!target.closest('.column')) {
+        activeColumnDropdown.value = null;
+    }
+}
+
+// Cleanup event listeners on unmount
+onUnmounted(() => {
+    document.removeEventListener('mousemove', onResizeMove);
+    document.removeEventListener('mouseup', onResizeEnd);
+    document.removeEventListener('click', onClickOutside);
+});
+
+// Add click outside listener
+document.addEventListener('click', onClickOutside);
+
 function getAddButtonPosition(index: number): string {
+    // Calculate position based on cumulative width of columns up to this index
     let cumulativeWidth = 0;
     for (let i = 0; i <= index; i++) {
-        cumulativeWidth += model.value[i].width;
+        cumulativeWidth += columns.value[i].width;
     }
-    return `${(cumulativeWidth / totalWidth) * 100}%`;
-}
-
-// Compute dropdown position class based on available space
-function getDropdownPositionClass(index: number): string {
-    const position = index <= 0 ? 0 : parseFloat(getAddButtonPosition(index - 1));
-    // If position > 70%, flip to the left
-    return position > 70 ? 'dropdown-left' : '';
-}
-
-function getColumnDropdownPositionClass(index: number): string {
-    let cumulativeWidth = 0;
-    for (let i = 0; i <= index; i++) {
-        cumulativeWidth += model.value[i].width;
-    }
-    const centerPosition = (cumulativeWidth - model.value[index].width / 2) / totalWidth * 100;
-    return centerPosition > 70 ? 'dropdown-left' : '';
+    const percentage = (cumulativeWidth / totalWidth) * 100;
+    return `${percentage}%`;
 }
 </script>
 
@@ -199,16 +252,18 @@ function getColumnDropdownPositionClass(index: number): string {
     <div class="cols-builder">
         <div class="columns-wrapper">
             <div class="columns" ref="columnsContainer">
-                <template v-for="(col, i) in model" :key="i">
-                    <div class="column" :style="{ width: `${col.width}%` }" @click.stop="toggleColumnDropdown(i)">
+                <template v-for="(col, i) in columns" :key="i">
+                    <div class="column"
+                        :style="{ width: `${col.width / totalWidth * 100}%`, anchorName: `--column-${i}` }"
+                        @click.stop="toggleColumnDropdown(i)">
                         <span class="col-label">{{ getLabel(col.type) }}</span>
                         <span class="width-label">{{ col.width }}</span>
                         <Icon class="delete" @click.stop="removeColumn(i)">close</Icon>
-                        <div v-if="i < model.length - 1" class="resize-handle"
+                        <div v-if="i < columns.length - 1" class="resize-handle"
                             @mousedown.stop.prevent="onResizeStart($event, i)"></div>
                         <!-- Column type dropdown -->
                         <div v-if="activeColumnDropdown === i" class="dropdown column-dropdown"
-                            :class="getColumnDropdownPositionClass(i)" @click.stop>
+                            :style="{ positionAnchor: `--column-${i}` }" @click.stop>
                             <button v-for="opt in colTypes" :key="opt.value" @click="changeColumnType(i, opt.value)"
                                 :class="{ active: col.type === opt.value }">
                                 <Icon>{{ opt.icon }}</Icon>
@@ -218,25 +273,29 @@ function getColumnDropdownPositionClass(index: number): string {
                     </div>
                 </template>
             </div>
-            <div class="add-buttons-row" ref="addButtonsRow">
+            <div class="add-buttons-row">
                 <div class="add-btn-container" :style="{ left: '0' }">
-                    <button class="add-btn teardrop" @click.stop="toggleAddDropdown(0)" :disabled="!canAddColumn">
+                    <button class="add-btn teardrop" @click.stop="toggleDropdown(0)" :disabled="!canAddColumn"
+                        :style="{ anchorName: `--dropdown-0` }">
                         <Icon>add</Icon>
                     </button>
-                    <div v-if="activeAddDropdown === 0" class="dropdown" :class="getDropdownPositionClass(0)">
+                    <div v-if="activeDropdown === 0" class="dropdown" :style="{ positionAnchor: `--dropdown-0` }">
                         <button v-for="opt in colTypes" :key="opt.value" @click="addColumnWithType(0, opt.value)">
                             <Icon>{{ opt.icon }}</Icon>
                             {{ opt.label }}
                         </button>
                     </div>
                 </div>
-                <template v-for="(col, i) in model" :key="'add-' + i">
+                <template v-for="(col, i) in columns" :key="'add-' + i">
                     <div class="add-btn-container" :style="{ left: getAddButtonPosition(i) }">
-                        <button class="add-btn teardrop" @click.stop="toggleAddDropdown(i + 1)" :disabled="!canAddColumn">
+                        <button class="add-btn teardrop" @click.stop="toggleDropdown(i + 1)" :disabled="!canAddColumn"
+                            :style="{ anchorName: `--dropdown-${i}` }">
                             <Icon>add</Icon>
                         </button>
-                        <div v-if="activeAddDropdown === i + 1" class="dropdown" :class="getDropdownPositionClass(i + 1)">
-                            <button v-for="opt in colTypes" :key="opt.value" @click="addColumnWithType(i + 1, opt.value)">
+                        <div v-if="activeDropdown === i + 1" class="dropdown"
+                            :style="{ positionAnchor: `--dropdown-${i}` }">
+                            <button v-for="opt in colTypes" :key="opt.value"
+                                @click="addColumnWithType(i + 1, opt.value)">
                                 <Icon>{{ opt.icon }}</Icon>
                                 {{ opt.label }}
                             </button>
@@ -264,6 +323,7 @@ function getColumnDropdownPositionClass(index: number): string {
     display: flex;
     align-items: stretch;
     min-height: 60px;
+
     border-radius: 5px;
     border: 1px solid #ffffff14;
     overflow: visible;
@@ -350,12 +410,13 @@ function getColumnDropdownPositionClass(index: number): string {
     border-radius: 50% 0 50% 50%;
     transform: rotate(-45deg);
     cursor: pointer;
+
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.add-btn.teardrop > .icon {
+.add-btn.teardrop>.icon {
     --size: 16px;
     transform: rotate(45deg);
 }
@@ -367,44 +428,37 @@ function getColumnDropdownPositionClass(index: number): string {
 
 .dropdown {
     position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 12px;
+    position-area: bottom center;
+    position-try: most-width flip-inline;
+    margin: 12px;
     border: 1px solid light-dark(#30343d, #9da1ac);
-    background-color: light-dark(#fff, #1a1c1f);
-    border-radius: 4px;
+    background-color: #ffffff06;
     z-index: 10;
-    min-width: 160px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.dropdown.dropdown-left {
-    left: auto;
-    right: 0;
-    transform: translateX(50%);
 }
 
 .column-dropdown {
-    top: calc(100% + 4px);
+    position-area: bottom span-right;
 }
 
 .dropdown button {
     display: flex;
     align-items: center;
     gap: 12px;
-    width: 100%;
-    padding: 8px 12px;
+    width: 200px;
+    padding: 6px 12px;
     text-align: left;
     border: none;
-    font-size: 14px;
+    font-size: 12px;
     cursor: pointer;
-    background-color: transparent;
+
+    background-color: light-dark(#fff, #30343d);
     color: light-dark(#000, #fff);
+    font-size: 14px;
 }
 
 .dropdown button:hover {
-    background-color: light-dark(#f0f0f0, #30343d);
+    background-color: light-dark(#30343d, #9da1ac);
+    color: light-dark(#fff, #000);
 }
 
 .dropdown button.active {
