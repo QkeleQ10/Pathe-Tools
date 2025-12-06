@@ -22,12 +22,26 @@ const props = defineProps<{
     fontSize: number;
 }>();
 
-const displayScheduledTime = useStorage('display-scheduled-time', true);
-const displayMainShowTime = useStorage('display-main-show-time', false);
-const displayIntermissionTime = useStorage('display-intermission-time', true);
-const displayCreditsTime = useStorage('display-credits-time', true);
-const displayEndTime = useStorage('display-end-time', false);
-const displayNextStartTime = useStorage('display-next-start-time', false);
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', [
+    { type: 'auditorium', width: 8 },
+    { type: 'scheduledTime', width: 8 },
+    { type: 'intermissionTime', width: 12 },
+    { type: 'creditsTime', width: 22 },
+    { type: 'title', width: 47 },
+    { type: 'ageRating', width: 3 },
+]);
+
+const colTypes = [
+    { label: 'Zaal', value: 'auditorium', icon: 'text_fields' },
+    { label: 'Inloop', value: 'scheduledTime', icon: 'schedule' },
+    { label: 'Hoofdfilm', value: 'mainShowTime', icon: 'schedule' },
+    { label: 'Pauze', value: 'intermissionTime', icon: 'schedule' },
+    { label: 'Aftiteling', value: 'creditsTime', icon: 'schedule' },
+    { label: 'Einde', value: 'endTime', icon: 'schedule' },
+    { label: 'Volg.', value: 'nextStartTime', icon: 'schedule' },
+    { label: 'Film', value: 'title', icon: 'text_fields' },
+    { label: '', value: 'ageRating', icon: 'text_fields' },
+];
 
 const printComponent = useTemplateRef('printComponent');
 
@@ -60,7 +74,8 @@ defineExpose({
                 </div>
                 <table class="timetable" spellcheck="false">
                     <colgroup>
-                        <col span="1" style="width: 6%;" />
+                        <col v-for="(col, i) in columns" :key="i" :span="1" :style="`width: ${col.width}%;`" />
+                        <!-- <col span="1" style="width: 6%;" />
                         <col span="1" style="width: 9%;" />
                         <col span="1" style="width: 6%;" />
                         <col span="1" style="width: 6%;" />
@@ -68,11 +83,14 @@ defineExpose({
                         <col span="1" style="width: 6%;" />
                         <col span="1" style="width: 4%;" />
                         <col span="1" style="width: 49%;" />
-                        <col span="1" style="width: 2%;" />
+                        <col span="1" style="width: 2%;" /> -->
                     </colgroup>
                     <thead>
                         <tr>
-                            <td nowrap class="td-auditorium">Zaal</td>
+                            <td v-for="(col, i) in columns" :key="i" nowrap :class="`td-${col.type}`">
+                                {{colTypes.find(c => c.value === col.type)?.label}}
+                            </td>
+                            <!-- <td nowrap class="td-auditorium">Zaal</td>
                             <td nowrap class="td-scheduled">
                                 {{ displayScheduledTime ? "Inloop" : '' }}
                             </td>
@@ -95,7 +113,7 @@ defineExpose({
                                 {{ displayNextStartTime ? "Volg." : '' }}
                             </td>
                             <td nowrap class="td-title">Film</td>
-                            <td nowrap class="td-age"></td>
+                            <td nowrap class="td-age"></td> -->
                         </tr>
                     </thead>
                     <ScheduleTableRow v-for="(show, i) in shows" :key="i" :show="show" />
