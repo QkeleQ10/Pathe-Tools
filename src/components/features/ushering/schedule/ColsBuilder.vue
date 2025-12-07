@@ -241,22 +241,27 @@ function distributeWidthsEqually() {
 }
 
 function removeColumn(index: number) {
+    const removedWidth = columns.value[index].width;
     columns.value.splice(index, 1);
 
-    // Redistribute the removed width to remaining columns
+    // Redistribute the removed width to adjacent columns
     if (columns.value.length > 0) {
-        // Distribute proportionally
-        const currentTotal = columns.value.reduce((sum, col) => sum + col.width, 0);
-        const scaleFactor = totalWidth / currentTotal;
+        // Determine adjacent column indices (after removal)
+        const leftIndex = index - 1;
+        const rightIndex = index; // After removal, the column at `index` is the one that was to the right
 
-        let distributed = 0;
-        for (let i = 0; i < columns.value.length - 1; i++) {
-            const newWidth = Math.round(columns.value[i].width * scaleFactor);
-            distributed += newWidth;
-            columns.value[i].width = newWidth;
+        if (leftIndex >= 0 && rightIndex < columns.value.length) {
+            // Both neighbors exist - split the width between them
+            const halfWidth = Math.floor(removedWidth / 2);
+            columns.value[leftIndex].width += halfWidth;
+            columns.value[rightIndex].width += removedWidth - halfWidth;
+        } else if (leftIndex >= 0) {
+            // Only left neighbor exists (removed the rightmost column)
+            columns.value[leftIndex].width += removedWidth;
+        } else if (rightIndex < columns.value.length) {
+            // Only right neighbor exists (removed the leftmost column)
+            columns.value[rightIndex].width += removedWidth;
         }
-        // Last column gets the remainder to ensure exact total
-        columns.value[columns.value.length - 1].width = totalWidth - distributed;
     }
 }
 
