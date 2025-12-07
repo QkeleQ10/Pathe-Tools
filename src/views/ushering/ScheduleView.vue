@@ -149,7 +149,6 @@ const { isOverDropZone } = useDropZone(main, {
                     <fieldset>
                         <legend>Kolommen</legend>
                         <ColsBuilder style="min-width: 600px;" v-model="columns" />
-                        <Button class="secondary" @click="columns = defaultColumns">Standaardwaarden</Button>
                     </fieldset>
                     <fieldset>
                         <legend>Uitloop</legend>

@@ -162,8 +162,6 @@ tr:first-of-type>td .plf-icon {
 td {
     position: relative;
     padding: 2px 6px;
-    text-wrap: nowrap;
-    text-overflow: ellipsis;
 
     .plf-icon {
         position: absolute;
@@ -229,6 +227,10 @@ td {
     }
 }
 
+.td-auditorium {
+    overflow: hidden;
+}
+
 .td-mainShowTime,
 .td-endTime,
 .td-nextStartTime {
@@ -236,10 +238,7 @@ td {
 }
 
 .td-title {
-    /* display: flex; */
     height: var(--row-height);
-    /* align-items: center; */
-    /* justify-content: space-between; */
     overflow: hidden;
     text-overflow: ellipsis;
 

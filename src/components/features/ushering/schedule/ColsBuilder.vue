@@ -32,7 +32,7 @@ export const colTypes: { content: (show: TimetableShow) => string; label: string
     {
         content: (show) =>
             show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : ''
-        , label: "Aftiteling", colHeading: "Aftiteling", value: 'creditsTime', icon: 'schedule', defaultWidth: 17, minWidth: 5
+        , label: "Aftiteling", colHeading: "Aftiteling", value: 'creditsTime', icon: 'schedule', defaultWidth: 17, minWidth: 12
     },
     {
         content: (show) =>
@@ -57,9 +57,9 @@ export const colTypes: { content: (show: TimetableShow) => string; label: string
     {
         content: (show) =>
             show.nextStartTime && show.endTime && show.nextStartTime.getTime() - show.endTime.getTime() > 0
-                ? String(Math.floor((show.nextStartTime.getTime() - show.endTime.getTime()) / 60000))
+                ? String(Math.floor((show.nextStartTime.getTime() - show.endTime.getTime()) / 60000)) + '\''
                 : ''
-        , label: "Schoonmaaktijd", colHeading: "Sch.", value: 'cleaningTime', icon: 'timer', defaultWidth: 6, minWidth: 3
+        , label: "Schoonmaaktijd", colHeading: "S.t.", value: 'cleaningTime', icon: 'timer', defaultWidth: 6, minWidth: 3
     }
 ];
 </script>
@@ -98,8 +98,6 @@ watch(columns, (newVal) => {
 const el = useTemplateRef('columnsContainer');
 const { width: containerWidth } = useElementSize(el)
 const scale = computed(() => containerWidth.value / totalWidth);
-
-const usedWidth = computed(() => columns.value.reduce((sum, col) => sum + col.width, 0));
 
 // Resize state
 const resizing = ref<{ index: number; startX: number; startWidthLeft: number; startWidthRight: number } | null>(null);
@@ -224,19 +222,6 @@ function addColumnWithType(atIndex: number, type: string) {
     if (currentTotal !== totalWidth) {
         // Adjust the new column's width to maintain total
         columns.value[atIndex].width += totalWidth - currentTotal;
-    }
-}
-
-function distributeWidthsEqually() {
-    if (columns.value.length === 0) return;
-
-    const count = columns.value.length;
-    const baseWidth = Math.floor(totalWidth / count);
-    const remainder = totalWidth - (baseWidth * count);
-
-    // Give each column the base width, distribute remainder to first columns
-    for (let i = 0; i < count; i++) {
-        columns.value[i].width = baseWidth + (i < remainder ? 1 : 0);
     }
 }
 
@@ -404,6 +389,7 @@ function getAddButtonPosition(index: number): string {
                 </template>
             </div>
         </div>
+        <Button class="secondary" @click="">Standaardwaarden</Button>
     </div>
 </template>
 

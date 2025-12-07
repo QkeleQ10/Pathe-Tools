@@ -270,6 +270,9 @@ table.timetable {
     td {
         position: relative;
         padding: .16em .48em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 0;
     }
 
     .td-credits {
