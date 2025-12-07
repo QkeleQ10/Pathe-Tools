@@ -143,8 +143,9 @@ function changeColumnType(index: number, type: string) {
 function addColumnWithType(atIndex: number, type: string) {
     activeDropdown.value = null;
 
-    const n = columns.value.length + 1; // new column count
-    const newColWidth = Math.floor(totalWidth / n); // width for the new column
+    // Get the default width for this column type
+    const colType = colTypes.find(c => c.value === type);
+    const defaultWidth = colType?.defaultWidth || Math.floor(totalWidth / (columns.value.length + 1));
 
     if (columns.value.length === 0) {
         // First column takes all available width
@@ -152,36 +153,69 @@ function addColumnWithType(atIndex: number, type: string) {
         return;
     }
 
-    // Reduce existing columns proportionally to free up space for the new column
-    const reductionPerCol = newColWidth / (n - 1);
-    let totalReduced = 0;
+    // We need to subtract defaultWidth from existing columns
+    // Try to take half from the right neighbor and half from the left neighbor
+    const halfWidth = Math.floor(defaultWidth / 2);
+    let widthToTake = defaultWidth;
+    let widthTaken = 0;
 
-    for (let i = 0; i < columns.value.length; i++) {
-        const reduction = Math.floor(reductionPerCol);
-        // Ensure column doesn't go below minimum width
-        const actualReduction = Math.min(reduction, columns.value[i].width - minColWidth);
-        columns.value[i].width -= actualReduction;
-        totalReduced += actualReduction;
+    // Helper function to take width from a column
+    const takeFromColumn = (colIndex: number, amount: number): number => {
+        if (colIndex < 0 || colIndex >= columns.value.length) return 0;
+        const available = columns.value[colIndex].width - minColWidth;
+        const taken = Math.min(amount, available);
+        if (taken > 0) {
+            columns.value[colIndex].width -= taken;
+        }
+        return taken;
+    };
+
+    // Define the index of the column to the right and left of where we're inserting
+    // atIndex is where the new column will be inserted
+    // The column to the right is at atIndex (before insertion), left is at atIndex - 1
+    const rightNeighborIndex = atIndex;
+    const leftNeighborIndex = atIndex - 1;
+
+    // First, try to take half from the right neighbor
+    if (rightNeighborIndex < columns.value.length) {
+        widthTaken += takeFromColumn(rightNeighborIndex, halfWidth);
     }
 
-    // Handle any rounding issues - the new column gets whatever was freed
-    const actualNewColWidth = totalReduced;
-
-    // If we couldn't free enough space, take proportionally from all columns
-    if (actualNewColWidth < minColWidth) {
-        // Fall back to equal distribution
-        columns.value.splice(atIndex, 0, { type, width: 0 });
-        distributeWidthsEqually();
-        return;
+    // Then, try to take half from the left neighbor
+    if (leftNeighborIndex >= 0) {
+        widthTaken += takeFromColumn(leftNeighborIndex, halfWidth);
     }
 
-    // Add the new column with the freed width
+    // If we still need more width, expand outward from the insertion point
+    let distance = 1;
+    while (widthTaken < widthToTake && distance < columns.value.length) {
+        const remaining = widthToTake - widthTaken;
+        const halfRemaining = Math.ceil(remaining / 2);
+
+        // Try column further right
+        const farRightIndex = atIndex + distance;
+        if (farRightIndex < columns.value.length) {
+            widthTaken += takeFromColumn(farRightIndex, halfRemaining);
+        }
+
+        // Try column further left
+        const farLeftIndex = atIndex - 1 - distance;
+        if (farLeftIndex >= 0 && widthTaken < widthToTake) {
+            widthTaken += takeFromColumn(farLeftIndex, widthToTake - widthTaken);
+        }
+
+        distance++;
+    }
+
+    // Add the new column with the width we were able to free (or defaultWidth if we got enough)
+    const actualNewColWidth = Math.max(widthTaken, minColWidth);
     columns.value.splice(atIndex, 0, { type, width: actualNewColWidth });
 
     // Ensure total equals totalWidth (fix any rounding issues)
     const currentTotal = columns.value.reduce((sum, col) => sum + col.width, 0);
     if (currentTotal !== totalWidth) {
-        columns.value[columns.value.length - 1].width += totalWidth - currentTotal;
+        // Adjust the new column's width to maintain total
+        columns.value[atIndex].width += totalWidth - currentTotal;
     }
 }
 
