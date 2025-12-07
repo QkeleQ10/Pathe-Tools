@@ -6,6 +6,7 @@ import { useVueToPrint } from 'vue-to-print';
 import { TimetableShow } from '@/scripts/types.ts';
 import { nl } from 'date-fns/locale';
 import ScheduleTableRow from './ScheduleTableRow.vue';
+import { defaultColumns, colTypes } from './ColsBuilder.vue';
 
 const props = defineProps<{
     shows: TimetableShow[];
@@ -22,26 +23,7 @@ const props = defineProps<{
     fontSize: number;
 }>();
 
-const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', [
-    { type: 'auditorium', width: 8 },
-    { type: 'scheduledTime', width: 8 },
-    { type: 'intermissionTime', width: 12 },
-    { type: 'creditsTime', width: 22 },
-    { type: 'title', width: 47 },
-    { type: 'ageRating', width: 3 },
-]);
-
-const colTypes = [
-    { label: 'Zaal', value: 'auditorium', icon: 'text_fields' },
-    { label: 'Inloop', value: 'scheduledTime', icon: 'schedule' },
-    { label: 'Hoofdfilm', value: 'mainShowTime', icon: 'schedule' },
-    { label: 'Pauze', value: 'intermissionTime', icon: 'schedule' },
-    { label: 'Aftiteling', value: 'creditsTime', icon: 'schedule' },
-    { label: 'Einde', value: 'endTime', icon: 'schedule' },
-    { label: 'Volg.', value: 'nextStartTime', icon: 'schedule' },
-    { label: 'Film', value: 'title', icon: 'text_fields' },
-    { label: '', value: 'ageRating', icon: 'text_fields' },
-];
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
 const printComponent = useTemplateRef('printComponent');
 
@@ -88,7 +70,7 @@ defineExpose({
                     <thead>
                         <tr>
                             <td v-for="(col, i) in columns" :key="i" nowrap :class="`td-${col.type}`">
-                                {{colTypes.find(c => c.value === col.type)?.label}}
+                                {{colTypes.find(c => c.value === col.type)?.colHeading || ''}}
                             </td>
                             <!-- <td nowrap class="td-auditorium">Zaal</td>
                             <td nowrap class="td-scheduled">
@@ -299,6 +281,7 @@ table.timetable {
     color: var(--color);
     font-family: Arial, Helvetica, sans-serif;
     font-size: inherit;
+    table-layout: fixed;
     --row-height: 1.72em;
 
     thead>tr {

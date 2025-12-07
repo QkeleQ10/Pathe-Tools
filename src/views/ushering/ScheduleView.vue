@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, useTemplateRef } from 'vue'
+import { ref, computed, useTemplateRef } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show, TimetableShow } from '@/scripts/types.ts'
@@ -9,21 +9,14 @@ import { useVueToPrint } from 'vue-to-print'
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue'
 import SchedulePage from '@features/ushering/schedule/SchedulePage.vue'
 import UserGuide from '@/components/features/ushering/schedule/UserGuide.vue'
-import ColsBuilder from '@/components/features/ushering/schedule/ColsBuilder.vue'
+import ColsBuilder, { defaultColumns } from '@/components/features/ushering/schedule/ColsBuilder.vue'
 
 const store = useTmsScheduleStore()
 const stingers = useStorage<string[]>('credits-stingers', [])
 
 const trueColours = useStorage('true-colours', false);
 
-const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', [
-    { type: 'auditorium', width: 8 },
-    { type: 'scheduledTime', width: 8 },
-    { type: 'intermissionTime', width: 12 },
-    { type: 'creditsTime', width: 22 },
-    { type: 'title', width: 47 },
-    { type: 'ageRating', width: 3 },
-]);
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
 const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
@@ -156,14 +149,7 @@ const { isOverDropZone } = useDropZone(main, {
                     <fieldset>
                         <legend>Kolommen</legend>
                         <ColsBuilder style="min-width: 600px;" v-model="columns" />
-                        <Button class="secondary" @click="columns = [
-                            { type: 'auditorium', width: 8 },
-                            { type: 'scheduledTime', width: 8 },
-                            { type: 'intermissionTime', width: 12 },
-                            { type: 'creditsTime', width: 22 },
-                            { type: 'title', width: 47 },
-                            { type: 'ageRating', width: 3 },
-                        ]">Standaardwaarden</Button>
+                        <Button class="secondary" @click="columns = defaultColumns">Standaardwaarden</Button>
                     </fieldset>
                     <fieldset>
                         <legend>Uitloop</legend>

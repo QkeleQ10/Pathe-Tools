@@ -1,6 +1,67 @@
+<script lang="ts">
+export const defaultColumns = [
+    { type: 'auditorium', width: 8 },
+    { type: 'scheduledTime', width: 9 },
+    { type: 'intermissionTime', width: 11 },
+    { type: 'creditsTime', width: 20 },
+    { type: 'title', width: 48 },
+    { type: 'ageRating', width: 4 },
+];
+
+export const colTypes: {content: (show: TimetableShow) => string; label: string; colHeading: string; value: string; icon: string}[] = [
+    {
+        content: (show) =>
+            show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '')
+        , label: "Zaal", colHeading: "Zaal", value: 'auditorium', icon: 'text_fields'
+    },
+    {
+        content: (show) =>
+            show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : ''
+        , label: "Inloop", colHeading: "Inloop", value: 'scheduledTime', icon: 'schedule'
+    },
+    {
+        content: (show) =>
+            show.mainShowTime ? format(show.mainShowTime, 'HH:mm:ss') : ''
+        , label: "Start hoofdfilm", colHeading: "Hoofdfilm", value: 'mainShowTime', icon: 'schedule'
+    },
+    {
+        content: (show) =>
+            show.intermissionTime ? format(show.intermissionTime, 'HH:mm:ss') : ''
+        , label: "Pauze", colHeading: "Pauze", value: 'intermissionTime', icon: 'schedule'
+    },
+    {
+        content: (show) =>
+            show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : ''
+        , label: "Aftiteling", colHeading: "Aftiteling", value: 'creditsTime', icon: 'schedule'
+    },
+    {
+        content: (show) =>
+            show.endTime ? format(show.endTime, 'HH:mm:ss') : ''
+        , label: "Einde voorstelling", colHeading: "Einde", value: 'endTime', icon: 'schedule'
+    },
+    {
+        content: (show) =>
+            show.nextStartTime ? format(show.nextStartTime, 'HH:mm') : ''
+        , label: "Volgende inloop", colHeading: "Volg.", value: 'nextStartTime', icon: 'schedule'
+    },
+    {
+        content: (show) =>
+            show.title
+        , label: "Filmtitel", colHeading: "Film", value: 'title', icon: 'text_fields'
+    },
+    {
+        content: (show) =>
+            show.featureRating
+        , label: "Leeftijdskeuring", colHeading: "", value: 'ageRating', icon: 'text_fields'
+    },
+];
+</script>
+
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, useTemplateRef } from 'vue';
 import { useElementSize } from '@vueuse/core';
+import { format } from 'date-fns';
+import { TimetableShow } from '@/scripts/types';
 
 const model = defineModel<{
     type: string;
@@ -8,18 +69,6 @@ const model = defineModel<{
 }[]>({
     default: () => []
 });
-
-const colTypes = [
-    { label: 'Zaal', value: 'auditorium', icon: 'text_fields' },
-    { label: 'Inloop', value: 'scheduledTime', icon: 'schedule' },
-    { label: 'Start hoofdfilm', value: 'mainShowTime', icon: 'schedule' },
-    { label: 'Pauze', value: 'intermissionTime', icon: 'schedule' },
-    { label: 'Aftiteling', value: 'creditsTime', icon: 'schedule' },
-    { label: 'Einde voorstelling', value: 'endTime', icon: 'schedule' },
-    { label: 'Volgende inloop', value: 'nextStartTime', icon: 'schedule' },
-    { label: 'Filmtitel', value: 'title', icon: 'text_fields' },
-    { label: 'Leeftijdskeuring', value: 'ageRating', icon: 'text_fields' },
-];
 
 const totalWidth = 100;
 const minColWidth = 3;

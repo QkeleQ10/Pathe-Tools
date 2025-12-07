@@ -4,67 +4,13 @@ import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { TimetableShow } from '@/scripts/types.ts';
 import Icon4dx from '@/assets/symbols/Icon4dx.vue';
+import { defaultColumns, colTypes } from './ColsBuilder.vue';
 
 defineProps<{ show: TimetableShow }>();
 
 const stingers = useStorage<string[]>('credits-stingers', []);
 
-const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', [
-    { type: 'auditorium', width: 8 },
-    { type: 'scheduledTime', width: 8 },
-    { type: 'intermissionTime', width: 12 },
-    { type: 'creditsTime', width: 22 },
-    { type: 'title', width: 47 },
-    { type: 'ageRating', width: 3 },
-]);
-
-const colTypes = [
-    {
-        content: (show) => {
-            show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '')
-        }, value: 'auditorium', icon: 'text_fields'
-    },
-    {
-        content: (show) => {
-            show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : ''
-        }, value: 'scheduledTime', icon: 'schedule'
-    },
-    {
-        content: (show) => {
-            show.mainShowTime ? format(show.mainShowTime, 'HH:mm:ss') : ''
-        }, value: 'mainShowTime', icon: 'schedule'
-    },
-    {
-        content: (show) => {
-            show.intermissionTime ? format(show.intermissionTime, 'HH:mm:ss') : ''
-        }, value: 'intermissionTime', icon: 'schedule'
-    },
-    {
-        content: (show) => {
-            show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : ''
-        }, value: 'creditsTime', icon: 'schedule'
-    },
-    {
-        content: (show) => {
-            show.endTime ? format(show.endTime, 'HH:mm:ss') : ''
-        }, value: 'endTime', icon: 'schedule'
-    },
-    {
-        content: (show) => {
-            show.nextStartTime ? format(show.nextStartTime, 'HH:mm') : ''
-        }, value: 'nextStartTime', icon: 'schedule'
-    },
-    {
-        content: (show) => {
-            show.title
-        }, value: 'title', icon: 'text_fields'
-    },
-    {
-        content: (show) => {
-            show.featureRating
-        }, value: 'ageRating', icon: 'text_fields'
-    },
-];
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1);
 const displayCreditsDuration = useStorage('show-credits-duration', 1);
@@ -88,7 +34,6 @@ function toggleCreditsStinger(title: string) {
         console.error('Failed to toggle post-credits:', error)
     }
 }
-
 </script>
 
 <template>
@@ -217,6 +162,8 @@ tr:first-of-type>td .plf-icon {
 td {
     position: relative;
     padding: 2px 6px;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
 
     .plf-icon {
         position: absolute;
@@ -264,11 +211,6 @@ td {
         font-style: normal;
     }
 
-    &.td-ageRating {
-        text-align: end;
-        min-width: 1.68em;
-    }
-
     .nicam-icon {
         fill: var(--color);
         position: absolute;
@@ -281,19 +223,19 @@ td {
 
     .final-show {
         position: absolute;
-        right: -6px;
+        left: 110px;
         --size: 12px;
         opacity: .5;
     }
 }
 
-.td-main,
-.td-end,
-.td-next {
+.td-mainShowTime,
+.td-endTime,
+.td-nextStartTime {
     opacity: .5;
 }
 
-.td-credits {
+.td-creditsTime {
     padding-left: 32px;
 }
 
@@ -302,6 +244,11 @@ td {
     height: var(--row-height);
     align-items: center;
     justify-content: space-between;
+}
+
+.td-ageRating {
+    text-align: end;
+    min-width: 1.68em;
 }
 
 [contenteditable]:hover {
