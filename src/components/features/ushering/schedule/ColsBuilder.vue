@@ -2,58 +2,65 @@
 export const defaultColumns = [
     { type: 'auditorium', width: 8 },
     { type: 'scheduledTime', width: 9 },
-    { type: 'intermissionTime', width: 11 },
-    { type: 'creditsTime', width: 20 },
-    { type: 'title', width: 48 },
-    { type: 'ageRating', width: 4 },
+    { type: 'intermissionTime', width: 14 },
+    { type: 'creditsTime', width: 17 },
+    { type: 'title', width: 49 },
+    { type: 'ageRating', width: 3 },
 ];
 
-export const colTypes: {content: (show: TimetableShow) => string; label: string; colHeading: string; value: string; icon: string}[] = [
+export const colTypes: { content: (show: TimetableShow) => string; label: string; colHeading: string; value: string; icon: string, defaultWidth: number }[] = [
     {
         content: (show) =>
             show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '')
-        , label: "Zaal", colHeading: "Zaal", value: 'auditorium', icon: 'text_fields'
+        , label: "Zaal", colHeading: "Zaal", value: 'auditorium', icon: 'text_fields', defaultWidth: 8
     },
     {
         content: (show) =>
             show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : ''
-        , label: "Inloop", colHeading: "Inloop", value: 'scheduledTime', icon: 'schedule'
+        , label: "Inloop", colHeading: "Inloop", value: 'scheduledTime', icon: 'schedule', defaultWidth: 9
     },
     {
         content: (show) =>
             show.mainShowTime ? format(show.mainShowTime, 'HH:mm:ss') : ''
-        , label: "Start hoofdfilm", colHeading: "Hoofdfilm", value: 'mainShowTime', icon: 'schedule'
+        , label: "Start hoofdfilm", colHeading: "Hoofdfilm", value: 'mainShowTime', icon: 'schedule', defaultWidth: 8
     },
     {
         content: (show) =>
             show.intermissionTime ? format(show.intermissionTime, 'HH:mm:ss') : ''
-        , label: "Pauze", colHeading: "Pauze", value: 'intermissionTime', icon: 'schedule'
+        , label: "Pauze", colHeading: "Pauze", value: 'intermissionTime', icon: 'schedule', defaultWidth: 14
     },
     {
         content: (show) =>
             show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : ''
-        , label: "Aftiteling", colHeading: "Aftiteling", value: 'creditsTime', icon: 'schedule'
+        , label: "Aftiteling", colHeading: "Aftiteling", value: 'creditsTime', icon: 'schedule', defaultWidth: 17
     },
     {
         content: (show) =>
             show.endTime ? format(show.endTime, 'HH:mm:ss') : ''
-        , label: "Einde voorstelling", colHeading: "Einde", value: 'endTime', icon: 'schedule'
+        , label: "Einde voorstelling", colHeading: "Einde", value: 'endTime', icon: 'schedule', defaultWidth: 8
     },
     {
         content: (show) =>
             show.nextStartTime ? format(show.nextStartTime, 'HH:mm') : ''
-        , label: "Volgende inloop", colHeading: "Volg.", value: 'nextStartTime', icon: 'schedule'
+        , label: "Volgende inloop", colHeading: "Volg.", value: 'nextStartTime', icon: 'schedule', defaultWidth: 5
     },
     {
         content: (show) =>
             show.title
-        , label: "Filmtitel", colHeading: "Film", value: 'title', icon: 'text_fields'
+        , label: "Filmtitel", colHeading: "Film", value: 'title', icon: 'text_fields', defaultWidth: 49
     },
     {
         content: (show) =>
             show.featureRating
-        , label: "Leeftijdskeuring", colHeading: "", value: 'ageRating', icon: 'text_fields'
+        , label: "Leeftijdskeuring", colHeading: "", value: 'ageRating', icon: 'text_fields', defaultWidth: 3
     },
+    {
+        content: (show) =>
+            show.nextStartTime && show.endTime && show.nextStartTime.getTime() - show.endTime.getTime() > 0
+                ? String(Math.floor((show.nextStartTime.getTime() - show.endTime.getTime()) / 60000))
+                : ''
+        , label: "Schoonmaaktijd", colHeading: "Sch.", value: 'cleaningTime', icon: 'timer', defaultWidth: 6
+    }
 ];
 </script>
 

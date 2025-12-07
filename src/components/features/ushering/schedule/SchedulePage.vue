@@ -57,45 +57,16 @@ defineExpose({
                 <table class="timetable" spellcheck="false">
                     <colgroup>
                         <col v-for="(col, i) in columns" :key="i" :span="1" :style="`width: ${col.width}%;`" />
-                        <!-- <col span="1" style="width: 6%;" />
-                        <col span="1" style="width: 9%;" />
-                        <col span="1" style="width: 6%;" />
-                        <col span="1" style="width: 6%;" />
-                        <col span="1" style="width: 13%;" />
-                        <col span="1" style="width: 6%;" />
-                        <col span="1" style="width: 4%;" />
-                        <col span="1" style="width: 49%;" />
-                        <col span="1" style="width: 2%;" /> -->
                     </colgroup>
                     <thead>
                         <tr>
                             <td v-for="(col, i) in columns" :key="i" nowrap :class="`td-${col.type}`">
-                                {{colTypes.find(c => c.value === col.type)?.colHeading || ''}}
+                                <span contenteditable
+                                    v-if="col.type === 'intermissionTime' && !shows.some(show => show.intermissionTime)"></span>
+                                <span contenteditable v-else>
+                                    {{colTypes.find(c => c.value === col.type)?.colHeading || ''}}
+                                </span>
                             </td>
-                            <!-- <td nowrap class="td-auditorium">Zaal</td>
-                            <td nowrap class="td-scheduled">
-                                {{ displayScheduledTime ? "Inloop" : '' }}
-                            </td>
-                            <td nowrap class="td-main">
-                                {{displayMainShowTime && shows.some(show => show.mainShowTime)
-                                    ? "Start" : ''}}
-                            </td>
-                            <td nowrap class="td-intermission">
-                                {{displayIntermissionTime && shows.some(show =>
-                                    show.intermissionTime)
-                                    ? "Pauze" : ''}}
-                            </td>
-                            <td nowrap class="td-credits">
-                                {{ displayCreditsTime ? "Aftiteling" : '' }}
-                            </td>
-                            <td nowrap class="td-end">
-                                {{ displayEndTime ? "Eind" : '' }}
-                            </td>
-                            <td nowrap class="td-next">
-                                {{ displayNextStartTime ? "Volg." : '' }}
-                            </td>
-                            <td nowrap class="td-title">Film</td>
-                            <td nowrap class="td-age"></td> -->
                         </tr>
                     </thead>
                     <ScheduleTableRow v-for="(show, i) in shows" :key="i" :show="show" />

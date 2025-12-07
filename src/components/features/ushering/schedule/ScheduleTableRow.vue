@@ -44,7 +44,7 @@ function toggleCreditsStinger(title: string) {
         'final-show': !show.nextStartTime
     }" @contextmenu.prevent="displayContextMenu = true">
         <template v-for="col in columns" :key="col.type">
-            <td :class="{
+            <td nowrap :class="{
                 ['td-' + col.type]: true,
                 translucent: col.type === 'ageRating' && ['AL', '6', '9', '12', '14'].includes(show.featureRating)
             }" :style="col.type === 'nextStartTime' ? 'font-weight: normal; font-style: normal;' : ''">
@@ -168,7 +168,7 @@ td {
     .plf-icon {
         position: absolute;
         top: 0;
-        left: -1.12em;
+        left: -3em;
         height: .88em;
         translate: 0 -50%;
         fill: var(--color);
@@ -177,7 +177,7 @@ td {
     .double-usherout {
         position: absolute;
         top: 50%;
-        left: 2em;
+        left: 0em;
         height: 100%;
         width: 1.76em;
         border-radius: 50%;
@@ -189,7 +189,7 @@ td {
     .long-gap {
         position: absolute;
         bottom: -1px;
-        left: 2.08em;
+        left: 0em;
         width: 4.96em;
         border-bottom: 2px dotted var(--color);
         opacity: .5;
@@ -199,7 +199,7 @@ td {
         position: absolute;
         top: 0;
         bottom: 0;
-        left: 1.44em;
+        left: -0.5em;
         border-left: 2px dashed var(--color);
         opacity: .5;
     }
@@ -223,7 +223,7 @@ td {
 
     .final-show {
         position: absolute;
-        left: 110px;
+        left: 6.4em;
         --size: 12px;
         opacity: .5;
     }
@@ -235,20 +235,23 @@ td {
     opacity: .5;
 }
 
-.td-creditsTime {
-    padding-left: 32px;
-}
-
 .td-title {
-    display: flex;
+    /* display: flex; */
     height: var(--row-height);
-    align-items: center;
-    justify-content: space-between;
+    /* align-items: center; */
+    /* justify-content: space-between; */
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &>span:last-child {
+        float: right;
+    }
 }
 
 .td-ageRating {
     text-align: end;
     min-width: 1.68em;
+    padding-left: 0;
 }
 
 [contenteditable]:hover {
