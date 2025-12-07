@@ -16,6 +16,16 @@ export const colTypes: { content: (show: TimetableShow) => string; label: string
     },
     {
         content: (show) =>
+            show.title
+        , label: "Filmtitel", colHeading: "Film", value: 'title', icon: 'text_fields', defaultWidth: 49, minWidth: 10
+    },
+    {
+        content: (show) =>
+            show.featureRating
+        , label: "Leeftijdskeuring", colHeading: "", value: 'ageRating', icon: 'text_fields', defaultWidth: 3, minWidth: 3
+    },
+    {
+        content: (show) =>
             show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : ''
         , label: "Inloop", colHeading: "Inloop", value: 'scheduledTime', icon: 'schedule', defaultWidth: 9, minWidth: 5
     },
@@ -43,16 +53,6 @@ export const colTypes: { content: (show: TimetableShow) => string; label: string
         content: (show) =>
             show.nextStartTime ? format(show.nextStartTime, 'HH:mm') : ''
         , label: "Volgende inloop", colHeading: "Volg.", value: 'nextStartTime', icon: 'schedule', defaultWidth: 5, minWidth: 5
-    },
-    {
-        content: (show) =>
-            show.title
-        , label: "Filmtitel", colHeading: "Film", value: 'title', icon: 'text_fields', defaultWidth: 49, minWidth: 10
-    },
-    {
-        content: (show) =>
-            show.featureRating
-        , label: "Leeftijdskeuring", colHeading: "", value: 'ageRating', icon: 'text_fields', defaultWidth: 3, minWidth: 3
     },
     {
         content: (show) =>
@@ -248,6 +248,25 @@ function removeColumn(index: number) {
             columns.value[rightIndex].width += removedWidth;
         }
     }
+    activeColumnDropdown.value = null;
+}
+
+function moveColumnLeft(index: number) {
+    if (index > 0) {
+        const temp = columns.value[index];
+        columns.value[index] = columns.value[index - 1];
+        columns.value[index - 1] = temp;
+    }
+    activeColumnDropdown.value = null;
+}
+
+function moveColumnRight(index: number) {
+    if (index < columns.value.length - 1) {
+        const temp = columns.value[index];
+        columns.value[index] = columns.value[index + 1];
+        columns.value[index + 1] = temp;
+    }
+    activeColumnDropdown.value = null;
 }
 
 function resetToDefaults() {
@@ -343,17 +362,27 @@ function getAddButtonPosition(index: number): string {
         <div class="columns-wrapper">
             <div class="columns" ref="columnsContainer">
                 <template v-for="(col, i) in columns" :key="i">
-                    <div class="column" :style="{ width: `${col.width / totalWidth * 100}%` }">
+                    <div class="column" :style="{ width: `${col.width / totalWidth * 100}%` }"
+                        @click.stop="toggleColumnDropdown(i)">
                         <span class="col-label">{{ getLabel(col.type) }}</span>
                         <span class="width-label">{{ col.width }}%</span>
-                        <Icon class="delete" @click.stop="removeColumn(i)">close</Icon>
-                        <Icon class="edit" @click.stop="toggleColumnDropdown(i)"
-                            :style="{ anchorName: `--column-${i}` }">edit</Icon>
                         <div v-if="i < columns.length - 1" class="resize-handle"
                             @mousedown.stop.prevent="onResizeStart($event, i)"></div>
                         <!-- Column type dropdown -->
-                        <div v-if="activeColumnDropdown === i" class="dropdown column-dropdown"
-                            :style="{ positionAnchor: `--column-${i}` }" @click.stop>
+                        <div v-if="activeColumnDropdown === i" class="dropdown column-dropdown" @click.stop>
+                            <button @click.stop="removeColumn(i)">
+                                <Icon class="delete">close</Icon>
+                                Verwijderen
+                            </button>
+                            <button @click.stop="moveColumnLeft(i)" :class="{ disabled: i === 0 }">
+                                <Icon class="move-left">chevron_left</Icon>
+                                Naar links verplaatsen
+                            </button>
+                            <button @click.stop="moveColumnRight(i)" :class="{ disabled: i === columns.length - 1 }">
+                                <Icon class="move-right">chevron_right</Icon>
+                                Naar rechts verplaatsen
+                            </button>
+                            <hr />
                             <button v-for="opt in colTypes" :key="opt.value" @click="changeColumnType(i, opt.value)"
                                 :class="{ active: col.type === opt.value }">
                                 <Icon>{{ opt.icon }}</Icon>
@@ -369,7 +398,7 @@ function getAddButtonPosition(index: number): string {
                         :style="{ anchorName: `--dropdown-0` }">
                         <Icon>add</Icon>
                     </button>
-                    <div v-if="activeDropdown === 0" class="dropdown" :style="{ positionAnchor: `--dropdown-0` }">
+                    <div v-if="activeDropdown === 0" class="add-dropdown" :style="{ positionAnchor: `--dropdown-0` }">
                         <button v-for="opt in colTypes" :key="opt.value" @click="addColumnWithType(0, opt.value)">
                             <Icon>{{ opt.icon }}</Icon>
                             {{ opt.label }}
@@ -382,7 +411,7 @@ function getAddButtonPosition(index: number): string {
                             :style="{ anchorName: `--dropdown-${i}` }">
                             <Icon>add</Icon>
                         </button>
-                        <div v-if="activeDropdown === i + 1" class="dropdown"
+                        <div v-if="activeDropdown === i + 1" class="add-dropdown"
                             :style="{ positionAnchor: `--dropdown-${i}` }">
                             <button v-for="opt in colTypes" :key="opt.value"
                                 @click="addColumnWithType(i + 1, opt.value)">
@@ -428,7 +457,11 @@ function getAddButtonPosition(index: number): string {
     background-color: #ffffff06;
     color: currentColor;
     user-select: none;
-    transition: background-color 0.15s;
+    cursor: pointer;
+
+    &:hover {
+        background-color: #ffffff1c;
+    }
 }
 
 .col-label {
@@ -447,18 +480,7 @@ function getAddButtonPosition(index: number): string {
 }
 
 .delete {
-    position: absolute;
-    top: 4px;
-    right: 8px;
     color: #ff6b6b;
-    cursor: pointer;
-}
-
-.edit {
-    position: absolute;
-    bottom: 4px;
-    right: 8px;
-    cursor: pointer;
 }
 
 .resize-handle {
@@ -516,21 +538,26 @@ function getAddButtonPosition(index: number): string {
     cursor: not-allowed;
 }
 
-.dropdown {
+.add-dropdown {
     position: absolute;
     position-area: left;
     position-try: most-width flip-inline;
     margin: 12px;
     border: 1px solid light-dark(#30343d, #9da1ac);
-    background-color: #ffffff06;
+    background-color: light-dark(#fff, #30343d);
     z-index: 10;
 }
 
 .column-dropdown {
-    position-area: left;
+    position: absolute;
+    top: 45px;
+    border: 1px solid light-dark(#30343d, #9da1ac);
+    background-color: light-dark(#fff, #30343d);
+    z-index: 10;
 }
 
-.dropdown button {
+.add-dropdown button,
+.column-dropdown button {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -544,16 +571,21 @@ function getAddButtonPosition(index: number): string {
     background-color: light-dark(#fff, #30343d);
     color: light-dark(#000, #fff);
     font-size: 14px;
-}
 
-.dropdown button:hover {
-    background-color: light-dark(#30343d, #9da1ac);
-    color: light-dark(#fff, #000);
-}
+    &:hover {
+        background-color: light-dark(#30343d, #9da1ac);
+        color: light-dark(#fff, #000);
+    }
 
-.dropdown button.active {
-    background-color: var(--yellow2);
-    color: #090a0b;
+    &.active {
+        background-color: var(--yellow2);
+        color: #090a0b;
+    }
+
+    &.disabled {
+        opacity: .3;
+        cursor: not-allowed;
+    }
 }
 
 .info {
