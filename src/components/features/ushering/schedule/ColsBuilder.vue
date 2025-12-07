@@ -8,58 +8,58 @@ export const defaultColumns = [
     { type: 'ageRating', width: 3 },
 ];
 
-export const colTypes: { content: (show: TimetableShow) => string; label: string; colHeading: string; value: string; icon: string, defaultWidth: number }[] = [
+export const colTypes: { content: (show: TimetableShow) => string; label: string; colHeading: string; value: string; icon: string, defaultWidth: number, minWidth: number }[] = [
     {
         content: (show) =>
             show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '')
-        , label: "Zaal", colHeading: "Zaal", value: 'auditorium', icon: 'text_fields', defaultWidth: 8
+        , label: "Zaal", colHeading: "Zaal", value: 'auditorium', icon: 'text_fields', defaultWidth: 8, minWidth: 3
     },
     {
         content: (show) =>
             show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : ''
-        , label: "Inloop", colHeading: "Inloop", value: 'scheduledTime', icon: 'schedule', defaultWidth: 9
+        , label: "Inloop", colHeading: "Inloop", value: 'scheduledTime', icon: 'schedule', defaultWidth: 9, minWidth: 5
     },
     {
         content: (show) =>
             show.mainShowTime ? format(show.mainShowTime, 'HH:mm:ss') : ''
-        , label: "Start hoofdfilm", colHeading: "Hoofdfilm", value: 'mainShowTime', icon: 'schedule', defaultWidth: 8
+        , label: "Start hoofdfilm", colHeading: "Hoofdfilm", value: 'mainShowTime', icon: 'schedule', defaultWidth: 8, minWidth: 5
     },
     {
         content: (show) =>
             show.intermissionTime ? format(show.intermissionTime, 'HH:mm:ss') : ''
-        , label: "Pauze", colHeading: "Pauze", value: 'intermissionTime', icon: 'schedule', defaultWidth: 14
+        , label: "Pauze", colHeading: "Pauze", value: 'intermissionTime', icon: 'schedule', defaultWidth: 14, minWidth: 5
     },
     {
         content: (show) =>
             show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : ''
-        , label: "Aftiteling", colHeading: "Aftiteling", value: 'creditsTime', icon: 'schedule', defaultWidth: 17
+        , label: "Aftiteling", colHeading: "Aftiteling", value: 'creditsTime', icon: 'schedule', defaultWidth: 17, minWidth: 5
     },
     {
         content: (show) =>
             show.endTime ? format(show.endTime, 'HH:mm:ss') : ''
-        , label: "Einde voorstelling", colHeading: "Einde", value: 'endTime', icon: 'schedule', defaultWidth: 8
+        , label: "Einde voorstelling", colHeading: "Einde", value: 'endTime', icon: 'schedule', defaultWidth: 8, minWidth: 5
     },
     {
         content: (show) =>
             show.nextStartTime ? format(show.nextStartTime, 'HH:mm') : ''
-        , label: "Volgende inloop", colHeading: "Volg.", value: 'nextStartTime', icon: 'schedule', defaultWidth: 5
+        , label: "Volgende inloop", colHeading: "Volg.", value: 'nextStartTime', icon: 'schedule', defaultWidth: 5, minWidth: 5
     },
     {
         content: (show) =>
             show.title
-        , label: "Filmtitel", colHeading: "Film", value: 'title', icon: 'text_fields', defaultWidth: 49
+        , label: "Filmtitel", colHeading: "Film", value: 'title', icon: 'text_fields', defaultWidth: 49, minWidth: 10
     },
     {
         content: (show) =>
             show.featureRating
-        , label: "Leeftijdskeuring", colHeading: "", value: 'ageRating', icon: 'text_fields', defaultWidth: 3
+        , label: "Leeftijdskeuring", colHeading: "", value: 'ageRating', icon: 'text_fields', defaultWidth: 3, minWidth: 3
     },
     {
         content: (show) =>
             show.nextStartTime && show.endTime && show.nextStartTime.getTime() - show.endTime.getTime() > 0
                 ? String(Math.floor((show.nextStartTime.getTime() - show.endTime.getTime()) / 60000))
                 : ''
-        , label: "Schoonmaaktijd", colHeading: "Sch.", value: 'cleaningTime', icon: 'timer', defaultWidth: 6
+        , label: "Schoonmaaktijd", colHeading: "Sch.", value: 'cleaningTime', icon: 'timer', defaultWidth: 6, minWidth: 3
     }
 ];
 </script>
@@ -78,7 +78,12 @@ const model = defineModel<{
 });
 
 const totalWidth = 100;
-const minColWidth = 3;
+const defaultMinColWidth = 3;
+
+// Helper function to get minWidth for a column type
+function getMinWidth(type: string): number {
+    return colTypes.find(c => c.value === type)?.minWidth || defaultMinColWidth;
+}
 
 const columns = ref<{ type: string; width: number }[]>(model.value || []);
 
@@ -110,7 +115,8 @@ const canAddColumn = computed(() => {
     if (columns.value.length === 0) return true;
     // Can we have at least minColWidth per column after adding one more?
     const newColumnCount = columns.value.length + 1;
-    return totalWidth >= newColumnCount * minColWidth;
+    const totalMinWidth = columns.value.reduce((sum, col) => sum + getMinWidth(col.type), 0) + defaultMinColWidth;
+    return totalWidth >= totalMinWidth;
 });
 
 function getLabel(type: string) {
@@ -143,9 +149,10 @@ function changeColumnType(index: number, type: string) {
 function addColumnWithType(atIndex: number, type: string) {
     activeDropdown.value = null;
 
-    // Get the default width for this column type
+    // Get the default width and minWidth for this column type
     const colType = colTypes.find(c => c.value === type);
     const defaultWidth = colType?.defaultWidth || Math.floor(totalWidth / (columns.value.length + 1));
+    const newColMinWidth = colType?.minWidth || defaultMinColWidth;
 
     if (columns.value.length === 0) {
         // First column takes all available width
@@ -159,11 +166,12 @@ function addColumnWithType(atIndex: number, type: string) {
     let widthToTake = defaultWidth;
     let widthTaken = 0;
 
-    // Helper function to take width from a column
+    // Helper function to take width from a column (respects column-specific minWidth)
     const takeFromColumn = (colIndex: number, amount: number): number => {
         if (colIndex < 0 || colIndex >= columns.value.length) return 0;
-        const available = columns.value[colIndex].width - minColWidth;
-        const taken = Math.min(amount, available);
+        const colMinWidth = getMinWidth(columns.value[colIndex].type);
+        const available = columns.value[colIndex].width - colMinWidth;
+        const taken = Math.min(amount, Math.max(0, available));
         if (taken > 0) {
             columns.value[colIndex].width -= taken;
         }
@@ -207,8 +215,8 @@ function addColumnWithType(atIndex: number, type: string) {
         distance++;
     }
 
-    // Add the new column with the width we were able to free (or defaultWidth if we got enough)
-    const actualNewColWidth = Math.max(widthTaken, minColWidth);
+    // Add the new column with the width we were able to free (or at least minWidth)
+    const actualNewColWidth = Math.max(widthTaken, newColMinWidth);
     columns.value.splice(atIndex, 0, { type, width: actualNewColWidth });
 
     // Ensure total equals totalWidth (fix any rounding issues)
@@ -275,18 +283,22 @@ function onResizeMove(e: MouseEvent) {
 
     const combinedWidth = startWidthLeft + startWidthRight;
 
+    // Get column-specific minWidths
+    const leftMinWidth = getMinWidth(columns.value[index].type);
+    const rightMinWidth = getMinWidth(columns.value[index + 1].type);
+
     // Calculate new widths ensuring both stay within bounds
     let newLeftWidth = startWidthLeft + widthDelta;
     let newRightWidth = startWidthRight - widthDelta;
 
     // Clamp to minimum widths
-    if (newLeftWidth < minColWidth) {
-        newLeftWidth = minColWidth;
-        newRightWidth = combinedWidth - minColWidth;
+    if (newLeftWidth < leftMinWidth) {
+        newLeftWidth = leftMinWidth;
+        newRightWidth = combinedWidth - leftMinWidth;
     }
-    if (newRightWidth < minColWidth) {
-        newRightWidth = minColWidth;
-        newLeftWidth = combinedWidth - minColWidth;
+    if (newRightWidth < rightMinWidth) {
+        newRightWidth = rightMinWidth;
+        newLeftWidth = combinedWidth - rightMinWidth;
     }
 
     columns.value[index].width = newLeftWidth;
