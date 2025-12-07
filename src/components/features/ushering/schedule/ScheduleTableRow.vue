@@ -4,17 +4,13 @@ import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { TimetableShow } from '@/scripts/types.ts';
 import Icon4dx from '@/assets/symbols/Icon4dx.vue';
+import { defaultColumns, colTypes } from './ColsBuilder.vue';
 
 defineProps<{ show: TimetableShow }>();
 
 const stingers = useStorage<string[]>('credits-stingers', []);
 
-const displayScheduledTime = useStorage('display-scheduled-time', true);
-const displayMainShowTime = useStorage('display-main-show-time', false);
-const displayIntermissionTime = useStorage('display-intermission-time', true);
-const displayCreditsTime = useStorage('display-credits-time', true);
-const displayEndTime = useStorage('display-end-time', false);
-const displayNextStartTime = useStorage('display-next-start-time', false);
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1);
 const displayCreditsDuration = useStorage('show-credits-duration', 1);
@@ -38,7 +34,6 @@ function toggleCreditsStinger(title: string) {
         console.error('Failed to toggle post-credits:', error)
     }
 }
-
 </script>
 
 <template>
@@ -48,91 +43,74 @@ function toggleCreditsStinger(title: string) {
         italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
         'final-show': !show.nextStartTime
     }" @contextmenu.prevent="displayContextMenu = true">
-        <td nowrap class="td-auditorium">
-            <span contenteditable>
-                {{ show.auditorium === 'Rooftop' ? 'RT' :
-                    show.auditorium.replace(/^\w+\s/, '') }}
-            </span>
-        </td>
-        <td nowrap class="td-scheduled">
-            <span contenteditable>
-                {{ displayScheduledTime && show.scheduledTime
-                    ? format(show.scheduledTime, 'HH:mm')
-                    : '' }}
-            </span>
-            <span class="preshow-duration" contenteditable
-                v-if="displayScheduledTime && (show.scheduledTime && show.mainShowTime) && ((displayPreshowDuration === 1 && show.auditorium?.includes('4DX')) || displayPreshowDuration === 2)">
-                +{{ Math.round((show.mainShowTime.getTime() - show.scheduledTime.getTime()) /
-                    60000) }}
-            </span>
-        </td>
-        <td nowrap class="td-main">
-            <span contenteditable>
-                {{ displayMainShowTime && show.mainShowTime
-                    ? format(show.mainShowTime, 'HH:mm:ss')
-                    : '' }}
-            </span>
-        </td>
-        <td nowrap class="td-intermission">
-            <span contenteditable>
-                {{ displayIntermissionTime && show.intermissionTime
-                    ? format(show.intermissionTime, 'HH:mm:ss')
-                    : '' }}
-            </span>
-        </td>
-        <td nowrap class="td-credits">
-            <Icon4dx class="plf-icon" src="@assets/symbols/icon-4dx.svg" v-if="show.isNearPlf" />
-            <div class="double-usherout"
-                v-if="show.timeToNextUsherout <= shortGapInterval * 60000 && shortGapInterval > 0">
-            </div>
-            <div class="long-gap" v-if="show.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
-            </div>
-            <div class="plf-overlap" v-if="show.overlapWithPlf"></div>
-            <span class="credits-time">
-                <span contenteditable
-                    :style="{ opacity: show.creditsTime.getTime() === show.endTime.getTime() ? '.5' : '1' }">
-                    {{ displayCreditsTime && show.creditsTime
-                        ? format(show.creditsTime, 'HH:mm:ss')
-                        : '' }}
-                </span>
-                <span class="credits-duration" contenteditable
-                    v-if="displayCreditsTime && (show.creditsTime && show.endTime) && ((displayCreditsDuration === 1 && show.hasCreditsStinger) || displayCreditsDuration === 2)">
-                    +{{ Math.round((show.endTime.getTime() - show.creditsTime.getTime()) /
-                        60000) }}
-                </span>
-            </span>
-            <Icon v-if="!show.nextStartTime" class="final-show">dark_mode</Icon>
-        </td>
-        <td nowrap class="td-end">
-            <span contenteditable>
-                {{ (displayEndTime) && show.endTime
-                    ? format(show.endTime, 'HH:mm')
-                    : '' }}
-            </span>
-        </td>
-        <td nowrap class="td-next" style="font-weight: normal; font-style: normal;">
-            <span contenteditable>
-                {{ displayNextStartTime && show.nextStartTime
-                    ? format(show.nextStartTime, 'HH:mm')
-                    : '' }}
-            </span>
-        </td>
-        <td nowrap class="td-title">
-            <span contenteditable>{{ show.title }}</span>
-            <span contenteditable>{{ show.extras.join(' ') }}</span>
-        </td>
-        <td nowrap class="age-rating"
-            :class="{ translucent: ['AL', '6', '9', '12', '14'].includes(show.featureRating) }">
-            <span contenteditable>{{ show.featureRating }}</span>
-            <!-- <IconNicamAL class="nicam-icon" v-if="show.featureRating === 'AL'" />
-                <IconNicam6 class="nicam-icon" v-else-if="show.featureRating === '6'" />
-                <IconNicam9 class="nicam-icon" v-else-if="show.featureRating === '9'" />
-                <IconNicam12 class="nicam-icon" v-else-if="show.featureRating === '12'" />
-                <IconNicam14 class="nicam-icon" v-else-if="show.featureRating === '14'" />
-                <IconNicam16 class="nicam-icon" v-else-if="show.featureRating === '16'" />
-                <IconNicam18 class="nicam-icon" v-else-if="show.featureRating === '18'" />
-                <span v-else>{{ show.featureRating }}</span> -->
-        </td>
+        <template v-for="col in columns" :key="col.type">
+            <td nowrap :class="{
+                ['td-' + col.type]: true,
+                translucent: col.type === 'ageRating' && ['AL', '6', '9', '12', '14'].includes(show.featureRating)
+            }" :style="col.type === 'nextStartTime' ? 'font-weight: normal; font-style: normal;' : ''">
+
+                <template v-if="col.type === 'scheduledTime'">
+
+                    <span contenteditable>
+                        {{ show.scheduledTime
+                            ? format(show.scheduledTime, 'HH:mm')
+                            : '' }}
+                    </span>
+                    <span class="preshow-duration" contenteditable
+                        v-if="(show.scheduledTime && show.mainShowTime) && ((displayPreshowDuration === 1 && show.auditorium?.includes('4DX')) || displayPreshowDuration === 2)">
+                        +{{ Math.round((show.mainShowTime.getTime() - show.scheduledTime.getTime()) /
+                            60000) }}
+                    </span>
+
+                </template>
+
+                <template v-else-if="col.type === 'creditsTime'">
+
+                    <Icon4dx class="plf-icon" src="@assets/symbols/icon-4dx.svg" v-if="show.isNearPlf" />
+                    <div class="double-usherout"
+                        v-if="show.timeToNextUsherout <= shortGapInterval * 60000 && shortGapInterval > 0">
+                    </div>
+                    <div class="long-gap"
+                        v-if="show.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
+                    </div>
+                    <div class="plf-overlap" v-if="show.overlapWithPlf"></div>
+                    <span class="credits-time">
+                        <span contenteditable
+                            :style="{ opacity: show.creditsTime.getTime() === show.endTime.getTime() ? '.5' : '1' }">
+                            {{ show.creditsTime
+                                ? format(show.creditsTime, 'HH:mm:ss')
+                                : '' }}
+                        </span>
+                        <span class="credits-duration" contenteditable
+                            v-if="(show.creditsTime && show.endTime) && ((displayCreditsDuration === 1 && show.hasCreditsStinger) || displayCreditsDuration === 2)">
+                            +{{ Math.round((show.endTime.getTime() - show.creditsTime.getTime()) /
+                                60000) }}
+                        </span>
+                    </span>
+                    <Icon v-if="!show.nextStartTime" class="final-show">dark_mode</Icon>
+
+                </template>
+
+                <template v-else-if="col.type === 'title'">
+
+                    <span contenteditable>
+                        {{colTypes.find(c => c.value === col.type).content(show)}}
+                    </span>
+
+                    <span contenteditable>
+                        {{ show.extras.join(' ') }}
+                    </span>
+
+                </template>
+
+                <template v-else>
+                    <span contenteditable>
+                        {{colTypes.find(c => c.value === col.type).content(show)}}
+                    </span>
+                </template>
+
+            </td>
+        </template>
     </tr>
 
     <Transition>
@@ -188,7 +166,7 @@ td {
     .plf-icon {
         position: absolute;
         top: 0;
-        left: -1.12em;
+        left: -3em;
         height: .88em;
         translate: 0 -50%;
         fill: var(--color);
@@ -197,7 +175,7 @@ td {
     .double-usherout {
         position: absolute;
         top: 50%;
-        left: 2em;
+        left: 0em;
         height: 100%;
         width: 1.76em;
         border-radius: 50%;
@@ -209,7 +187,7 @@ td {
     .long-gap {
         position: absolute;
         bottom: -1px;
-        left: 2.08em;
+        left: 0em;
         width: 4.96em;
         border-bottom: 2px dotted var(--color);
         opacity: .5;
@@ -219,7 +197,7 @@ td {
         position: absolute;
         top: 0;
         bottom: 0;
-        left: 1.44em;
+        left: -0.5em;
         border-left: 2px dashed var(--color);
         opacity: .5;
     }
@@ -229,11 +207,6 @@ td {
         opacity: .4;
         font-weight: normal;
         font-style: normal;
-    }
-
-    &.age-rating {
-        text-align: end;
-        min-width: 1.68em;
     }
 
     .nicam-icon {
@@ -248,27 +221,36 @@ td {
 
     .final-show {
         position: absolute;
-        right: -6px;
+        left: 6.4em;
         --size: 12px;
         opacity: .5;
     }
 }
 
-.td-main,
-.td-end,
-.td-next {
+.td-auditorium {
+    overflow: hidden;
+}
+
+.td-mainShowTime,
+.td-endTime,
+.td-nextStartTime {
     opacity: .5;
 }
 
-.td-credits {
-    padding-left: 32px;
+.td-title {
+    height: var(--row-height);
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &>span:last-child {
+        float: right;
+    }
 }
 
-.td-title {
-    display: flex;
-    height: var(--row-height);
-    align-items: center;
-    justify-content: space-between;
+.td-ageRating {
+    text-align: end;
+    min-width: 1.68em;
+    padding-left: 0;
 }
 
 [contenteditable]:hover {

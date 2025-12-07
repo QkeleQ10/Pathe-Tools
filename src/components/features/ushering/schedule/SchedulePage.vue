@@ -6,6 +6,7 @@ import { useVueToPrint } from 'vue-to-print';
 import { TimetableShow } from '@/scripts/types.ts';
 import { nl } from 'date-fns/locale';
 import ScheduleTableRow from './ScheduleTableRow.vue';
+import { defaultColumns, colTypes } from './ColsBuilder.vue';
 
 const props = defineProps<{
     shows: TimetableShow[];
@@ -22,12 +23,7 @@ const props = defineProps<{
     fontSize: number;
 }>();
 
-const displayScheduledTime = useStorage('display-scheduled-time', true);
-const displayMainShowTime = useStorage('display-main-show-time', false);
-const displayIntermissionTime = useStorage('display-intermission-time', true);
-const displayCreditsTime = useStorage('display-credits-time', true);
-const displayEndTime = useStorage('display-end-time', false);
-const displayNextStartTime = useStorage('display-next-start-time', false);
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
 const printComponent = useTemplateRef('printComponent');
 
@@ -60,42 +56,17 @@ defineExpose({
                 </div>
                 <table class="timetable" spellcheck="false">
                     <colgroup>
-                        <col span="1" style="width: 6%;" />
-                        <col span="1" style="width: 9%;" />
-                        <col span="1" style="width: 6%;" />
-                        <col span="1" style="width: 6%;" />
-                        <col span="1" style="width: 13%;" />
-                        <col span="1" style="width: 6%;" />
-                        <col span="1" style="width: 4%;" />
-                        <col span="1" style="width: 49%;" />
-                        <col span="1" style="width: 2%;" />
+                        <col v-for="(col, i) in columns" :key="i" :span="1" :style="`width: ${col.width}%;`" />
                     </colgroup>
                     <thead>
                         <tr>
-                            <td nowrap class="td-auditorium">Zaal</td>
-                            <td nowrap class="td-scheduled">
-                                {{ displayScheduledTime ? "Inloop" : '' }}
+                            <td v-for="(col, i) in columns" :key="i" nowrap :class="`td-${col.type}`">
+                                <span contenteditable
+                                    v-if="col.type === 'intermissionTime' && !shows.some(show => show.intermissionTime)"></span>
+                                <span contenteditable v-else>
+                                    {{colTypes.find(c => c.value === col.type)?.colHeading || ''}}
+                                </span>
                             </td>
-                            <td nowrap class="td-main">
-                                {{displayMainShowTime && shows.some(show => show.mainShowTime)
-                                    ? "Start" : ''}}
-                            </td>
-                            <td nowrap class="td-intermission">
-                                {{displayIntermissionTime && shows.some(show =>
-                                    show.intermissionTime)
-                                    ? "Pauze" : ''}}
-                            </td>
-                            <td nowrap class="td-credits">
-                                {{ displayCreditsTime ? "Aftiteling" : '' }}
-                            </td>
-                            <td nowrap class="td-end">
-                                {{ displayEndTime ? "Eind" : '' }}
-                            </td>
-                            <td nowrap class="td-next">
-                                {{ displayNextStartTime ? "Volg." : '' }}
-                            </td>
-                            <td nowrap class="td-title">Film</td>
-                            <td nowrap class="td-age"></td>
                         </tr>
                     </thead>
                     <ScheduleTableRow v-for="(show, i) in shows" :key="i" :show="show" />
@@ -281,6 +252,7 @@ table.timetable {
     color: var(--color);
     font-family: Arial, Helvetica, sans-serif;
     font-size: inherit;
+    table-layout: fixed;
     --row-height: 1.72em;
 
     thead>tr {
@@ -298,6 +270,9 @@ table.timetable {
     td {
         position: relative;
         padding: .16em .48em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 0;
     }
 
     .td-credits {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, useTemplateRef } from 'vue'
+import { ref, computed, useTemplateRef } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show, TimetableShow } from '@/scripts/types.ts'
@@ -9,19 +9,14 @@ import { useVueToPrint } from 'vue-to-print'
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue'
 import SchedulePage from '@features/ushering/schedule/SchedulePage.vue'
 import UserGuide from '@/components/features/ushering/schedule/UserGuide.vue'
-import ColsBuilder from '@/components/features/ushering/schedule/ColsBuilder.vue'
+import ColsBuilder, { defaultColumns } from '@/components/features/ushering/schedule/ColsBuilder.vue'
 
 const store = useTmsScheduleStore()
 const stingers = useStorage<string[]>('credits-stingers', [])
 
 const trueColours = useStorage('true-colours', false);
 
-const displayScheduledTime = useStorage('display-scheduled-time', true);
-const displayMainShowTime = useStorage('display-main-show-time', false);
-const displayIntermissionTime = useStorage('display-intermission-time', true);
-const displayCreditsTime = useStorage('display-credits-time', true);
-const displayEndTime = useStorage('display-end-time', false);
-const displayNextStartTime = useStorage('display-next-start-time', false);
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
 const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
@@ -151,40 +146,9 @@ const { isOverDropZone } = useDropZone(main, {
                 <SidePanel style="flex: 150px 1 0;">
                     <h2>Opties</h2>
 
-                    <InvokableModalDialog>
-                        <template #button-content>
-                            <Icon>help</Icon> Kolommen
-                        </template>
-                        <template #dialog-content>
-                            <ColsBuilder />
-                        </template>
-                    </InvokableModalDialog>
                     <fieldset>
                         <legend>Kolommen</legend>
-                        <div>
-                            <div class="label">Weergeven indien beschikbaar</div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                                <InputCheckbox class="enclose-box" identifier="displayScheduledTime"
-                                    v-model="displayScheduledTime">Inloop
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayMainShowTime"
-                                    v-model="displayMainShowTime">Start hoofdfilm
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayIntermissionTime"
-                                    v-model="displayIntermissionTime">Pauze
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayCreditsTime"
-                                    v-model="displayCreditsTime">
-                                    Aftiteling
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayEndTime" v-model="displayEndTime">
-                                    Einde voorstelling
-                                </InputCheckbox>
-                                <InputCheckbox class="enclose-box" identifier="displayNextStartTime"
-                                    v-model="displayNextStartTime">Volgende inloop
-                                </InputCheckbox>
-                            </div>
-                        </div>
+                        <ColsBuilder style="min-width: 600px;" v-model="columns" />
                     </fieldset>
                     <fieldset>
                         <legend>Uitloop</legend>
