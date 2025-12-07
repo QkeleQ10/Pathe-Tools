@@ -1,4 +1,4 @@
-// utils/contextMenuManager.ts
+// scripts/contextMenuManager.ts
 import { h, render, VNode, Component, isVNode } from 'vue';
 import ContextMenu from '@ui/ContextMenu.vue';
 
@@ -18,11 +18,6 @@ export interface ShowContextMenuOptions {
 export function showContextMenu(content: ContextMenuContent, options: ShowContextMenuOptions = {}) {
     const container = document.createElement('div');
     document.body.appendChild(container);
-
-    // Set anchor name on the anchor element if provided
-    if (options.anchor) {
-        options.anchor.style.anchorName = '--context-menu-anchor';
-    }
 
     const destroy = () => {
         render(null, container);
