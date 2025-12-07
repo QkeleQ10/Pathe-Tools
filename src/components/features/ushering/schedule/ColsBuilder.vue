@@ -250,6 +250,11 @@ function removeColumn(index: number) {
     }
 }
 
+function resetToDefaults() {
+    // Create a deep copy of defaultColumns to avoid reference issues
+    columns.value = defaultColumns.map(col => ({ ...col }));
+}
+
 function onResizeStart(e: MouseEvent, index: number) {
     e.preventDefault();
     e.stopPropagation();
@@ -389,7 +394,7 @@ function getAddButtonPosition(index: number): string {
                 </template>
             </div>
         </div>
-        <Button class="secondary" @click="">Standaardwaarden</Button>
+        <Button class="secondary" @click="resetToDefaults">Standaardwaarden</Button>
     </div>
 </template>
 
