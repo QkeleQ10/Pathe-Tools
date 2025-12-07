@@ -37,12 +37,14 @@ function toggleCreditsStinger(title: string) {
 </script>
 
 <template>
-    <tr :class="{
-        targeting: displayContextMenu,
-        'no-print': !printRow,
-        italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
-        'final-show': !show.nextStartTime
-    }" @contextmenu.prevent="displayContextMenu = true">
+    <InvokableContextMenu v-model:active="displayContextMenu" menu-class="dark">
+        <template #anchor>
+            <tr :class="{
+                targeting: displayContextMenu,
+                'no-print': !printRow,
+                italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
+                'final-show': !show.nextStartTime
+            }">
         <template v-for="col in columns" :key="col.type">
             <td nowrap :class="{
                 ['td-' + col.type]: true,
@@ -111,10 +113,10 @@ function toggleCreditsStinger(title: string) {
 
             </td>
         </template>
-    </tr>
-
-    <Transition>
-        <ContextMenu v-if="displayContextMenu" class="dark" @click-outside="displayContextMenu = false">
+            </tr>
+        </template>
+        
+        <template #menu>
             <button @click="toggleCreditsStinger(show.title); displayContextMenu = false">
                 <div class="check" :class="{ 'empty': !stingers.includes(show.title?.trim()) }">
                 </div>
@@ -124,8 +126,8 @@ function toggleCreditsStinger(title: string) {
                 <div class="check" :class="{ 'empty': printRow }"></div>
                 Voorstelling verwijderen uit lijst
             </button>
-        </ContextMenu>
-    </Transition>
+        </template>
+    </InvokableContextMenu>
 </template>
 
 <style scoped>
@@ -263,5 +265,23 @@ td {
     outline: 1px solid var(--yellow1);
     outline-offset: -1px;
     background-color: #ffc52631;
+}
+
+.check {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border: 2px solid currentColor;
+    border-radius: 3px;
+    position: relative;
+}
+
+.check:not(.empty)::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
 }
 </style>

@@ -6,13 +6,17 @@ const active = defineModel<boolean>('active', {
     type: Boolean,
 });
 
+defineProps<{
+    menuClass?: string;
+}>();
+
 const anchorRef = ref<HTMLElement | null>(null);
 const contextPosition = ref<{ x: number; y: number } | null>(null);
 
 const handleContextMenu = (event: MouseEvent) => {
     event.preventDefault();
     
-    // Store the click position for manual positioning fallback
+    // Store the click position for fallback positioning
     contextPosition.value = {
         x: event.clientX,
         y: event.clientY
@@ -54,6 +58,7 @@ defineExpose({
                 :anchor="anchorRef"
                 :x="contextPosition?.x"
                 :y="contextPosition?.y"
+                :class="menuClass"
                 @click-outside="closeMenu"
             >
                 <slot name="menu">
