@@ -6,7 +6,10 @@ import { TimetableShow } from '@/scripts/types.ts';
 import Icon4dx from '@/assets/symbols/Icon4dx.vue';
 import { defaultColumns, colTypes } from './ColsBuilder.vue';
 
-defineProps<{ show: TimetableShow }>();
+defineProps<{
+    show: TimetableShow,
+    sortBy: "scheduledTime" | "creditsTime",
+}>();
 
 const stingers = useStorage<string[]>('credits-stingers', []);
 
@@ -66,12 +69,13 @@ function toggleCreditsStinger(title: string) {
 
                 <template v-else-if="col.type === 'creditsTime'">
 
-                    <Icon4dx class="plf-icon" src="@assets/symbols/icon-4dx.svg" v-if="show.isNearPlf" />
+                    <Icon4dx class="plf-icon" src="@assets/symbols/icon-4dx.svg"
+                        v-if="sortBy === 'creditsTime' && show.isNearPlf" />
                     <div class="double-usherout"
-                        v-if="show.timeToNextUsherout <= shortGapInterval * 60000 && shortGapInterval > 0">
+                        v-if="sortBy === 'creditsTime' && show.timeToNextUsherout <= shortGapInterval * 60000 && shortGapInterval > 0">
                     </div>
                     <div class="long-gap"
-                        v-if="show.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
+                        v-if="sortBy === 'creditsTime' && show.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
                     </div>
                     <div class="plf-overlap" v-if="show.overlapWithPlf"></div>
                     <span class="credits-time">

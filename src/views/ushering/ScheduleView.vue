@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, useTemplateRef } from 'vue'
+import { ref, computed, useTemplateRef, nextTick } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
 import { Show, TimetableShow } from '@/scripts/types.ts'
@@ -14,6 +14,7 @@ import ColsBuilder, { defaultColumns } from '@/components/features/ushering/sche
 const store = useTmsScheduleStore()
 const stingers = useStorage<string[]>('credits-stingers', [])
 
+const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', 'creditsTime');
 const trueColours = useStorage('true-colours', false);
 
 const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
@@ -140,7 +141,8 @@ const { isOverDropZone } = useDropZone(main, {
                     <p id="upload-hint" v-if="!pages?.[0]?.length">Upload eerst een bestand.</p>
                     <div id="pages" ref="pages" :class="{ gray: trueColours }">
                         <SchedulePage v-for="(page, i) in pages" :ref="el => schedulePageRefs[i] = el" :shows="page"
-                            :metadata="store.metadata" :page-num="i" :num-pages="pages.length" :fontSize="fontSize" />
+                            :metadata="store.metadata" :page-num="i" :num-pages="pages.length" :fontSize="fontSize"
+                            :sortBy="sortBy" />
                     </div>
                 </div>
                 <SidePanel style="flex: 150px 1 0;">
@@ -220,7 +222,7 @@ const { isOverDropZone } = useDropZone(main, {
                             <template #label>Duur filmpauzes</template>
                             <span class="unit">minuten</span>
                         </InputGroup>
-                        <InputGroup type="select" id="animation" v-model="fontSize">
+                        <InputGroup type="select" id="fontSize" v-model="fontSize">
                             <template #label>Lettergrootte</template>
                             <template #input>
                                 <option :value="11">Kleiner</option>
@@ -228,21 +230,43 @@ const { isOverDropZone } = useDropZone(main, {
                                 <option :value="14">Groter</option>
                             </template>
                         </InputGroup>
+                        <InputGroup type="select" id="sortBy" v-model="sortBy">
+                            <template #label>Sorteren op</template>
+                            <template #input>
+                                <option :value="'creditsTime'">Aftitelingstijd</option>
+                                <option :value="'scheduledTime'">Aanvangstijd</option>
+                            </template>
+                        </InputGroup>
                     </fieldset>
 
                     <fieldset id="print-buttons" class="buttons flex">
                         <legend>Afdrukken</legend>
-                        <Button v-if="pages.length > 1" @click="handlePrint()" class="primary full">
-                            <Icon>print</Icon>
-                            Alles
-                        </Button>
-                        <Button v-for="(page, i) in pages" :key="i" @click="schedulePageRefs[i]?.handlePrint()"
-                            class="full" :class="{ 'secondary': pages.length > 1 }">
-                            <Icon>print</Icon>
-                            {{ pages.length > 1
-                                ? 'Deel ' + (i + 1)
-                                : 'Afdrukken' }}
-                        </Button>
+                        <template v-if="pages.length === 1">
+                            <Button class="primary full" style="flex: 2;"
+                                @click="sortBy = 'creditsTime'; nextTick(() => schedulePageRefs[0]?.handlePrint())">
+                                <Icon>print</Icon>
+                                Uitlopenlijst
+                            </Button>
+                            <Button class="secondary full" style="flex: 1;"
+                                @click="sortBy = 'scheduledTime'; nextTick(() => schedulePageRefs[0]?.handlePrint())">
+                                <Icon>print</Icon>
+                                Inlopenlijst
+                            </Button>
+                        </template>
+                        <template v-else>
+                            <Button class="primary full" v-if="pages.length > 1" @click="handlePrint()"
+                                style="flex: 2;">
+                                <Icon>print</Icon>
+                                Alles
+                            </Button>
+                            <Button class="secondary full" v-for="(page, i) in pages" :key="i"
+                                @click="schedulePageRefs[i]?.handlePrint()" style="flex: 1;">
+                                <Icon>print</Icon>
+                                {{ pages.length > 1
+                                    ? 'Deel ' + (i + 1)
+                                    : 'Afdrukken' }}
+                            </Button>
+                        </template>
                     </fieldset>
                 </SidePanel>
             </div>

@@ -60,7 +60,8 @@ export const colTypes: { content: (show: TimetableShow) => string; label: string
                 ? String(Math.floor((show.nextStartTime.getTime() - show.endTime.getTime()) / 60000)) + '\''
                 : ''
         , label: "Schoonmaaktijd", colHeading: "S.t.", value: 'cleaningTime', icon: 'timer', defaultWidth: 6, minWidth: 3
-    }
+    },
+    { content: () => '', label: "Lege ruimte", colHeading: "", value: 'spacer', icon: 'space_bar', defaultWidth: 3, minWidth: 1 },
 ];
 </script>
 
@@ -183,14 +184,10 @@ function addColumnWithType(atIndex: number, type: string) {
     const leftNeighborIndex = atIndex - 1;
 
     // First, try to take half from the right neighbor
-    if (rightNeighborIndex < columns.value.length) {
-        widthTaken += takeFromColumn(rightNeighborIndex, halfWidth);
-    }
+    widthTaken += takeFromColumn(Math.min(rightNeighborIndex, columns.value.length - 1), widthToTake - halfWidth);
 
     // Then, try to take half from the left neighbor
-    if (leftNeighborIndex >= 0) {
-        widthTaken += takeFromColumn(leftNeighborIndex, halfWidth);
-    }
+    widthTaken += takeFromColumn(Math.max(0, leftNeighborIndex), halfWidth);
 
     // If we still need more width, expand outward from the insertion point
     let distance = 1;

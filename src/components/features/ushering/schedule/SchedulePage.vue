@@ -21,6 +21,7 @@ const props = defineProps<{
     pageNum: number;
     numPages: number;
     fontSize: number;
+    sortBy: "scheduledTime" | "creditsTime";
 }>();
 
 const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
@@ -45,13 +46,16 @@ defineExpose({
         <div class="print-component-wrapper">
             <div class="print-component" ref="printComponent" :style="`font-size: ${fontSize}px;`">
                 <div class="header" v-if="'flags' in metadata">
+                    {{ sortBy === 'scheduledTime' ? 'Inlopen' : 'Uitlopen' }}
+                    van
                     {{
                         (metadata.flags.includes('times-only')
-                            ? 'Datum onbekend'
+                            ? 'onbekende datum'
                             : format(shows[0]?.scheduledTime || 0, 'PPPP', { locale: nl }))
-                        + (props.numPages > 1
-                            ? ` (deel ${props.pageNum + 1} van ${props.numPages})`
-                            : '')
+                    }}
+                    {{ (props.numPages > 1
+                        ? ` (deel ${props.pageNum + 1} van ${props.numPages})`
+                        : '')
                     }}
                 </div>
                 <table class="timetable" spellcheck="false">
@@ -60,7 +64,8 @@ defineExpose({
                     </colgroup>
                     <thead>
                         <tr>
-                            <td v-for="(col, i) in columns" :key="i" nowrap :class="`td-${col.type}`">
+                            <td v-for="(col, i) in columns" :key="i" nowrap
+                                :class="{ [`td-${col.type}`]: true, 'sorting-variable': col.type === sortBy }">
                                 <span contenteditable
                                     v-if="col.type === 'intermissionTime' && !shows.some(show => show.intermissionTime)"></span>
                                 <span contenteditable v-else>
@@ -69,7 +74,9 @@ defineExpose({
                             </td>
                         </tr>
                     </thead>
-                    <ScheduleTableRow v-for="(show, i) in shows" :key="i" :show="show" />
+                    <ScheduleTableRow
+                        v-for="(show, i) in [...shows].sort((a, b) => a[sortBy].getTime() - b[sortBy].getTime())"
+                        :key="i" :show="show" :sortBy="sortBy" />
                 </table>
                 <span contenteditable class="custom-content"></span>
                 <div class="footer">
@@ -273,6 +280,10 @@ table.timetable {
         overflow: hidden;
         text-overflow: ellipsis;
         padding-right: 0;
+
+        &.sorting-variable {
+            text-decoration: underline;
+        }
     }
 
     .td-credits {
