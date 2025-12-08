@@ -217,25 +217,27 @@ const { isOverDropZone } = useDropZone(main, {
                                 <option :value="2">Altijd tonen</option>
                             </template>
                         </InputGroup>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <InputGroup type="select" id="fontSize" v-model="fontSize">
+                                <template #label>Lettergrootte</template>
+                                <template #input>
+                                    <option :value="11">Kleiner</option>
+                                    <option :value="12.5">Normaal</option>
+                                    <option :value="14">Groter</option>
+                                </template>
+                            </InputGroup>
+                            <InputGroup type="select" id="sortBy" v-model="sortBy">
+                                <template #label>Sorteren op</template>
+                                <template #input>
+                                    <option :value="'creditsTime'">Aftitelingstijd</option>
+                                    <option :value="'scheduledTime'">Aanvangstijd</option>
+                                </template>
+                            </InputGroup>
+                        </div>
                         <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration"
                             min="0" max="30">
                             <template #label>Duur filmpauzes</template>
                             <span class="unit">minuten</span>
-                        </InputGroup>
-                        <InputGroup type="select" id="fontSize" v-model="fontSize">
-                            <template #label>Lettergrootte</template>
-                            <template #input>
-                                <option :value="11">Kleiner</option>
-                                <option :value="12.5">Normaal</option>
-                                <option :value="14">Groter</option>
-                            </template>
-                        </InputGroup>
-                        <InputGroup type="select" id="sortBy" v-model="sortBy">
-                            <template #label>Sorteren op</template>
-                            <template #input>
-                                <option :value="'creditsTime'">Aftitelingstijd</option>
-                                <option :value="'scheduledTime'">Aanvangstijd</option>
-                            </template>
                         </InputGroup>
                     </fieldset>
 
