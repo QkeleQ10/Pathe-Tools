@@ -23,7 +23,6 @@ declare module 'vue' {
     InputDate: typeof import('./src/components/ui/InputDate.vue')['default']
     InputGroup: typeof import('./src/components/ui/InputGroup.vue')['default']
     InputSwitch: typeof import('./src/components/ui/InputSwitch.vue')['default']
-    InvokableContextMenu: typeof import('./src/components/ui/InvokableContextMenu.vue')['default']
     InvokableModalDialog: typeof import('./src/components/ui/InvokableModalDialog.vue')['default']
     ModalDialog: typeof import('./src/components/ui/ModalDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

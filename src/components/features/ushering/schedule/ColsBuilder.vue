@@ -62,7 +62,7 @@ export const colTypes: { content: (show: TimetableShow) => string; label: string
                     const hours = Math.floor(mins / 60);
                     const minutes = mins % 60;
                     return hours > 0 ? `${hours}u${String(minutes).padStart(2, '0')}` : `${mins}'`;
-                  })()
+                })()
                 : ''
         , label: "Schoonmaaktijd", colHeading: "S.t.", value: 'cleaningTime', icon: 'timer', defaultWidth: 6, minWidth: 3
     },
@@ -361,6 +361,7 @@ function getAddButtonPosition(index: number): string {
 
 <template>
     <div class="cols-builder">
+        <Button class="tertiary" @click="resetToDefaults">Resetten</Button>
         <div class="columns-wrapper">
             <div class="columns" ref="columnsContainer">
                 <template v-for="(col, i) in columns" :key="i">
@@ -425,13 +426,21 @@ function getAddButtonPosition(index: number): string {
                 </template>
             </div>
         </div>
-        <Button class="secondary" @click="resetToDefaults">Standaardwaarden</Button>
     </div>
 </template>
 
 <style scoped>
 .cols-builder {
-    margin-block: 16px;
+    margin-bottom: 0;
+    position: relative;
+}
+
+button.tertiary {
+    position: absolute;
+    top: -32px;
+    right: 0;
+    background-color: #111316 !important;
+    padding-left: 8px;
 }
 
 .columns-wrapper {
@@ -506,10 +515,17 @@ function getAddButtonPosition(index: number): string {
     margin-top: -8px;
 }
 
+
 .add-btn-container {
     position: absolute;
     transform: translateX(-50%);
     z-index: 2;
+    opacity: 0;
+    transition: opacity .2s;
+}
+
+.cols-builder:hover .add-btn-container {
+    opacity: 1;
 }
 
 .add-btn.teardrop {

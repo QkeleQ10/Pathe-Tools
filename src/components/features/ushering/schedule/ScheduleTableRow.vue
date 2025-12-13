@@ -20,7 +20,9 @@ const displayCreditsDuration = useStorage('show-credits-duration', 1);
 const shortGapInterval = useStorage('short-gap-interval', 10);
 const longGapInterval = useStorage('long-gap-interval', 35);
 
-const displayContextMenu = ref(false);
+const contextMenuVisible = ref(false);
+const contextMenuX = ref(0);
+const contextMenuY = ref(0);
 const printRow = ref(true);
 
 function toggleCreditsStinger(title: string) {
@@ -37,15 +39,22 @@ function toggleCreditsStinger(title: string) {
         console.error('Failed to toggle post-credits:', error)
     }
 }
+
+function displayContextMenu(event: MouseEvent) {
+    event.preventDefault();
+    contextMenuX.value = event.clientX;
+    contextMenuY.value = event.clientY;
+    contextMenuVisible.value = true;
+}
 </script>
 
 <template>
     <tr :class="{
-        targeting: displayContextMenu,
+        targeting: contextMenuVisible,
         'no-print': !printRow,
         italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
         'final-show': !show.nextStartTime
-    }" @contextmenu.prevent="displayContextMenu = true">
+    }" @contextmenu="displayContextMenu">
         <template v-for="col in columns" :key="col.type">
             <td nowrap :class="{
                 ['td-' + col.type]: true,
@@ -118,13 +127,13 @@ function toggleCreditsStinger(title: string) {
     </tr>
 
     <Transition>
-        <ContextMenu v-if="displayContextMenu" class="dark" @click-outside="displayContextMenu = false">
-            <button @click="toggleCreditsStinger(show.title); displayContextMenu = false">
+        <ContextMenu v-if="contextMenuVisible" class="dark" @click-outside="contextMenuVisible = false" :x="contextMenuX" :y="contextMenuY">
+            <button @click="toggleCreditsStinger(show.title); contextMenuVisible = false">
                 <div class="check" :class="{ 'empty': !stingers.includes(show.title?.trim()) }">
                 </div>
                 Post-credits-scène bij {{ show.title }}
             </button>
-            <button @click="printRow = !printRow; displayContextMenu = false">
+            <button @click="printRow = !printRow; contextMenuVisible = false">
                 <div class="check" :class="{ 'empty': printRow }"></div>
                 Voorstelling verwijderen uit lijst
             </button>
@@ -148,6 +157,7 @@ tr {
 
     &.targeting {
         background-color: #ffc52631;
+        background-color: hsl(from var(--yellow1) h s l / 0.19);
     }
 
     &.italic {

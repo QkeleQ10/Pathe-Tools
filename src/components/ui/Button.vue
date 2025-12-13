@@ -1,5 +1,5 @@
 <template>
-    <button class="primary center" type="button">
+    <button class="center" type="button">
         <slot></slot>
     </button>
 </template>
@@ -78,6 +78,19 @@ button.secondary {
 
     &:hover {
         background-color: light-dark(#0000001a, #ffffff33);
+    }
+}
+
+button.tertiary {
+    color: var(--yellow2);
+    background-color: transparent;
+    height: auto;
+    line-height: normal;
+    padding: 0;
+
+    &:hover {
+        background-color: var(--yellow1a);
+        box-shadow: none;
     }
 }
 </style>
