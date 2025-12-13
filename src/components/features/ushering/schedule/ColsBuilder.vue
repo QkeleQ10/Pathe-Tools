@@ -57,7 +57,12 @@ export const colTypes: { content: (show: TimetableShow) => string; label: string
     {
         content: (show) =>
             show.nextStartTime && show.endTime && show.nextStartTime.getTime() - show.endTime.getTime() > 0
-                ? String(Math.floor((show.nextStartTime.getTime() - show.endTime.getTime()) / 60000)) + '\''
+                ? (() => {
+                    const mins = Math.floor((show.nextStartTime.getTime() - show.endTime.getTime()) / 60000);
+                    const hours = Math.floor(mins / 60);
+                    const minutes = mins % 60;
+                    return hours > 0 ? `${hours}u${String(minutes).padStart(2, '0')}` : `${mins}'`;
+                  })()
                 : ''
         , label: "Schoonmaaktijd", colHeading: "S.t.", value: 'cleaningTime', icon: 'timer', defaultWidth: 6, minWidth: 3
     },

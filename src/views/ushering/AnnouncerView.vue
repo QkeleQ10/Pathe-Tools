@@ -488,7 +488,7 @@ const { isOverDropZone } = useDropZone(main, {
                     </fieldset>
 
                     <fieldset style="position: relative;">
-                        <legend>Handmatige omroep</legend>
+                        <legend>Geluidsfragmenten</legend>
                         <div class="manual-sounds-list" v-for="ids in [
                             [...voices.chimes.sounds,
                             ...defaultVoice.sounds.filter(id => !id.startsWith('auditorium'))],
@@ -498,7 +498,8 @@ const { isOverDropZone } = useDropZone(main, {
                             <Button class="secondary manual-sound-button" v-for="id of ids"
                                 @click="previewAnnouncement([{ spriteName: id, offset: 0 }])"
                                 :class="{ translucent: !id.startsWith('chime') && !preferredVoices.some(e => voices[e].sounds.includes(id)) }">
-                                <span>
+                                <Icon v-if="id.startsWith('chime')" style="--size: 16px; margin-right: 0;">music_note</Icon>
+                                <span v-else>
                                     {{ getSoundInfo(id).name }}
                                 </span>
                             </Button>
@@ -659,18 +660,22 @@ const { isOverDropZone } = useDropZone(main, {
 .manual-sounds-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
     margin-bottom: 10px;
 
     .manual-sound-button {
-        height: 22px;
+        height: 26px;
         min-width: 0;
-        padding-left: 6px;
-        padding-right: 6px;
+        padding-left: 8px;
+        padding-right: 8px;
         font-size: 13px;
         font-weight: normal;
         overflow: hidden;
         border-radius: 4px;
+
+        &>span::first-letter {
+            text-transform: uppercase;
+        }
     }
 }
 

@@ -46,17 +46,19 @@ defineExpose({
         <div class="print-component-wrapper">
             <div class="print-component" ref="printComponent" :style="`font-size: ${fontSize}px;`">
                 <div class="header" v-if="'flags' in metadata">
-                    {{ sortBy === 'scheduledTime' ? 'Inlopen' : 'Uitlopen' }}
-                    van
-                    {{
-                        (metadata.flags.includes('times-only')
-                            ? 'onbekende datum'
-                            : format(shows[0]?.scheduledTime || 0, 'PPPP', { locale: nl }))
-                    }}
-                    {{ (props.numPages > 1
-                        ? ` (deel ${props.pageNum + 1} van ${props.numPages})`
-                        : '')
-                    }}
+                    <span>
+                        {{ sortBy === 'scheduledTime' ? 'Inlopen' : 'Uitlopen' }}
+                        van
+                        {{
+                            (metadata.flags.includes('times-only')
+                                ? 'onbekende datum'
+                                : format(shows[0]?.scheduledTime || 0, 'PPPP', { locale: nl }))
+                        }}
+                        {{ (props.numPages > 1
+                            ? ` (deel ${props.pageNum + 1} van ${props.numPages})`
+                            : '')
+                        }}
+                    </span>
                 </div>
                 <table class="timetable" spellcheck="false">
                     <colgroup>
@@ -173,7 +175,6 @@ div.header {
     color: var(--color);
     opacity: 0.5;
     font-size: .8em;
-    text-align: center;
 
     &::first-letter {
         text-transform: uppercase;
@@ -244,12 +245,14 @@ div.footer {
     outline: 1px solid #ffffff88;
     outline-offset: -1px;
     background-color: #ffc52631;
+    background-color: hsl(from var(--yellow1) h s l / 0.19);
 }
 
 [contenteditable]:focus-visible {
     outline: 1px solid var(--yellow1);
     outline-offset: -1px;
     background-color: #ffc52631;
+    background-color: hsl(from var(--yellow1) h s l / 0.19);
 }
 
 table.timetable {

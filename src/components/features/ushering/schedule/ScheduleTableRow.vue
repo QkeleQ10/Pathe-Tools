@@ -242,18 +242,25 @@ td {
 }
 
 .td-title {
+    display: flex;
+    align-items: center;
     height: var(--row-height);
-    overflow: hidden;
-    text-overflow: ellipsis;
+
+    &>span:first-child {
+        flex: 1;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
     &>span:last-child {
-        float: right;
+        margin-left: auto;
     }
 }
 
 .td-ageRating {
     text-align: end;
-    min-width: 1.68em;
     padding-left: 0;
 }
 
@@ -261,11 +268,13 @@ td {
     outline: 1px solid #ffffff88;
     outline-offset: -1px;
     background-color: #ffc52631;
+    background-color: hsl(from var(--yellow1) h s l / 0.19);
 }
 
 [contenteditable]:focus-visible {
     outline: 1px solid var(--yellow1);
     outline-offset: -1px;
     background-color: #ffc52631;
+    background-color: hsl(from var(--yellow1) h s l / 0.19);
 }
 </style>
