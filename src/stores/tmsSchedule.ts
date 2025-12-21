@@ -209,7 +209,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             .replace(" PAUZE", '')
 
         let extraString = transformedString
-            .match(/(\s((4DX)|(ATMOS)|(IMAX)|(SCREENX)|(3D)|(ROOFTOP)|(Music)|(Pride)|(PrideNight)|(Ladies)|(Premiere)|(Bollywood)|(BESLOTEN)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
+            .match(/(\s((4DX)|(ATMOS)|(IMAX)|(SCREENX)|(3D)|(ROOFTOP)|(Music)|(Pride)|(PrideNight)|(Ladies)|(Premiere)|(Bollywood)|(BESLOTEN)|(HFR)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
 
         return {
             extras: extraString.length > 0 ? extraString.split(' ') : [],
