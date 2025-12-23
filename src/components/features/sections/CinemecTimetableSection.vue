@@ -292,7 +292,7 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
         if (!line.enabled) continue;
         if (mode08Beta.value === true || line.align === 'marquee' || line.align === 'marquee-reverse') {
             marqueeTextCommands.push(new qmln.CommandShowTextImmediately(
-                line.align === 'marquee' ? 0x06 : 0x05,
+                line.align === 'marquee' ? 0x06 : line.align === 'marquee-reverse' ? 0x05 : 0x00,
                 line.speed, null, line.fcolor, line.bcolor, null, i + 1, line.textString
             ));
         } else {
