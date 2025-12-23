@@ -41,9 +41,13 @@ const additionalPlf = useLocalStorage('additional-plf', false);
 const additionalLanguage = useLocalStorage('additional-language', false);
 
 const receiveBeta = useLocalStorage('receive-beta', false);
+const mode08Beta = useLocalStorage('mode-08-beta', false);
 const autoSend = useLocalStorage('auto-send', true);
-const autoConfigure = useLocalStorage('auto-configure', true);
 const autoBlack = useLocalStorage('auto-black', true);
+
+const autoConfigShows = useLocalStorage('auto-config-shows', 'walkin');
+const autoConfigNoShows = useLocalStorage('auto-config-no-shows', 'walkout');
+const autoConfigNoData = useLocalStorage('auto-config-no-data', 'noinfo');
 
 const ip1 = useLocalStorage('ip1', "10.10.87.81");
 const ip2 = useLocalStorage('ip2', "10.10.87.82");
@@ -69,7 +73,7 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
         ]
     },
     "walkout": {
-        name: "Uitloop",
+        name: "Uitloopbericht",
         lines: () => [
             ...repeatDisplayLine(2, lines.black()),
             {
@@ -92,7 +96,7 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
         ]
     },
     "noinfo": {
-        name: "Geen info",
+        name: "Geen gegevens-bericht",
         lines: () => [
             ...repeatDisplayLine(2, lines.black()),
             {
@@ -100,7 +104,7 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
                 fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
             {
-                textString: "De timetable toont momenteel geen actuele",
+                textString: "Deze timetable toont momenteel geen actuele",
                 fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
             {
@@ -112,6 +116,32 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
                 fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
             lines.black(), lines.ticker()
+        ]
+    },
+    "christmas": {
+        name: "Kerstboom 1",
+        lines: () => [
+            { textString: String.raw`         *          `, fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`        /.\         `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`       /~C1;o~C2;..\        ~C3;Hartelijk dank voor je filmbezoek.`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`       /..~C1;o~C2;\        ${theatreName.value}`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`      /.~C1;o~C2;..~C1;o~C2;\       ~C3;wenst je prettige feestdagen`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`      /...~C1;o~C2;.\       ~C3;en een gelukkig nieuwjaar!`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`     /..~C1;o~C2;....\      `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`     ^^^[_]^^^      `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+        ]
+    },
+    "christmas2": {
+        name: "Kerstboom 2",
+        lines: () => [
+            { textString: String.raw`         *          `, fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`        /_\         `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`       /~C3;*~C2;\_\        ~C3;Hartelijk dank voor je filmbezoek.`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`      /~C3;*~C2;\_\~C1;*~C2;\       ${theatreName.value}`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`      /_/~C1;*~C2;/~C3;*~C2;\       ~C3;wenst je prettige feestdagen`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`     /~C1;*~C2;\~C3;*~C2;\_\~C1;*~C2;\      ~C3;en een gelukkig nieuwjaar!`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`     /~C1;*~C2;/~C3;*~C2;/_/~C3;*~C2;\      `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
+            { textString: String.raw`       \___/        `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
         ]
     }
 }
@@ -125,16 +155,22 @@ const showsSoon = computed(() => {
         ); // shows starting within -17 minutes and 3 hours from now
 });
 
-const autoConfiguration = computed(() => {
-    if (showsSoon.value.length)
-        return presetConfigurations['walkin'].lines(); // if there's a show starting within -17 minutes and 3 hours from now
-    else if (now.value.getHours() >= 21 || now.value.getHours() < 1)
-        return presetConfigurations['walkout'].lines(); // else if it's between 21:00 and 00:59
-    else
-        return presetConfigurations['noinfo'].lines(); // else if it's between 01:00 and 20:59
+const currentConfiguration = computed(() => {
+    if (showsSoon.value.length) {
+        // if there's a show starting within -17 minutes and 3 hours from now
+        if (autoConfigShows.value === 'manual') return manualConfiguration.value;
+        return presetConfigurations[autoConfigShows.value].lines();
+    } else if (now.value.getHours() >= 21 || now.value.getHours() < 1) {
+        // else if it's between 21:00 and 00:59
+        if (autoConfigNoShows.value === 'manual') return manualConfiguration.value;
+        return presetConfigurations[autoConfigNoShows.value].lines();
+    } else {
+        // else if it's between 01:00 and 20:59
+        if (autoConfigNoData.value === 'manual') return manualConfiguration.value;
+        return presetConfigurations[autoConfigNoData.value].lines();
+    }
 });
-const manualConfiguration = ref<DisplayLine[]>(presetConfigurations['walkin'].lines());
-const currentConfiguration = computed(() => autoConfigure.value ? autoConfiguration.value : manualConfiguration.value);
+const manualConfiguration = useLocalStorage<DisplayLine[]>('manual-configuration', presetConfigurations['walkin'].lines());
 
 store.$subscribe(loadWalkIns)
 
@@ -254,7 +290,7 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
     for (let i = 0; i < displayLines.length; i++) {
         const line = displayLines[i];
         if (!line.enabled) continue;
-        if (line.align === 'marquee' || line.align === 'marquee-reverse') {
+        if (mode08Beta.value === true || line.align === 'marquee' || line.align === 'marquee-reverse') {
             marqueeTextCommands.push(new qmln.CommandShowTextImmediately(
                 line.align === 'marquee' ? 0x06 : 0x05,
                 line.speed, null, line.fcolor, line.bcolor, null, i + 1, line.textString
@@ -442,7 +478,7 @@ function showFormattingInfo() {
             <div style="flex: 520px 0 0;">
                 <h2>Voorbeeld</h2>
 
-                <div class="block" id="matrix-display" :class="{
+                <div id="matrix-display" :class="{
                     blackout: autoBlack && !showsSoon.length && (
                         (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
                         (new Date().getHours() === 9 && new Date().getMinutes() < 30)
@@ -499,15 +535,14 @@ function showFormattingInfo() {
                                     <option
                                         value="Deze zomer: 5 avonden per week een film op de ~C3;Rooftop~C1;! Check pathé.nl of de Pathé-app.">
                                         Rooftop zomervakantie</option>
-                                    <option value="Nieuw: ervaar ~C2;IMAX~C1; nu ook in Utrecht!">
-                                        IMAX Utrecht - opening
-                                    </option>
                                     <option
-                                        value="Nieuw: ervaar ~C2;filmtitel 1~C1; & ~C2;filmtitel 2~C1; nu in ~C2;IMAX~C1;!">
-                                        IMAX Utrecht - films</option>
+                                        value="F~C2;i~C1;j~C2;n~C1;e~C2; ~C1;f~C2;e~C1;e~C2;s~C1;t~C2;d~C1;a~C2;g~C1;e~C2;n~C1;!">
+                                        Fijne feestdagen
+                                    </option>
                                 </datalist>
                                 <Icon style="position: absolute;top:0;right:0;color: var(--yellow1); cursor: pointer;"
-                                    @click="showFormattingInfo">info
+                                    @click="showFormattingInfo">
+                                    info
                                 </Icon>
                             </InputGroup>
                             <div>
@@ -595,7 +630,8 @@ function showFormattingInfo() {
 
                     <Tab value="Voorstellingen">
                         <Icon style="position: absolute;top:0;right:0;color: var(--yellow1); cursor: pointer;"
-                            @click="showFormattingInfo">info
+                            @click="showFormattingInfo">
+                            info
                         </Icon>
                         <p v-if="walkIns.some(walkIn => walkIn.title.length > 38)">
                             <b>Let op:</b> roodgekleurde filmtitels zijn te lang en worden mogelijk afgekapt.
@@ -642,15 +678,35 @@ function showFormattingInfo() {
                     <Tab value="Weergave">
                         <fieldset>
                             <legend>Automatisering</legend>
-                            <InputSwitch identifier="autoConfigure" v-model="autoConfigure">
-                                Best passende weergave gebruiken
-                                <small>
-                                    Als er inlopen zijn in de komende 3 uur, dan wordt de configuratie
-                                    <i>Voorstellingen</i> getoond.<br>
-                                    Anders wordt tussen 21:00 en 01:00 de configuratie <i>Uitloop</i> getoond.<br>
-                                    Anders wordt de configuratie <i>Geen info</i> getoond.
-                                </small>
-                            </InputSwitch>
+                            <InputGroup type="select" id="autoConfigShows" v-model="autoConfigShows">
+                                <template #label>Weergave tijdens inlopen</template>
+                                <template #input>
+                                    <option v-for="(preset, key) in presetConfigurations" :value="key">
+                                        {{ preset.name }}
+                                    </option>
+                                    <option value="manual">Aangepaste configuratie</option>
+                                </template>
+                            </InputGroup>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <InputGroup type="select" id="autoConfigNoShows" v-model="autoConfigNoShows">
+                                    <template #label>Weergave na inlopen</template>
+                                    <template #input>
+                                        <option v-for="(preset, key) in presetConfigurations" :value="key">
+                                            {{ preset.name }}
+                                        </option>
+                                        <option value="manual">Aangepaste configuratie</option>
+                                    </template>
+                                </InputGroup>
+                                <InputGroup type="select" id="autoConfigNoData" v-model="autoConfigNoData">
+                                    <template #label>Weergave bij geen gegevens</template>
+                                    <template #input>
+                                        <option v-for="(preset, key) in presetConfigurations" :value="key">
+                                            {{ preset.name }}
+                                        </option>
+                                        <option value="manual">Aangepaste configuratie</option>
+                                    </template>
+                                </InputGroup>
+                            </div>
                             <InputSwitch identifier="autoBlack" v-model="autoBlack">
                                 Verlichting 's nachts uitschakelen
                                 <small>
@@ -660,28 +716,12 @@ function showFormattingInfo() {
                             </InputSwitch>
                         </fieldset>
 
-                        <fieldset v-if="!autoConfigure">
-                            <legend>Voorgedefinieerde configuraties</legend>
-                            <small>
-                                Let op: eigen configuraties kunnen nog niet worden opgeslagen.<br>
-                                Als je één van de onderstaande configuraties selecteert, dan wordt de eigen configuratie
-                                overschreven.<br>
-                            </small>
-                            <div class="flex buttons">
-                                <Button class="secondary" v-for="(preset, key) in presetConfigurations" :key="key"
-                                    @click="manualConfiguration = preset.lines()">
-                                    {{ preset.name }}
-                                </Button>
-                            </div>
-                        </fieldset>
-
-                        <fieldset v-if="!autoConfigure">
+                        <fieldset style="position: relative;">
                             <Icon style="position: absolute;top:0;right:0;color: var(--yellow1); cursor: pointer;"
                                 @click="showFormattingInfo">info
                             </Icon>
-                            <legend>Configuratie</legend>
+                            <legend>Aangepaste configuratie</legend>
                             <small>
-                                Onderstaande statische configuratie wordt op het bord weergegeven.<br>
                                 Regels met het selectievakje uit worden gevuld met geplande inlopen.
                             </small>
                             <div id="display-lines">
@@ -729,6 +769,25 @@ function showFormattingInfo() {
                                     </div>
                                 </div>
                             </div>
+                            <InvokableModalDialog>
+                                <template #button-content>
+                                    <Icon>content_paste_go</Icon> Configuratie kopiëren...
+                                </template>
+                                <template #dialog-content>
+                                    <h3>Voorgedefinieerde configuraties</h3>
+                                    <p>
+                                        Selecteer één van de onderstaande configuraties om deze te kopiëren naar de
+                                        aangepaste configuratie.
+                                        <b>De huidige aangepaste configuratie wordt daarbij overschreven.</b>
+                                    </p>
+                                    <div class="flex buttons">
+                                        <Button class="secondary" v-for="(preset, key) in presetConfigurations"
+                                            :key="key" @click="manualConfiguration = preset.lines()">
+                                            {{ preset.name }}
+                                        </Button>
+                                    </div>
+                                </template>
+                            </InvokableModalDialog>
                         </fieldset>
                     </Tab>
 
@@ -746,6 +805,10 @@ function showFormattingInfo() {
                                 </div>
                                 <InputSwitch v-model="autoSend" identifier="autoSend">
                                     <span>Automatisch verzenden</span>
+                                </InputSwitch>
+                                <InputSwitch v-model="mode08Beta" identifier="mode08Beta">
+                                    <span>Modus <code>0x08</code> gebruiken</span>
+                                    <small>Bèta</small>
                                 </InputSwitch>
                                 <InputSwitch v-model="receiveBeta" identifier="receiveBeta">
                                     <span><code>receive</code> gebruiken</span>
@@ -896,7 +959,17 @@ pre {
     position: relative;
     font-family: monospace;
     font-size: 14px;
-    width: calc(60ch + 56px);
+    width: calc(60ch + 48px);
+
+    padding: 16px 20px;
+    border-radius: 5px;
+    background-color: #090909;
+    background-image: linear-gradient(45deg, #0b0b0b 0%, #090909 100%);
+    box-shadow: 0 0 10px #00000080;
+    outline: 1px solid #ffffff1a;
+    background-repeat: no-repeat;
+    background-size: 340px 100%;
+    color: #ffffffcc;
 
     &.blackout {
         .matrix-clock {
@@ -924,18 +997,19 @@ pre {
 
     box-sizing: content-box;
     height: calc(1em + 4px);
-    padding: 4px 8px;
+    padding: 2px 4px;
     margin-block: 4px;
     overflow: hidden;
 
-    background-color: black;
+    background-color: #111111;
+    background-image: linear-gradient(45deg, #121212 0%, #101010 100%);
     color: orange;
-    border-radius: 4px;
+    border-radius: 2px;
     font-family: monospace;
 }
 
 .fcolor0 {
-    color: #000;
+    color: transparent;
 }
 
 .fcolor1 {
@@ -951,7 +1025,7 @@ pre {
 }
 
 .bcolor0 {
-    background-color: #000;
+    background-color: transparent;
 }
 
 .bcolor1 {
@@ -993,7 +1067,7 @@ pre {
 }
 
 .matrix-clock {
-    font-size: larger;
+    font-size: 20px;
     width: 5ch;
     margin-left: auto;
     margin-bottom: 16px;
