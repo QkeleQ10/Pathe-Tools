@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, inject, nextTick, onBeforeUnmount, onMounted, Ref, h } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
-import { useTmsScheduleStore } from '@/stores/tmsSchedule';
-import * as qmln from '@/scripts/qmln'
+import { useTmsScheduleStore } from '@/stores/tmsSchedule.ts';
+import * as qmln from '@/scripts/qmln.ts';
 import { format } from 'date-fns';
-import { showDialog } from '@/scripts/dialogManager';
+import { showDialog } from '@/scripts/dialogManager.ts';
 
 interface DisplayLine {
     fcolor: 0x00 | 0x01 | 0x02 | 0x03;
