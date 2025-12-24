@@ -536,7 +536,7 @@ function showFormattingInfo() {
                                         value="Deze zomer: 5 avonden per week een film op de ~C3;Rooftop~C1;! Check pathé.nl of de Pathé-app.">
                                         Rooftop zomervakantie</option>
                                     <option
-                                        value="F~C2;i~C1;j~C2;n~C1;e~C2; ~C1;f~C2;e~C1;e~C2;s~C1;t~C2;d~C1;a~C2;g~C1;e~C2;n~C1;!">
+                                        value="F~C2;i~C1;j~C2;n~C1;e ~C2;f~C1;e~C2;e~C1;s~C2;t~C1;d~C2;a~C1;g~C2;e~C1;n~C2;!">
                                         Fijne feestdagen
                                     </option>
                                 </datalist>
@@ -973,11 +973,11 @@ pre {
 
     &.blackout {
         .matrix-clock {
-            color: #000 !important;
+            color: transparent !important;
         }
 
         .matrix-row>div>span {
-            color: #000 !important;
+            color: transparent !important;
         }
     }
 }
@@ -997,12 +997,12 @@ pre {
 
     box-sizing: content-box;
     height: calc(1em + 4px);
-    padding: 2px 4px;
+    padding: 0 4px;
     margin-block: 4px;
     overflow: hidden;
 
-    background-color: #111111;
-    background-image: linear-gradient(45deg, #121212 0%, #101010 100%);
+    background-color: #141414;
+    background-image: linear-gradient(45deg, #151515 0%, #131313 100%);
     color: orange;
     border-radius: 2px;
     font-family: monospace;
@@ -1067,7 +1067,7 @@ pre {
 }
 
 .matrix-clock {
-    font-size: 20px;
+    font-size: 22px;
     width: 5ch;
     margin-left: auto;
     margin-bottom: 16px;
