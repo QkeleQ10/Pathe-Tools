@@ -311,22 +311,33 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
             const line = displayLines[i];
             if (!line.enabled) continue;
             if (line.align === 'marquee' || line.align === 'marquee-reverse') continue;
-            if (line.fcolor !== 0x03) continue;
             else {
+                let y = i + 1;
+                if (line.fcolor === 0x03) {
+                    // orange lines are shifted by 1 if the previous line is also orange
+                    if (displayLines[i - 1]?.fcolor === 0x03) {
+                        // previous line is also orange, shift
+                        y--;
+                    } else {
+                        // previous line is not orange, remove this line
+                        continue;
+                    }
+                }
+
                 stillTextCommandsShifted.push(new qmln.CommandShowTextString(
-                    null, line.fcolor, line.bcolor, null, i === 0 ? 8 : i,
+                    null, line.fcolor, line.bcolor, null, y,
                     truncateAndPad(line.textString, 60, line.align)
                 ));
             }
         }
 
         displayData = [
-            ...stillTextCommandsShifted,
+            ...stillTextCommandsShifted.filter((_, i) => displayLines[i].fcolor === 0x03), // only orange lines are shifted
             new qmln.CommandDisplayBuffer(null, 0x08, 0x07),
             new qmln.CommandClearBuffer(),
             new qmln.CommandShowCurrentTime(),
             ...stillTextCommandsShifted,
-            new qmln.CommandDisplayBuffer(null, Number(animation.value), Number(animationSpeed.value)),
+            new qmln.CommandDisplayBuffer(null, 0x00, 0x09),
             ...marqueeTextCommands,
             new qmln.CommandEndOfSegmentData(),
         ]
