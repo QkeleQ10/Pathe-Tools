@@ -26,6 +26,8 @@ const lastSentPacket = ref<string | null>(null);
 const lastSentTime = ref<Date | null>(null);
 const lastSentStatus = ref<[string | null, string | null]>([null, null]);
 
+const lastReceivedPacket = ref<string | null>(null);
+
 const aboutToStartTime = useLocalStorage('about-to-start-time', 0);
 const isStartedTime = useLocalStorage('is-started-time', 9);
 const hideTime = useLocalStorage('hide-time', 17);
@@ -34,14 +36,13 @@ const animation = useLocalStorage('animation', 0x00);
 const animationSpeed = useLocalStorage('animation-speed', 0x07);
 
 const theatreName = useLocalStorage('theatre-name', 'Pathé');
-const tickerText = useLocalStorage('ticker-text', '');
+const motd = useLocalStorage('motd', '');
 
 const additionalAgeRating = useLocalStorage('additional-age-rating', true);
 const additionalPlf = useLocalStorage('additional-plf', false);
 const additionalLanguage = useLocalStorage('additional-language', false);
 
 const receiveBeta = useLocalStorage('receive-beta', false);
-const mode08Beta = useLocalStorage('mode-08-beta', false);
 const autoSend = useLocalStorage('auto-send', true);
 const autoBlack = useLocalStorage('auto-black', true);
 
@@ -57,7 +58,7 @@ const walkIns = ref<{ scheduledTime: Date, title: string, auditorium: string, i:
 const lines: { [key: string]: (...arg: any[]) => DisplayLine } = {
     empty: () => ({ fcolor: 3, bcolor: 0, textString: "", enabled: false, align: 'left', speed: 0x07 }),
     black: () => ({ fcolor: 3, bcolor: 0, textString: "", enabled: true, align: 'left', speed: 0x07 }),
-    ticker: (fallback = lines.black()) => (tickerText.value.length ? { fcolor: 1, bcolor: 0, textString: tickerText.value, enabled: true, align: tickerText.value.replace(/~[CB]\d;|~[FNRI];/g, '').length > 60 ? 'marquee' : 'center', speed: 0x07 } : fallback)
+    motd: (fallback = lines.black()) => (motd.value.length ? { fcolor: 1, bcolor: 0, textString: motd.value, enabled: true, align: motd.value.replace(/~[CB]\d;|~[FNRI];/g, '').length > 60 ? 'marquee' : 'center', speed: 0x07 } : fallback)
 }
 
 const presetConfigurations: { [key: string]: { name: string, lines: () => DisplayLine[] } } = {
@@ -69,7 +70,7 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
                 fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07
             },
             ...repeatDisplayLine(6),
-            lines.ticker(lines.empty())
+            lines.motd(lines.empty())
         ]
     },
     "walkout": {
@@ -92,7 +93,7 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
                 textString: `${theatreName.value}`,
                 fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
-            lines.black(), lines.ticker()
+            lines.black(), lines.motd()
         ]
     },
     "noinfo": {
@@ -115,11 +116,11 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
                 textString: "de kassa of een medewerker voor het zaalnummer.",
                 fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'center', speed: 0x07
             },
-            lines.black(), lines.ticker()
+            lines.black(), lines.motd()
         ]
     },
     "christmas": {
-        name: "Kerstboom 1",
+        name: "Kerstboom",
         lines: () => [
             { textString: String.raw`         *          `, fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
             { textString: String.raw`        /.\         `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
@@ -129,19 +130,6 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
             { textString: String.raw`      /...~C1;o~C2;.\       ~C3;en een gelukkig nieuwjaar!`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
             { textString: String.raw`     /..~C1;o~C2;....\      `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
             { textString: String.raw`     ^^^[_]^^^      `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
-        ]
-    },
-    "christmas2": {
-        name: "Kerstboom 2",
-        lines: () => [
-            { textString: String.raw`         *          `, fcolor: 0x03, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
-            { textString: String.raw`        /_\         `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
-            { textString: String.raw`       /~C3;*~C2;\_\        ~C3;Hartelijk dank voor je filmbezoek.`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
-            { textString: String.raw`      /~C3;*~C2;\_\~C1;*~C2;\       ${theatreName.value}`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
-            { textString: String.raw`      /_/~C1;*~C2;/~C3;*~C2;\       ~C3;wenst je prettige feestdagen`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
-            { textString: String.raw`     /~C1;*~C2;\~C3;*~C2;\_\~C1;*~C2;\      ~C3;en een gelukkig nieuwjaar!`, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
-            { textString: String.raw`     /~C1;*~C2;/~C3;*~C2;/_/~C3;*~C2;\      `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
-            { textString: String.raw`       \___/        `, fcolor: 0x02, bcolor: 0x00, enabled: true, align: 'left', speed: 0x07 },
         ]
     }
 }
@@ -214,7 +202,9 @@ function getFormattedText(line: DisplayLine): { textString: string, fcolor: numb
         } else if (token.startsWith('~B')) {
             currentBcolor = parseInt(token.substring(2, 3), 10) as 0 | 1 | 2 | 3;
         } else if (token.startsWith('~R')) {
-            [currentFcolor, currentBcolor] = [currentBcolor, currentFcolor];
+            const temp = currentFcolor;
+            currentFcolor = currentBcolor;
+            currentBcolor = temp;
         } else if (token.startsWith('~F')) {
             currentFlash = true;
         } else if (token.startsWith('~N')) {
@@ -266,7 +256,7 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
     return result;
 }
 
-function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(currentConfiguration.value)): qmln.Packet {
+function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(currentConfiguration.value), shiftBeta: boolean = false): qmln.Packet {
     if (
         autoBlack.value && !showsSoon.value.length && (
             (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
@@ -290,7 +280,7 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
     for (let i = 0; i < displayLines.length; i++) {
         const line = displayLines[i];
         if (!line.enabled) continue;
-        if (mode08Beta.value === true || line.align === 'marquee' || line.align === 'marquee-reverse') {
+        if (line.align === 'marquee' || line.align === 'marquee-reverse') {
             marqueeTextCommands.push(new qmln.CommandShowTextImmediately(
                 line.align === 'marquee' ? 0x06 : line.align === 'marquee-reverse' ? 0x05 : 0x00,
                 line.speed, null, line.fcolor, line.bcolor, null, i + 1, line.textString
@@ -303,17 +293,49 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
         }
     }
 
-    return new qmln.Packet(
-        null,
-        null,
-        new qmln.FunctionSendToInitialSegment([
+    let displayData = [
+        new qmln.CommandClearBuffer(),
+        new qmln.CommandShowCurrentTime(),
+        ...stillTextCommands,
+        new qmln.CommandDisplayBuffer(null, Number(animation.value), Number(animationSpeed.value)),
+        ...marqueeTextCommands,
+        new qmln.CommandEndOfSegmentData(),
+    ]
+
+    if (shiftBeta) {
+        console.log("Generating shifted packet");
+
+        let stillTextCommandsShifted: qmln.CommandShowTextString[] = [];
+
+        for (let i = 0; i < displayLines.length; i++) {
+            const line = displayLines[i];
+            if (!line.enabled) continue;
+            if (line.align === 'marquee' || line.align === 'marquee-reverse') continue;
+            if (line.fcolor !== 0x03) continue;
+            else {
+                stillTextCommandsShifted.push(new qmln.CommandShowTextString(
+                    null, line.fcolor, line.bcolor, null, i === 0 ? 8 : i,
+                    truncateAndPad(line.textString, 60, line.align)
+                ));
+            }
+        }
+
+        displayData = [
+            ...stillTextCommandsShifted,
+            new qmln.CommandDisplayBuffer(null, 0x08, 0x07),
             new qmln.CommandClearBuffer(),
             new qmln.CommandShowCurrentTime(),
-            ...stillTextCommands,
+            ...stillTextCommandsShifted,
             new qmln.CommandDisplayBuffer(null, Number(animation.value), Number(animationSpeed.value)),
             ...marqueeTextCommands,
             new qmln.CommandEndOfSegmentData(),
-        ])
+        ]
+    }
+
+    return new qmln.Packet(
+        null,
+        null,
+        new qmln.FunctionSendToInitialSegment(displayData)
     );
 }
 
@@ -351,6 +373,7 @@ async function sendData(hex: string = generatePacket().toString(), force = false
                         console.log(`Response from ${ip}:`, res);
                         const json = await res.json();
                         console.log(`Response from ${ip} as JSON:`, json);
+                        lastReceivedPacket.value = json || null;
                     } else {
                         console.log(`Successfully sent to ${ip}`);
                     }
@@ -526,9 +549,9 @@ function showFormattingInfo() {
                             <InputGroup type="text" id="theatreName" v-model="theatreName">
                                 <template #label>Naam theater</template>
                             </InputGroup>
-                            <InputGroup type="text" id="tickerText" v-model="tickerText" list="tickerText-list">
+                            <InputGroup type="text" id="motd" v-model="motd" list="motd-list">
                                 <template #label>Lichtkrant</template>
-                                <datalist id="tickerText-list">
+                                <datalist id="motd-list">
                                     <option
                                         value="De ~C3;Rooftop~C1; is weer geopend! Check pathé.nl of de Pathé-app voor alle voorstellingen.">
                                         Rooftop weer open</option>
@@ -806,17 +829,13 @@ function showFormattingInfo() {
                                 <InputSwitch v-model="autoSend" identifier="autoSend">
                                     <span>Automatisch verzenden</span>
                                 </InputSwitch>
-                                <InputSwitch v-model="mode08Beta" identifier="mode08Beta">
-                                    <span>Modus <code>0x08</code> gebruiken</span>
-                                    <small>Bèta</small>
-                                </InputSwitch>
                                 <InputSwitch v-model="receiveBeta" identifier="receiveBeta">
                                     <span><code>receive</code> gebruiken</span>
                                     <small>Bèta</small>
                                 </InputSwitch>
 
                                 <div class="flex buttons">
-                                    <Button class="" @click="sendData(new qmln.Packet(
+                                    <Button class="primary" @click="sendData(new qmln.Packet(
                                         null, null, new qmln.FunctionSetClock(new Date())
                                     ).toString())" :disabled="sending">
                                         <Icon>update</Icon>
@@ -825,6 +844,11 @@ function showFormattingInfo() {
                                     <Button class="secondary" @click="sendData()" :disabled="sending">
                                         <Icon>send</Icon>
                                         <span>Nu verzenden</span>
+                                    </Button>
+                                    <Button class="secondary"
+                                        @click="sendData(generatePacket(fillEmptyLinesWithShows(currentConfiguration), true).toString())"
+                                        :disabled="sending">
+                                        <span>Oranje regels verschuiven (bèta)</span>
                                     </Button>
                                 </div>
                             </div>
@@ -855,6 +879,11 @@ function showFormattingInfo() {
                                 }}</pre>
                             </div>
                         </fieldset>
+
+                        <fieldset v-if="receiveBeta">
+                            <legend>Laatst ontvangen pakket</legend>
+                            <pre>{{ JSON.stringify(lastReceivedPacket, null, 4) }}</pre>
+                        </fieldset>
                     </Tab>
 
                 </Tabs>
@@ -870,7 +899,7 @@ pre {
     overflow-wrap: anywhere;
 }
 
-:deep(#tickerText) {
+:deep(#motd) {
     font-family: monospace;
     font-size: 14px;
 }
@@ -1009,7 +1038,11 @@ pre {
 }
 
 .fcolor0 {
-    color: transparent;
+    color: #000;
+
+    &.bcolor0 {
+        color: transparent;
+    }
 }
 
 .fcolor1 {
