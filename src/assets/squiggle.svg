@@ -1,0 +1,77 @@
+<svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_2_2)">
+<g clip-path="url(#clip1_2_2)">
+<g clip-path="url(#clip2_2_2)">
+<path d="M54 61C47.3333 65.6667 40.6667 65.6667 34 61C27.3333 56.3333 20.6667 56.3333 14 61" stroke="#525252" stroke-width="3" stroke-linecap="round"/>
+</g>
+</g>
+<g clip-path="url(#clip3_2_2)">
+<g clip-path="url(#clip4_2_2)">
+<path d="M14 7C20.6667 2.33333 27.3333 2.33333 34 7C40.6667 11.6667 47.3333 11.6667 54 7" stroke="#525252" stroke-width="3" stroke-linecap="round"/>
+</g>
+</g>
+<g clip-path="url(#clip5_2_2)">
+<g clip-path="url(#clip6_2_2)">
+<path d="M7 54C2.33333 47.3333 2.33333 40.6667 7 34C11.6667 27.3333 11.6667 20.6667 7 14" stroke="#525252" stroke-width="3" stroke-linecap="round"/>
+</g>
+</g>
+<g clip-path="url(#clip7_2_2)">
+<g clip-path="url(#clip8_2_2)">
+<path d="M61 14C65.6667 20.6667 65.6667 27.3333 61 34C56.3333 40.6667 56.3333 47.3333 61 54" stroke="#525252" stroke-width="3" stroke-linecap="round"/>
+</g>
+</g>
+<g clip-path="url(#clip9_2_2)">
+<circle cx="14" cy="14" r="7" stroke="#525252" stroke-width="3"/>
+</g>
+<g clip-path="url(#clip10_2_2)">
+<circle cx="54" cy="14" r="7" transform="rotate(90 54 14)" stroke="#525252" stroke-width="3"/>
+</g>
+<g clip-path="url(#clip11_2_2)">
+<circle cx="54" cy="54" r="7" transform="rotate(180 54 54)" stroke="#525252" stroke-width="3"/>
+</g>
+<g clip-path="url(#clip12_2_2)">
+<circle cx="14" cy="54" r="7" transform="rotate(-90 14 54)" stroke="#525252" stroke-width="3"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_2_2">
+<rect width="68" height="68" fill="white"/>
+</clipPath>
+<clipPath id="clip1_2_2">
+<rect width="40" height="14" fill="white" transform="matrix(-1 0 0 -1 54 68)"/>
+</clipPath>
+<clipPath id="clip2_2_2">
+<rect width="40" height="14" fill="white" transform="matrix(-1 0 0 -1 54 68)"/>
+</clipPath>
+<clipPath id="clip3_2_2">
+<rect width="40" height="14" fill="white" transform="translate(14)"/>
+</clipPath>
+<clipPath id="clip4_2_2">
+<rect width="40" height="14" fill="white" transform="translate(14)"/>
+</clipPath>
+<clipPath id="clip5_2_2">
+<rect width="40" height="14" fill="white" transform="matrix(0 -1 1 0 0 54)"/>
+</clipPath>
+<clipPath id="clip6_2_2">
+<rect width="40" height="14" fill="white" transform="matrix(0 -1 1 0 0 54)"/>
+</clipPath>
+<clipPath id="clip7_2_2">
+<rect width="40" height="14" fill="white" transform="matrix(0 1 -1 0 68 14)"/>
+</clipPath>
+<clipPath id="clip8_2_2">
+<rect width="40" height="14" fill="white" transform="matrix(0 1 -1 0 68 14)"/>
+</clipPath>
+<clipPath id="clip9_2_2">
+<rect width="14" height="14" fill="white"/>
+</clipPath>
+<clipPath id="clip10_2_2">
+<rect width="14" height="14" fill="white" transform="matrix(0 1 -1 0 68 0)"/>
+</clipPath>
+<clipPath id="clip11_2_2">
+<rect width="14" height="14" fill="white" transform="matrix(-1 0 0 -1 68 68)"/>
+</clipPath>
+<clipPath id="clip12_2_2">
+<rect width="14" height="14" fill="white" transform="matrix(0 -1 1 0 0 68)"/>
+</clipPath>
+</defs>
+</svg>

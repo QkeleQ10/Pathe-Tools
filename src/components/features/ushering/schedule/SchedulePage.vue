@@ -44,7 +44,8 @@ defineExpose({
 <template>
     <div class="page" v-if="shows.length > 0">
         <div class="print-component-wrapper">
-            <div class="print-component" ref="printComponent" :style="`font-size: ${fontSize}px;`">
+            <div class="print-component" ref="printComponent" :style="`font-size: ${fontSize}px;`"
+                :class="{ scheduled: sortBy === 'scheduledTime' }">
                 <div class="header" v-if="'flags' in metadata">
                     <span>
                         {{ sortBy === 'scheduledTime' ? 'Inlopen' : 'Uitlopen' }}
@@ -292,5 +293,10 @@ table.timetable {
     .td-credits {
         padding-left: 2.56em;
     }
+}
+
+.print-component.scheduled {
+    border-left: 8px solid transparent;
+    border-image: url("/src/assets/squiggle.svg") 14 repeat;
 }
 </style>
