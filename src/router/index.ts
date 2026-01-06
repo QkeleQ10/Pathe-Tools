@@ -5,6 +5,7 @@ import { createRouter, createWebHistory, RouteRecordRaw, RouterScrollBehavior } 
 import HomeView from '../views/HomeView.vue';
 import UsheringScheduleView from '../views/ushering/ScheduleView.vue';
 import UsheringAnnouncerView from '../views/ushering/AnnouncerView.vue';
+import UsheringPlannerView from '../views/ushering/PlannerView.vue';
 import NarrowcastingTimetableView from '../views/narrowcasting/TimetableView.vue';
 import PocIntermissionView from '../views/poc/IntermissionView.vue';
 
@@ -39,6 +40,14 @@ const routes: RouteRecordRaw[] = [
         component: UsheringAnnouncerView,
         meta: {
             title: 'Omroepen',
+        }
+    },
+    {
+        path: '/ushering/planner',
+        name: 'ushering-planner',
+        component: UsheringPlannerView,
+        meta: {
+            title: 'Planner',
         }
     },
     {
