@@ -20,6 +20,11 @@ import { RouterLink } from 'vue-router';
                                 <Icon>alarm</Icon>Omroepen
                             </Button>
                         </RouterLink>
+                        <RouterLink to="/ushering/planner" style="text-decoration: none;">
+                            <Button class="secondary">
+                                <Icon>note_alt</Icon>Planner (bèta)
+                            </Button>
+                        </RouterLink>
                     </div>
                     <h3>Narrowcasting</h3>
                     <div class="flex">
