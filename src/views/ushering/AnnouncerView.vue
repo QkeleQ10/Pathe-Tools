@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch } from 'vue';
+import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, onBeforeMount } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
 import { Announcement, AnnouncementRule, Show } from '@/scripts/types.ts';
 import { voices, getSoundInfo, Voice, defaultVoice, defaultVoiceKey } from '@/scripts/voices';
@@ -25,7 +25,6 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'plfStart',
         name: '4DX-inloop',
         segments: [
-            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'start', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -46,7 +45,6 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'start',
         name: 'Start',
         segments: [
-            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'start', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -67,7 +65,6 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'startmainshow',
         name: 'Start hoofdfilm',
         segments: [
-            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'startmainshow', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -88,7 +85,6 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'intermission',
         name: 'Pauze',
         segments: [
-            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'intermission', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -109,7 +105,6 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'credits',
         name: 'Aftiteling',
         segments: [
-            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'credits', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -130,7 +125,6 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'endshow',
         name: 'Einde voorstelling',
         segments: [
-            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'endshow', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
@@ -151,7 +145,6 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'startfinalmainshow',
         name: 'Start laatste hoofdfilm',
         segments: [
-            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'start', offset: 0 },
             { spriteName: 'final', offset: 0 },
             { spriteName: 'mainshow', offset: 0 }
@@ -173,7 +166,6 @@ const presetRulesDefault: AnnouncementRule[] = [
         id: 'endfinalshow',
         name: 'Einde laatste voorstelling',
         segments: [
-            { spriteName: 'chime0', offset: -1600 },
             { spriteName: 'end', offset: 0 },
             { spriteName: 'final', offset: 0 },
             { spriteName: 'show', offset: 0 }
@@ -215,13 +207,26 @@ const intermissionDuration = useStorage('intermission-duration', 15) // duration
 const preferredVoices = useStorage<(keyof typeof voices)[]>('preferred-voices', [defaultVoiceKey], localStorage, { mergeDefaults: true });
 const voiceBehaviour = useStorage('voice-behaviour', 'roundrobin', localStorage);
 
-const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([{ spriteName: 'chime0', offset: -1600 },]);
+const chimeSound = useStorage('chime-sound', 0, localStorage); // which chime sound to use before announcements
+
+const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([]);
 const customAnnouncementDate = ref<Date>(new Date());
 
 const scheduledAnnouncements = ref<Announcement[]>([])
 store.$subscribe(() => scheduleAnnouncements(), { deep: true })
 
 let interval: NodeJS.Timeout | null = null;
+
+onBeforeMount(() => {
+    for (const key of preferredVoices.value) {
+        if (!voices[key]) {
+            preferredVoices.value = preferredVoices.value.filter(k => k !== key);
+        }
+    }
+    if (preferredVoices.value.length === 0) {
+        preferredVoices.value = [defaultVoiceKey];
+    }
+})
 
 onMounted(() => {
     scheduleAnnouncements();
@@ -323,7 +328,7 @@ async function generateAndEnqueue() {
 
 async function generateAudio(announcement: Announcement) {
     if (announcement.audio) return;
-    const segmentsWithVoices = selectVoices(announcement.segments, preferredVoices.value.map(s => voices[s]));
+    const segmentsWithVoices = prepareSegments(announcement.segments, preferredVoices.value.map(s => voices[s]));
     announcement.audio = await assembleAudio(segmentsWithVoices);
 }
 
@@ -363,29 +368,51 @@ function showMatchesFilter(show: Show, index: number, rule: AnnouncementRule) {
     return matches;
 }
 
-function selectVoices(segments: { spriteName: string; offset: number }[], selectedVoices: Voice[]): { voice: Voice; spriteName: string; offset: number }[] {
+/**
+ * Add an optional chime sound to the segments and assign voices to each segment
+ * @param segments The segments without voice assigned
+ * @param selectedVoices The preferred voices to use
+ */
+function prepareSegments(
+    segments: { spriteName: string; offset: number }[],
+    selectedVoices: Voice[],
+    includeChime: boolean = true
+): { voice: Voice; spriteName: string; offset: number }[] {
+
     const preferredVoices = selectedVoices.sort(() => 0.5 - Math.random());
     const allVoices = Object.values(voices);
+
+    let preparedSegments: { voice: Voice; spriteName: string; offset: number }[] = [];
+
+    if (includeChime && chimeSound.value !== -1) preparedSegments.push({
+        voice: voices.chimes,
+        spriteName: `chime${chimeSound.value}`,
+        offset: -1600
+    });
 
     // Loop through the preferred voices in random order to find one that has all the required sprites
     for (const voice of preferredVoices) {
         // Check if the voice has all the required sprites
         if (segments.every(segment => segment.spriteName.startsWith('chime') || voice.sprite[segment.spriteName])) {
-            return segments.map(segment => ({
+            preparedSegments.push(...segments.map(segment => ({
                 ...segment,
                 voice: segment.spriteName.startsWith('chime') ? voices.chimes : voice
-            }));
+            })));
+
+            return preparedSegments;
         }
     }
 
     // If no voice has all the required sprites, use a mix of voices (prefferred voices first)
-    return segments.map(segment => {
+    preparedSegments.push(...segments.map(segment => {
         const voice = [...preferredVoices, ...allVoices].find(v => v.sprite[segment.spriteName]);
         return {
             ...segment,
             voice: (segment.spriteName.startsWith('chime') ? voices.chimes : voice) || defaultVoice
         };
-    });
+    }));
+
+    return preparedSegments;
 }
 
 function assembleAudio(segments: { voice: Voice; spriteName: string; offset: number }[]) {
@@ -396,9 +423,13 @@ function assembleAudio(segments: { voice: Voice; spriteName: string; offset: num
     })
 }
 
-async function previewAnnouncement(segments: { spriteName: string; offset: number }[], selectedVoices: Voice[] = preferredVoices.value.map(s => voices[s])) {
-    const segmentsWithVoices = selectVoices(segments, selectedVoices);
-    const audio = await assembleAudio(segmentsWithVoices);
+async function previewAnnouncement(
+    segments: { spriteName: string; offset: number }[],
+    selectedVoices: Voice[] = preferredVoices.value.map(s => voices[s]),
+    includeChime: boolean = true
+) {
+    const preparedSegments = prepareSegments(segments, selectedVoices, includeChime);
+    const audio = await assembleAudio(preparedSegments);
     audio.play();
 }
 
@@ -448,11 +479,11 @@ const { isOverDropZone } = useDropZone(main, {
                                 :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
                                 @preview="playAnnouncement(announcement)"
                                 @delete="scheduledAnnouncements.splice(scheduledAnnouncements.indexOf(announcement), 1)" />
-                            <p v-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
-                                key="0">Er zijn geen omroepen gepland.</p>
-                            <p v-if="store.table.length < 1">Upload eerst een bestand.</p>
                         </TransitionGroup>
                     </ul>
+                    <p v-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
+                        key="0">Er zijn geen omroepen gepland.</p>
+                    <p v-if="store.table.length < 1">Upload eerst een bestand.</p>
                 </div>
 
                 <SidePanel style="flex: 35% 1 1;">
@@ -461,7 +492,7 @@ const { isOverDropZone } = useDropZone(main, {
                     <fieldset>
                         <legend>Algemeen</legend>
                         <div class="flex buttons">
-                            <Button class="full" @click="scheduleAnnouncements()"
+                            <Button class="secondary full" @click="scheduleAnnouncements()"
                                 @contextmenu="scheduleAnnouncements(true)">
                                 <Icon>refresh</Icon>
                                 <span>Omroepen voorbereiden</span>
@@ -478,7 +509,7 @@ const { isOverDropZone } = useDropZone(main, {
 
                     <fieldset>
                         <legend>Stem</legend>
-                        <VoicesSelector v-model="preferredVoices" @click="regenerate()" />
+                        <VoicesSelector v-model="preferredVoices" @update:modelValue="regenerate()" />
                         <!-- <InputGroup type="select" id="voiceBehaviour" v-model="voiceBehaviour">
                             <template #label>Gedrag bij meerdere stemmen</template>
                             <template #input>
@@ -496,9 +527,10 @@ const { isOverDropZone } = useDropZone(main, {
                             ...preferredVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
                         ]" v-show="ids?.length > 0">
                             <Button class="secondary manual-sound-button" v-for="id of ids"
-                                @click="previewAnnouncement([{ spriteName: id, offset: 0 }])"
+                                @click="previewAnnouncement([{ spriteName: id, offset: 0 }], undefined, false)"
                                 :class="{ translucent: !id.startsWith('chime') && !preferredVoices.some(e => voices[e].sounds.includes(id)) }">
-                                <Icon v-if="id.startsWith('chime')" style="--size: 16px; margin-right: 0;">music_note</Icon>
+                                <Icon v-if="id.startsWith('chime')" style="--size: 16px; margin-right: 0;">music_note
+                                </Icon>
                                 <span v-else>
                                     {{ getSoundInfo(id).name }}
                                 </span>
@@ -508,11 +540,21 @@ const { isOverDropZone } = useDropZone(main, {
 
                     <fieldset>
                         <legend>Overig</legend>
-                        <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration"
-                            min="0" max="30">
-                            <template #label>Duur filmpauzes</template>
-                            <span class="unit">minuten</span>
-                        </InputGroup>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <InputGroup type="select" id="chimeSound" v-model="chimeSound"
+                                @update:modelValue="regenerate()">
+                                <template #label>Geluid vóór omroep</template>
+                                <template #input>
+                                    <option :value="0">Geluid 1</option>
+                                    <option :value="-1">Geen geluid</option>
+                                </template>
+                            </InputGroup>
+                            <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration"
+                                min="0" max="30">
+                                <template #label>Duur filmpauzes</template>
+                                <span class="unit">minuten</span>
+                            </InputGroup>
+                        </div>
                     </fieldset>
                 </SidePanel>
             </div>

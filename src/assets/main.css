@@ -220,16 +220,20 @@ em.label {
     border-radius: 5px;
     border: 1px solid #ffffff14;
 
-    &>* {
+    &:empty {
+        display: none;
+    }
+
+    &>li {
         padding: 8px 12px;
         border-bottom: 1px solid #ffffff14;
     }
 
-    &>*:last-child {
+    &>li:last-child {
         border-bottom: none;
     }
 
-    &>* .delete {
+    &>li .delete {
         color: #ff6b6b;
         cursor: pointer;
     }

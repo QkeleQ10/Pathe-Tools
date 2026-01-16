@@ -53,7 +53,7 @@ function sentenceCase(string: string) {
                 </li>
             </ul>
             <p v-else>
-                Geen onderdelen gevonden.
+                Geen onderdelen.
             </p>
             <div class="flex" style="margin-top: 16px;">
                 <Button class="secondary add-rule" @click="addSegment">
