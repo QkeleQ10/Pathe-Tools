@@ -7,7 +7,7 @@ const model = defineModel();
 </template>
 
 <style scoped>
-input {
+input:not(.contents-only) {
     height: 40px;
     width: 100%;
     padding: 0 12px;
@@ -18,7 +18,11 @@ input {
     border-radius: 6px;
 }
 
-input:focus-visible {
+input:not(.contents-only):focus-visible {
     outline: 2px solid var(--yellow2);
+}
+
+input.contents-only {
+    all: unset;
 }
 </style>
