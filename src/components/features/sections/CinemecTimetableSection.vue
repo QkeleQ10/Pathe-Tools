@@ -21,10 +21,16 @@ const store = useTmsScheduleStore();
 
 const syncFilmTitles = ref(true);
 
-const sending = ref(false);
+const addresses = useLocalStorage('addresses', ["10.10.87.81", "10.10.87.82"]);
+
+const health = ref<('healthy' | 'unhealthy' | 'unknown')>('unknown');
+
+const available = ref<boolean[]>(new Array(addresses.value.length).fill(false));
+const sending = ref<boolean[]>(new Array(addresses.value.length).fill(false));
+const sendStatus = ref<("ok" | "error" | null)[]>(new Array(addresses.value.length).fill(null));
+const sendTime = ref<(Date | null)[]>(new Array(addresses.value.length).fill(null));
+
 const lastSentPacket = ref<string | null>(null);
-const lastSentTime = ref<Date | null>(null);
-const lastSentStatus = ref<[string | null, string | null]>([null, null]);
 
 const lastReceivedPacket = ref<string | null>(null);
 
@@ -49,9 +55,6 @@ const autoBlack = useLocalStorage('auto-black', true);
 const autoConfigShows = useLocalStorage('auto-config-shows', 'walkin');
 const autoConfigNoShows = useLocalStorage('auto-config-no-shows', 'walkout');
 const autoConfigNoData = useLocalStorage('auto-config-no-data', 'noinfo');
-
-const ip1 = useLocalStorage('ip1', "10.10.87.81");
-const ip2 = useLocalStorage('ip2', "10.10.87.82");
 
 const walkIns = ref<{ scheduledTime: Date, title: string, auditorium: string, i: number }[]>([]);
 
@@ -351,22 +354,21 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
 }
 
 async function sendData(hex: string = generatePacket().toString(), force = false) {
+    const connectedIps = addresses.value.filter((_, i) => available.value[i]);
 
-    const ips = [ip1.value, ip2.value].filter(ip => ip.length);
+    if (sending.value.some(s => s)) return;
 
-    if (sending.value) return;
-
-    if (!force && hex === lastSentPacket.value && ips.every((ip, i) => lastSentStatus.value[i] === "ok")) {
+    if (!force && hex === lastSentPacket.value && connectedIps.every((_, i) => sendStatus.value[i] === "ok")) {
         console.info("No changes detected, skipping send.");
         return;
     }
 
     console.info("Sending data...");
 
-    sending.value = true;
+    sending.value = sending.value.map((_, i) => connectedIps.includes(addresses.value[i]));
 
     await Promise.allSettled(
-        ips.map(async (ip, i) => {
+        connectedIps.map(async (ip, i) => {
             try {
                 const res = await fetch(receiveBeta.value ? "http://localhost:5000/send-and-receive" : "http://localhost:5000/send-bytes", {
                     method: "POST",
@@ -379,7 +381,7 @@ async function sendData(hex: string = generatePacket().toString(), force = false
                 });
 
                 if (res.ok) {
-                    lastSentStatus.value[i] = "ok"
+                    sendStatus.value[i] = "ok"
                     if (receiveBeta.value) {
                         console.log(`Response from ${ip}:`, res);
                         const json = await res.json();
@@ -394,15 +396,16 @@ async function sendData(hex: string = generatePacket().toString(), force = false
                 }
             } catch (err) {
                 console.error(`Failed to send to ${ip}:`, err);
-                lastSentStatus.value[i] = "error";
+                sendStatus.value[i] = "error";
+                checkMiddlemanHealth();
             }
         })
     );
 
-    lastSentTime.value = new Date();
+    sendTime.value = sendTime.value.map((_, i) => connectedIps.includes(addresses.value[i]) ? new Date() : sendTime.value[i]);
     lastSentPacket.value = hex.toString();
 
-    sending.value = false;
+    sending.value = sending.value.map((_, i) => false);
 }
 
 function hexToAscii(hexString: string) {
@@ -476,18 +479,100 @@ onMounted(() => {
             i
         }));
 
+    addresses.value.forEach(tryConnect);
+
     timeoutId = setTimeout(() => {
         if (autoSend.value) sendData();
         intervalId = setInterval(() => {
             if (autoSend.value) sendData();
-        }, 10000);
-    }, 10000 - Date.now() % 10000);
+        }, 5000);
+    }, 5000 - Date.now() % 5000);
 });
 
 onBeforeUnmount(() => {
     if (intervalId) clearInterval(intervalId);
     if (timeoutId) clearTimeout(timeoutId);
 });
+
+async function checkMiddlemanHealth() {
+    return new Promise<void>(async (resolve) => {
+        health.value = 'unknown';
+
+        try {
+            const res = await fetch("http://localhost:5000/health", {
+                method: "GET",
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (res.ok) {
+                health.value = 'healthy';
+            } else {
+                const json = await res.json();
+                throw new Error(`HTTP error: ${res.status} ${res.statusText} ${json.message}`);
+            }
+        } catch (err) {
+            console.error("Health check failed:", err);
+            health.value = 'unhealthy';
+            available.value = available.value.map(() => false);
+        } finally {
+            resolve();
+        }
+    });
+}
+
+async function tryConnect(ip: string, index: number) {
+    await checkMiddlemanHealth();
+    if (health.value !== 'healthy') return;
+
+    available.value[index] = false;
+    sending.value[index] = true;
+
+    try {
+        const res = await fetch("http://localhost:5000/send-and-receive", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                ip,
+                port: "9100",
+                hex: new qmln.Packet(
+                    null,
+                    null,
+                    new qmln.FunctionSendPing()
+                ).toString()
+            })
+        });
+
+        if (res.ok) {
+            console.log(`Response from ${ip}:`, res);
+            const json = await res.json();
+            console.log(`Response from ${ip} as JSON:`, json);
+
+            if (!json?.responseHex?.length) throw new Error(`Invalid response from ${ip}: ${JSON.stringify(json)}`);
+
+            console.log(`Successfully connected to ${ip}`);
+            available.value[index] = true;
+        } else {
+            const json = await res.json();
+            throw new Error(`HTTP error: ${res.status} ${res.statusText} ${json.message}`);
+        }
+    } catch (err) {
+        console.error(`Failed to connect to ${ip}:`, err);
+        available.value[index] = false;
+        checkMiddlemanHealth();
+    } finally {
+        sending.value[index] = false;
+    }
+}
+
+function formatStatus(i: number) {
+    return !available.value[i] && sending.value[i] ? "Zoeken..." :
+        !available.value[i] ? "Niet verbonden" :
+            sending.value[i] ? "Verzenden..." :
+                !sendStatus.value[i] ? "Nog niets verzonden" :
+                    sendStatus.value[i] === 'ok' ? `OK ${sendTime.value[i] ? `om ${format(sendTime.value[i]!, 'HH:mm:ss')}` : ''}` :
+                        sendStatus.value[i] === 'error' ? `Fout ${sendTime.value[i] ? `om ${format(sendTime.value[i]!, 'HH:mm:ss')}` : ''}` :
+                            sendStatus.value[i]
+}
 
 function showFormattingInfo() {
     showDialog([
@@ -509,8 +594,43 @@ function showFormattingInfo() {
     <section>
 
         <div class="section-content" style="display: flex; gap: 32px; flex-wrap: wrap;">
-            <div style="flex: 520px 0 0;">
-                <h2>Voorbeeld</h2>
+            <div style="flex: min-width 0 0;">
+                <h2>Timetable</h2>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+                    <div class="status-box" @click="checkMiddlemanHealth" style="grid-column: 1 / -1">
+                        <div class="status-light" :class="{
+                            'healthy': health === 'healthy',
+                            'unhealthy': health === 'unhealthy',
+                            'inactive': health === 'unknown',
+                            'working': health === 'unknown',
+                        }"></div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            Achtergrondprogramma
+                            <small>{{
+                                {
+                                    healthy: "In werking",
+                                    unhealthy: "Niet in werking",
+                                    unknown: "Controleren..."
+                                }[health] }}</small>
+                        </div>
+                    </div>
+                    <template v-for="(address, i) in addresses" :key="i">
+                        <div class="status-box" @click="available[i] ? available[i] = false : tryConnect(address, i)">
+                            <div class="status-light" :class="{
+                                'healthy': available[i],
+                                'unhealthy': sendStatus[i] === 'error',
+                                'inactive': !available[i],
+                                'working': sending[i],
+                                [sendStatus[i]]: true,
+                            }"></div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                Scherm {{ i + 1 }}
+                                <small>{{ formatStatus(i) }}</small>
+                            </div>
+                        </div>
+                    </template>
+                </div>
 
                 <div id="matrix-display" :class="{
                     blackout: autoBlack && !showsSoon.length && (
@@ -534,20 +654,6 @@ function showFormattingInfo() {
                 <br>
 
                 <small>Dit voorbeeld is slechts indicatief.</small><br>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-                    <small>Laatst verzonden om
-                        {{ lastSentTime ? format(lastSentTime, 'HH:mm:ss') : 'onbekend' }}</small>
-                    <small>{{ sending ? "Verzenden..." : "" }}</small>
-                    <small v-for="(status, i) in lastSentStatus" :key="i">
-                        Scherm {{ i + 1 }}: {{
-                            !status ? "Niets verzonden" :
-                                status === 'ok' ? "OK" :
-                                    status === 'error' ? "Fout" :
-                                        status
-                        }}
-                    </small>
-                </div>
             </div>
 
             <SidePanel style="flex: 40% 1 1">
@@ -830,12 +936,11 @@ function showFormattingInfo() {
                             <legend>Verbinding</legend>
                             <div class="flex" style="flex-direction: column;">
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                                    <InputGroup type="text" v-model="ip1" id="ip">
-                                        <template #label>IP-adres scherm 1</template>
-                                    </InputGroup>
-                                    <InputGroup type="text" v-model="ip2" id="ip2">
-                                        <template #label>IP-adres scherm 2</template>
-                                    </InputGroup>
+                                    <template v-for="(address, i) in addresses" :key="i">
+                                        <InputGroup type="text" v-model="addresses[i]" :id="`ip-${i}`">
+                                            <template #label>IP-adres scherm {{ i + 1 }}</template>
+                                        </InputGroup>
+                                    </template>
                                 </div>
                                 <InputSwitch v-model="autoSend" identifier="autoSend">
                                     <span>Automatisch verzenden</span>
@@ -867,19 +972,6 @@ function showFormattingInfo() {
 
                         <fieldset>
                             <legend>Laatst verzonden pakket</legend>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-                                <small>Laatst verzonden om
-                                    {{ lastSentTime ? format(lastSentTime, 'HH:mm:ss') : 'onbekend' }}</small>
-                                <small>{{ sending ? "Verzenden..." : "" }}</small>
-                                <small v-for="(status, i) in lastSentStatus" :key="i">
-                                    Scherm {{ i + 1 }}: {{
-                                        !status ? "Niets verzonden" :
-                                            status === 'ok' ? "OK" :
-                                                status === 'error' ? "Fout" :
-                                                    status
-                                    }}
-                                </small>
-                            </div>
                             <div class="flex">
                                 <pre style="width: 48ch;">{{ lastSentPacket }}</pre>
                                 <pre style="width: 16ch;">{{
@@ -992,6 +1084,71 @@ pre {
         font-size: 14px;
         height: 36px;
         padding-right: 0;
+    }
+}
+
+.status-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    /* height: 40px; */
+    width: 100%;
+    padding: 8px 16px;
+    font: 16px Heebo, arial, sans-serif;
+    border: 1px solid light-dark(#9da1ac, #30343d);
+    border-radius: 6px;
+    line-height: 16px;
+    cursor: pointer;
+}
+
+.status-light {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    --color: hsl(0, 87%, 64%);
+    background-color: var(--color);
+
+    &.inactive {
+        --color: hsl(0, 0%, 64%);
+    }
+
+    &.healthy {
+        --color: hsl(111, 87%, 64%);
+    }
+
+    &.unhealthy {
+        --color: hsl(0, 87%, 64%);
+    }
+
+    &.working {
+        &::before {
+            content: "";
+            position: absolute;
+            top: -2px;
+            bottom: -2px;
+            left: -2px;
+            right: -2px;
+            background-color: var(--color);
+            border-radius: 50%;
+            animation: pulsate 750ms linear infinite;
+        }
+    }
+}
+
+@keyframes pulsate {
+    0% {
+        scale: 0.8;
+        opacity: 0.0;
+    }
+
+    50% {
+        opacity: 1.0;
+    }
+
+    100% {
+        scale: 1.3;
+        opacity: 0.0;
     }
 }
 
