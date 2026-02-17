@@ -8,6 +8,7 @@ import UsheringAnnouncerView from '../views/ushering/AnnouncerView.vue';
 import UsheringPlannerView from '../views/ushering/PlannerView.vue';
 import NarrowcastingTimetableView from '../views/narrowcasting/TimetableView.vue';
 import PocIntermissionView from '../views/poc/IntermissionView.vue';
+import SettingsDemoView from '../views/SettingsDemoView.vue';
 
 const routes: RouteRecordRaw[] = [
     {
@@ -84,6 +85,14 @@ const routes: RouteRecordRaw[] = [
         component: PocIntermissionView,
         meta: {
             title: 'Filmpauze',
+        }
+    },
+    {
+        path: '/demo/settings',
+        name: 'settings-demo',
+        component: SettingsDemoView,
+        meta: {
+            title: 'Settings Dialog Demo',
         }
     }
 ];
