@@ -16,9 +16,12 @@ const scrollToCategory = (categoryId: string) => {
     const element = document.getElementById(categoryId);
     if (element && contentRef.value) {
         const scrollContainer = contentRef.value;
-        const elementTop = element.offsetTop;
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const relativeTop = elementRect.top - containerRect.top + scrollContainer.scrollTop;
+        
         scrollContainer.scrollTo({
-            top: elementTop - 20,
+            top: relativeTop - 20,
             behavior: 'smooth'
         });
     }

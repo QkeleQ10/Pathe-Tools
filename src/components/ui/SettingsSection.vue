@@ -18,14 +18,14 @@ onMounted(() => {
         observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
-                    if (entry.isIntersecting && entry.intersectionRatio >= 0.3 && activeCategory) {
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.25 && activeCategory) {
                         activeCategory.value = props.categoryId;
                     }
                 });
             },
             {
                 root: contentRef.value,
-                threshold: [0, 0.3, 0.5, 0.7, 1],
+                threshold: [0, 0.25, 0.3, 0.5, 0.7, 1],
                 rootMargin: '-20% 0px -70% 0px'
             }
         );
