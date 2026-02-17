@@ -56,6 +56,10 @@ button.full {
     max-width: none;
 }
 
+button.left {
+    justify-content: flex-start;
+}
+
 button.large {
     height: auto;
     line-height: normal;

@@ -32,7 +32,7 @@ provide('scrollToCategory', scrollToCategory);
 
 <template>
     <slot name="invoker">
-        <Button class="secondary" @click="active = true">
+        <Button class="secondary full left" @click="active = true">
             <slot name="button-content">
                 Settings
             </slot>
@@ -76,11 +76,11 @@ provide('scrollToCategory', scrollToCategory);
 .settings-modal-content {
     background: #202020;
     color: #fff;
-    padding: 16px 20px;
+    padding: 24px 32px;
     border-radius: 10px;
-    max-width: 900px;
+    max-width: 1000px;
     width: 100%;
-    max-height: 85vh;
+    max-height: min(85vh, 800px);
     height: 80vh;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
     position: relative;
@@ -90,7 +90,7 @@ provide('scrollToCategory', scrollToCategory);
 .settings-layout {
     display: grid;
     grid-template-columns: 200px 1fr;
-    gap: 24px;
+    gap: 16px;
     height: 100%;
     overflow: hidden;
 }
@@ -105,6 +105,7 @@ provide('scrollToCategory', scrollToCategory);
 
 .settings-content {
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 8px 16px;
     padding-right: 8px;
 }

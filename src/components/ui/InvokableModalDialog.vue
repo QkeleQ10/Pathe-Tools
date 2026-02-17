@@ -7,7 +7,7 @@ const active = defineModel<boolean>('active', {
 
 <template>
     <slot name="invoker">
-        <Button class="secondary" @click="active = true">
+        <Button class="secondary full left" @click="active = true">
             <slot name="button-content">
                 Dialog
             </slot>

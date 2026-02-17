@@ -361,7 +361,6 @@ function getAddButtonPosition(index: number): string {
 
 <template>
     <div class="cols-builder">
-        <Button class="tertiary" @click="resetToDefaults">Resetten</Button>
         <div class="columns-wrapper">
             <div class="columns" ref="columnsContainer">
                 <template v-for="(col, i) in columns" :key="i">
@@ -426,6 +425,7 @@ function getAddButtonPosition(index: number): string {
                 </template>
             </div>
         </div>
+        <Button class="tertiary" @click="resetToDefaults">Standaardindeling herstellen</Button>
     </div>
 </template>
 
@@ -433,14 +433,6 @@ function getAddButtonPosition(index: number): string {
 .cols-builder {
     margin-bottom: 0;
     position: relative;
-}
-
-button.tertiary {
-    position: absolute;
-    top: -32px;
-    right: 0;
-    background-color: #111316 !important;
-    padding-left: 8px;
 }
 
 .columns-wrapper {

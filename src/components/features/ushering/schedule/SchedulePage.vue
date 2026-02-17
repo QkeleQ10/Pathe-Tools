@@ -46,6 +46,7 @@ defineExpose({
         <div class="print-component-wrapper">
             <div class="print-component" ref="printComponent" :style="`font-size: ${fontSize}px;`"
                 :class="{ scheduled: sortBy === 'scheduledTime' }">
+                <div class="scheduled-disclaimer" v-if="sortBy === 'scheduledTime'">{{ "INLOPEN ".repeat(30) }}</div>
                 <div class="header" v-if="'flags' in metadata">
                     <span>
                         {{ sortBy === 'scheduledTime' ? 'Inlopen' : 'Uitlopen' }}
@@ -180,6 +181,10 @@ div.header {
     &::first-letter {
         text-transform: uppercase;
     }
+
+    .scheduled & {
+        left: 10px;
+    }
 }
 
 div.footer {
@@ -296,7 +301,19 @@ table.timetable {
 }
 
 .print-component.scheduled {
-    border-left: 8px solid transparent;
-    border-image: url("/src/assets/squiggle.svg") 14 repeat;
+    margin-left: 10px;
+}
+
+.scheduled-disclaimer {
+    position: absolute;
+    left: 10px;
+    top: 0;
+    width: max-content;
+    transform: rotate(90deg);
+    transform-origin: left top;
+    font-size: 10px;
+    color: var(--color);
+    opacity: .5;
+    font-weight: bold;
 }
 </style>

@@ -43,18 +43,33 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <section :id="categoryId" class="settings-section" ref="sectionRef">
+    <fieldset :id="categoryId" class="settings-section" ref="sectionRef">
         <h2 class="settings-section-title">{{ title }}</h2>
         <div class="settings-section-content">
             <slot></slot>
         </div>
-    </section>
+    </fieldset>
 </template>
 
 <style scoped>
 .settings-section {
-    margin-bottom: 32px;
-    scroll-margin-top: 20px;
+    margin-bottom: 24px;
+    scroll-margin-top: 32px;
+    padding: 0;
+
+    border: none;
+    background-color: #ffffff0d;
+    padding: 24px 32px;
+    border-radius: 6px;
+
+    &:not(:first-child) {
+        padding-top: 24px;
+        /* border-top: 1px solid #4a4b4d; */
+    }
+
+    &:last-child {
+        margin-bottom: 150px;
+    }
 }
 
 .settings-section-title {

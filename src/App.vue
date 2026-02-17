@@ -17,6 +17,8 @@ document.addEventListener('click', () => userHasInteracted.value = true, { once:
 provide('userHasInteracted', userHasInteracted);
 
 const dismissedNotification = useStorage('dismissedNotification', false);
+
+const aboutOpen = ref(false);
 </script>
 
 <template>
@@ -34,40 +36,44 @@ const dismissedNotification = useStorage('dismissedNotification', false);
             <nav v-else>
             </nav>
 
+            <a @click="aboutOpen = true">
+                <Icon>info</Icon>
+            </a>
+
             <div id="clock">{{ format(now, 'HH:mm:ss') }}</div>
         </div>
     </header>
 
-    <HeroImage v-if="$route.meta.showHero !== false"
-        :class="{ large: $route.meta.largeHero, small: $route.meta.smallHero, 'zero-height': $route.meta.heroZeroHeight }" />
-
     <RouterView />
 
-    <footer v-if="$route.meta.showFooter ?? true">
-
-        <div class="block" id="faq">
-            <div class="svg-icon">
+    <Transition>
+        <ModalDialog v-if="aboutOpen" @dismiss="aboutOpen = false">
+            <div class="block" id="faq">
+                <div class="svg-icon">
+                </div>
+                <div class="content">
+                    <h3>Problemen of feedback?</h3>
+                    <p>Spreek me aan, stuur me een appje of bereik me via e-mail (selecteer het envelop-icoon
+                        hieronder).
+                    </p>
+                    <p><a @click="dismissedNotification = false"
+                            style="text-decoration: underline; color: var(--yellow1)">
+                            Waarom is de website niet meer zoals eerst?
+                        </a></p>
+                </div>
             </div>
-            <div class="content">
-                <h3>Problemen of feedback?</h3>
-                <p>Spreek me aan, stuur me een appje of bereik me via e-mail (selecteer het envelop-icoon hieronder).
-                </p>
-                <p><a @click="dismissedNotification = false" style="text-decoration: underline; color: var(--yellow1)">
-                        Waarom is de website niet meer zoals eerst?
-                    </a></p>
-            </div>
-        </div>
 
-        <div class="flex icons">
-            <a title="E-mail" href="mailto:quinten@althues.nl">
-                <Icon>mail</Icon>
-            </a>
-            <a title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
-                <Icon>code</Icon>
-            </a>
-        </div>
-        <p>Quinten Althues © 2024-{{ new Date().getFullYear() }}</p>
-    </footer>
+            <div class="flex icons">
+                <a title="E-mail" href="mailto:quinten@althues.nl">
+                    <Icon>mail</Icon>
+                </a>
+                <a title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
+                    <Icon>code</Icon>
+                </a>
+            </div>
+            <p>Quinten Althues © 2024-{{ new Date().getFullYear() }}</p>
+        </ModalDialog>
+    </Transition>
 
     <Transition>
         <ModalDialog v-if="!dismissedNotification" @dismiss="dismissedNotification = true">
@@ -92,6 +98,13 @@ const dismissedNotification = useStorage('dismissedNotification', false);
 </template>
 
 <style>
+#app {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100dvh;
+    overflow: hidden;
+}
+
 header {
     top: 0;
     left: 0;
@@ -102,13 +115,18 @@ header {
     align-items: center;
     justify-content: center;
 
+    border-bottom: 1px solid #fff3;
+    box-shadow: 0 2px 4px 0 #0008;
+
+    z-index: 1;
+
     div.wrapper {
         width: 100%;
         padding-inline: 32px;
         padding-block: 12px;
 
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 1fr auto auto;
         align-items: center;
     }
 }
@@ -141,35 +159,8 @@ nav a.active {
     }
 }
 
-footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-
-    padding-block: 32px;
-    margin-top: 164px;
-
-    background-color: #101114;
-    color: #fff;
-    z-index: 10;
-}
-
-footer a {
-    cursor: pointer;
-    color: currentColor;
-    text-decoration: none;
-}
-
-footer .icon {
-    vertical-align: middle;
-    --size: 24px;
-}
-
-footer p {
-    font-size: 12px;
-    margin: 0;
+#app>.content {
+    overflow-y: auto;
 }
 
 #clock {
