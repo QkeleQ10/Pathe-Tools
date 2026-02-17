@@ -28,7 +28,6 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Select: typeof import('./src/components/ui/Select.vue')['default']
-    SettingItem: typeof import('./src/components/ui/SettingItem.vue')['default']
     SettingsCategoryButton: typeof import('./src/components/ui/SettingsCategoryButton.vue')['default']
     SettingsDialog: typeof import('./src/components/ui/SettingsDialog.vue')['default']
     SettingsSection: typeof import('./src/components/ui/SettingsSection.vue')['default']
