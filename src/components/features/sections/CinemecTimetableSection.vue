@@ -5,6 +5,7 @@ import { useTmsScheduleStore } from '@/stores/tmsSchedule.ts';
 import * as qmln from '@/scripts/qmln.ts';
 import { format } from 'date-fns';
 import { showDialog } from '@/scripts/dialogManager.ts';
+import StatusBox from '@/components/ui/StatusBox.vue';
 
 interface DisplayLine {
     fcolor: 0x00 | 0x01 | 0x02 | 0x03;
@@ -45,11 +46,9 @@ const theatreName = useLocalStorage('theatre-name', 'Pathé');
 const motd = useLocalStorage('motd', '');
 
 const additionalAgeRating = useLocalStorage('additional-age-rating', true);
-const additionalPlf = useLocalStorage('additional-plf', false);
-const additionalLanguage = useLocalStorage('additional-language', false);
+const additionalPlf = useLocalStorage('additional-plf', true);
+const additionalLanguage = useLocalStorage('additional-language', true);
 
-const receiveBeta = useLocalStorage('receive-beta', false);
-const autoSend = useLocalStorage('auto-send', true);
 const autoBlack = useLocalStorage('auto-black', true);
 
 const autoConfigShows = useLocalStorage('auto-config-shows', 'walkin');
@@ -183,12 +182,6 @@ function loadWalkIns() {
                 i
             }
         });
-
-    if (autoSend.value) {
-        nextTick(() => {
-            sendData();
-        });
-    }
 }
 
 function getFormattedText(line: DisplayLine): { textString: string, fcolor: number, bcolor: number, flash: boolean }[] {
@@ -356,7 +349,10 @@ function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(cu
 async function sendData(hex: string = generatePacket().toString(), force = false) {
     const connectedIps = addresses.value.filter((_, i) => available.value[i]);
 
-    if (sending.value.some(s => s)) return;
+    if (sending.value.some(s => s) || health.value !== "healthy" || !connectedIps.length) {
+        console.info("Cannot send now.");
+        return;
+    }
 
     if (!force && hex === lastSentPacket.value && connectedIps.every((_, i) => sendStatus.value[i] === "ok")) {
         console.info("No changes detected, skipping send.");
@@ -370,7 +366,7 @@ async function sendData(hex: string = generatePacket().toString(), force = false
     await Promise.allSettled(
         connectedIps.map(async (ip, i) => {
             try {
-                const res = await fetch(receiveBeta.value ? "http://localhost:5000/send-and-receive" : "http://localhost:5000/send-bytes", {
+                const res = await fetch("http://localhost:5000/send-and-receive", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -382,21 +378,19 @@ async function sendData(hex: string = generatePacket().toString(), force = false
 
                 if (res.ok) {
                     sendStatus.value[i] = "ok"
-                    if (receiveBeta.value) {
-                        console.log(`Response from ${ip}:`, res);
-                        const json = await res.json();
-                        console.log(`Response from ${ip} as JSON:`, json);
-                        lastReceivedPacket.value = json || null;
-                    } else {
-                        console.log(`Successfully sent to ${ip}`);
-                    }
+
+                    console.log(`Response from ${ip}:`, res);
+                    const json = await res.json();
+                    console.log(`Response from ${ip} as JSON:`, json);
+                    lastReceivedPacket.value = json || null;
                 } else {
                     const json = await res.json();
                     throw new Error(`HTTP error: ${res.status} ${res.statusText} ${json.message}`);
                 }
             } catch (err) {
-                console.error(`Failed to send to ${ip}:`, err);
                 sendStatus.value[i] = "error";
+                console.error(`Failed to send to ${ip}:`, err);
+
                 checkMiddlemanHealth();
             }
         })
@@ -469,7 +463,7 @@ function truncateAndPad(string: string, maxLength: number, align: 'left' | 'cent
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-onMounted(() => {
+onMounted(async () => {
     walkIns.value = [...store.table]
         .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
         .map((show, i) => ({
@@ -479,13 +473,16 @@ onMounted(() => {
             i
         }));
 
-    addresses.value.forEach(tryConnect);
+    await Promise.allSettled(addresses.value.map((ip, index) => tryConnect(ip, index)));
+
+    sendData();
 
     timeoutId = setTimeout(() => {
-        if (autoSend.value) sendData();
-        intervalId = setInterval(() => {
-            if (autoSend.value) sendData();
-        }, 5000);
+        intervalId = setInterval(() => sendData(), 5000);
+
+        sendData(new qmln.Packet(
+            null, null, new qmln.FunctionSetClock(new Date())
+        ).toString()); // initial clock sync
     }, 5000 - Date.now() % 5000);
 });
 
@@ -521,47 +518,118 @@ async function checkMiddlemanHealth() {
 }
 
 async function tryConnect(ip: string, index: number) {
-    await checkMiddlemanHealth();
-    if (health.value !== 'healthy') return;
+    return new Promise<void>(async (resolve, reject) => {
+        await checkMiddlemanHealth();
+        if (health.value !== 'healthy') return;
 
-    available.value[index] = false;
-    sending.value[index] = true;
-
-    try {
-        const res = await fetch("http://localhost:5000/send-and-receive", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ip,
-                port: "9100",
-                hex: new qmln.Packet(
-                    null,
-                    null,
-                    new qmln.FunctionSendPing()
-                ).toString()
-            })
-        });
-
-        if (res.ok) {
-            console.log(`Response from ${ip}:`, res);
-            const json = await res.json();
-            console.log(`Response from ${ip} as JSON:`, json);
-
-            if (!json?.responseHex?.length) throw new Error(`Invalid response from ${ip}: ${JSON.stringify(json)}`);
-
-            console.log(`Successfully connected to ${ip}`);
-            available.value[index] = true;
-        } else {
-            const json = await res.json();
-            throw new Error(`HTTP error: ${res.status} ${res.statusText} ${json.message}`);
-        }
-    } catch (err) {
-        console.error(`Failed to connect to ${ip}:`, err);
         available.value[index] = false;
-        checkMiddlemanHealth();
-    } finally {
-        sending.value[index] = false;
+        sending.value[index] = true;
+
+        try {
+            const res = await fetch("http://localhost:5000/send-and-receive", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ip,
+                    port: "9100",
+                    hex: new qmln.Packet(
+                        null,
+                        null,
+                        new qmln.FunctionSendPing()
+                    ).toString()
+                })
+            });
+
+            if (res.ok) {
+                console.log(`Response from ${ip}:`, res);
+                const json = await res.json();
+                console.log(`Response from ${ip} as JSON:`, json);
+
+                if (!json?.responseHex?.length) throw new Error(`Invalid response from ${ip}: ${JSON.stringify(json)}`);
+
+                available.value[index] = true;
+                sending.value[index] = false;
+
+                console.log(`Successfully connected to ${ip}`);
+                resolve();
+            } else {
+                const json = await res.json();
+                throw new Error(`HTTP error: ${res.status} ${res.statusText} ${json.message}`);
+            }
+        } catch (err) {
+            available.value[index] = false;
+            sending.value[index] = false;
+
+            console.error(`Failed to connect to ${ip}:`, err);
+            reject(err);
+
+            checkMiddlemanHealth();
+        }
+    });
+}
+
+function* spiralOutwards(min: number = 0, max: number = 255, start: number = Math.floor((min + max) / 2)): Generator<number> {
+    let offset = 0;
+    let sign = 1;
+    while (true) {
+        if ((start - offset < min && start + offset > max))
+            break;
+
+        let next = start + offset * sign;
+
+        if (next >= min && next <= max)
+            yield next;
+
+        if (sign > 0)
+            offset++;
+        sign *= -1;
     }
+}
+
+async function outwardSpiralIpSearch() {
+    // const gen2 = spiralOutwards(0, 255, 10);
+    const gen2 = spiralOutwards(10, 10, 10);
+
+    while (true) {
+        const gen2Value = gen2.next();
+        if (gen2Value.done) break;
+
+        // const gen3 = spiralOutwards(0, 255, 87);
+        const gen3 = spiralOutwards(80, 90, 87);
+
+        while (true) {
+            const gen3Value = gen3.next();
+            if (gen3Value.done) break;
+
+            const gen4 = spiralOutwards(0, 255, 81);
+
+            while (true) {
+                const gen4Value = gen4.next();
+                if (gen4Value.done) break;
+
+                console.log(`Trying 10.${gen2Value.value}.${gen3Value.value}.${gen4Value.value}`);
+
+                try {
+                    if (addresses.value.includes(`10.${gen2Value.value}.${gen3Value.value}.${gen4Value.value}`)) {
+                        console.log(`Already in addresses, skipping 10.${gen2Value.value}.${gen3Value.value}.${gen4Value.value}`);
+                        continue;
+                    }
+
+                    await tryConnect(`10.${gen2Value.value}.${gen3Value.value}.${gen4Value.value}`, 0);
+
+                    console.log(`Successfully connected to 10.${gen2Value.value}.${gen3Value.value}.${gen4Value.value}`);
+                } catch (err) {
+                    // connection failed, try next IP
+                }
+            }
+
+            console.log(`Finished 10.${gen2Value.value}.${gen3Value.value}.*`);
+        }
+
+        console.log(`Finished 10.${gen2Value.value}.*.*`);
+    }
+
+    console.log("Finished searching all IPs in 10.*.*.*");
 }
 
 function formatStatus(i: number) {
@@ -592,43 +660,28 @@ function showFormattingInfo() {
 
 <template>
     <section>
-
         <div class="section-content" style="display: flex; gap: 32px; flex-wrap: wrap;">
             <div style="flex: min-width 0 0;">
                 <h2>Timetable</h2>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
-                    <div class="status-box" @click="checkMiddlemanHealth" style="grid-column: 1 / -1">
-                        <div class="status-light" :class="{
-                            'healthy': health === 'healthy',
-                            'unhealthy': health === 'unhealthy',
-                            'inactive': health === 'unknown',
-                            'working': health === 'unknown',
-                        }"></div>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            Achtergrondprogramma
-                            <small>{{
-                                {
-                                    healthy: "In werking",
-                                    unhealthy: "Niet in werking",
-                                    unknown: "Controleren..."
-                                }[health] }}</small>
-                        </div>
-                    </div>
+                    <StatusBox style="grid-column: 1 / -1" :health="health === 'unknown' ? 'inactive' : health"
+                        :working="health === 'unknown'" @click="checkMiddlemanHealth" :clickable="true">
+                        <template #label>Achtergrondprogramma</template>
+                        <template #description>{{ {
+                            healthy: 'In werking',
+                            unhealthy: 'Niet in werking',
+                            unknown: 'Controleren...'
+                        }[health] }}</template>
+                    </StatusBox>
                     <template v-for="(address, i) in addresses" :key="i">
-                        <div class="status-box" @click="available[i] ? available[i] = false : tryConnect(address, i)">
-                            <div class="status-light" :class="{
-                                'healthy': available[i],
-                                'unhealthy': sendStatus[i] === 'error',
-                                'inactive': !available[i],
-                                'working': sending[i],
-                                [sendStatus[i]]: true,
-                            }"></div>
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                Scherm {{ i + 1 }}
-                                <small>{{ formatStatus(i) }}</small>
-                            </div>
-                        </div>
+                        <StatusBox
+                            :health="available[i] ? 'healthy' : (sendStatus[i] === 'error' ? 'unhealthy' : 'inactive')"
+                            :working="sending[i]" @click="available[i] ? available[i] = false : tryConnect(address, i)"
+                            :clickable="true">
+                            <template #label>{{ `Scherm ${i + 1}` }}</template>
+                            <template #description>{{ formatStatus(i) }}</template>
+                        </StatusBox>
                     </template>
                 </div>
 
@@ -935,6 +988,7 @@ function showFormattingInfo() {
                         <fieldset>
                             <legend>Verbinding</legend>
                             <div class="flex" style="flex-direction: column;">
+
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                                     <template v-for="(address, i) in addresses" :key="i">
                                         <InputGroup type="text" v-model="addresses[i]" :id="`ip-${i}`">
@@ -942,29 +996,25 @@ function showFormattingInfo() {
                                         </InputGroup>
                                     </template>
                                 </div>
-                                <InputSwitch v-model="autoSend" identifier="autoSend">
-                                    <span>Automatisch verzenden</span>
-                                </InputSwitch>
-                                <InputSwitch v-model="receiveBeta" identifier="receiveBeta">
-                                    <span><code>receive</code> gebruiken</span>
-                                    <small>Bèta</small>
-                                </InputSwitch>
 
                                 <div class="flex buttons">
                                     <Button class="primary" @click="sendData(new qmln.Packet(
                                         null, null, new qmln.FunctionSetClock(new Date())
-                                    ).toString())" :disabled="sending">
+                                    ).toString())" :disabled="sending.some(s => s)">
                                         <Icon>update</Icon>
                                         <span>Klok bijwerken</span>
                                     </Button>
-                                    <Button class="secondary" @click="sendData()" :disabled="sending">
+                                    <Button class="secondary" @click="sendData()" :disabled="sending.some(s => s)">
                                         <Icon>send</Icon>
                                         <span>Nu verzenden</span>
                                     </Button>
                                     <Button class="secondary"
                                         @click="sendData(generatePacket(fillEmptyLinesWithShows(currentConfiguration), true).toString())"
-                                        :disabled="sending">
+                                        :disabled="sending.some(s => s)">
                                         <span>Oranje regels verschuiven (bèta)</span>
+                                    </Button>
+                                    <Button class="secondary" @click="outwardSpiralIpSearch()">
+                                        Schermen vinden (wees voorzichtig!)
                                     </Button>
                                 </div>
                             </div>
@@ -983,7 +1033,7 @@ function showFormattingInfo() {
                             </div>
                         </fieldset>
 
-                        <fieldset v-if="receiveBeta">
+                        <fieldset>
                             <legend>Laatst ontvangen pakket</legend>
                             <pre>{{ JSON.stringify(lastReceivedPacket, null, 4) }}</pre>
                         </fieldset>
@@ -1084,71 +1134,6 @@ pre {
         font-size: 14px;
         height: 36px;
         padding-right: 0;
-    }
-}
-
-.status-box {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    /* height: 40px; */
-    width: 100%;
-    padding: 8px 16px;
-    font: 16px Heebo, arial, sans-serif;
-    border: 1px solid light-dark(#9da1ac, #30343d);
-    border-radius: 6px;
-    line-height: 16px;
-    cursor: pointer;
-}
-
-.status-light {
-    position: relative;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    --color: hsl(0, 87%, 64%);
-    background-color: var(--color);
-
-    &.inactive {
-        --color: hsl(0, 0%, 64%);
-    }
-
-    &.healthy {
-        --color: hsl(111, 87%, 64%);
-    }
-
-    &.unhealthy {
-        --color: hsl(0, 87%, 64%);
-    }
-
-    &.working {
-        &::before {
-            content: "";
-            position: absolute;
-            top: -2px;
-            bottom: -2px;
-            left: -2px;
-            right: -2px;
-            background-color: var(--color);
-            border-radius: 50%;
-            animation: pulsate 750ms linear infinite;
-        }
-    }
-}
-
-@keyframes pulsate {
-    0% {
-        scale: 0.8;
-        opacity: 0.0;
-    }
-
-    50% {
-        opacity: 1.0;
-    }
-
-    100% {
-        scale: 1.3;
-        opacity: 0.0;
     }
 }
 
