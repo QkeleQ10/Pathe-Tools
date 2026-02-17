@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { inject, onMounted, onUnmounted, ref } from 'vue';
+import { inject, onMounted, onUnmounted, ref, Ref } from 'vue';
 
 const props = defineProps<{
     categoryId: string;
     title: string;
 }>();
 
-const activeCategory = inject<any>('activeCategory');
-const contentRef = inject<any>('settingsContentRef');
+const activeCategory = inject<Ref<string>>('activeCategory');
+const contentRef = inject<Ref<HTMLElement | null>>('settingsContentRef');
 const sectionRef = ref<HTMLElement | null>(null);
 
 let observer: IntersectionObserver | null = null;
@@ -18,7 +18,7 @@ onMounted(() => {
         observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
-                    if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.3 && activeCategory) {
                         activeCategory.value = props.categoryId;
                     }
                 });

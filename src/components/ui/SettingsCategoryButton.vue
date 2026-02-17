@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { inject, computed } from 'vue';
+import { inject, computed, Ref } from 'vue';
 
 const props = defineProps<{
     categoryId: string;
     label: string;
 }>();
 
-const activeCategory = inject<any>('activeCategory');
+const activeCategory = inject<Ref<string>>('activeCategory');
 const scrollToCategory = inject<(id: string) => void>('scrollToCategory');
 
 const isActive = computed(() => activeCategory?.value === props.categoryId);
