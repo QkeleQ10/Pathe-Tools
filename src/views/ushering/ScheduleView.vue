@@ -16,19 +16,12 @@ const store = useTmsScheduleStore()
 const stingers = useStorage<string[]>('credits-stingers', [])
 
 const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', 'creditsTime');
-const trueColours = useStorage('true-colours', false);
+// const trueColours = useStorage('true-colours', false);
+const trueColours = ref(true);
 
-const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
-
-const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
-const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
 const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
-const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
-const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
 
 const fontSize = useStorage('schedule-font-size', 12.5) // font size in pixels
-
-const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
 
 const main = ref<HTMLElement>(null)
 
@@ -112,7 +105,8 @@ const { isOverDropZone } = useDropZone(main, {
                 </template>
                 <template v-else>
                     <h1>Tijdenlijstje</h1>
-                    <p>Upload eerst een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) door hem naar deze pagina te slepen.</p>
+                    <p>Upload eerst een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) door hem naar
+                        deze pagina te slepen.</p>
                 </template>
             </main>
 
@@ -134,7 +128,8 @@ const { isOverDropZone } = useDropZone(main, {
                     </template>
 
                     <template v-else>
-                        <Button class="primary full left" v-if="pages.length > 1" @click="handlePrint()" style="flex: 2;">
+                        <Button class="primary full left" v-if="pages.length > 1" @click="handlePrint()"
+                            style="flex: 2;">
                             <Icon>print</Icon>
                             Alles afdrukken
                         </Button>
@@ -163,7 +158,7 @@ const { isOverDropZone } = useDropZone(main, {
 
                 <div class="flex" style="flex-direction: column;">
                     <span>Klik op tekst in het voorbeeld om te bewerken.</span>
-                    <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch>
+                    <!-- <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch> -->
                 </div>
 
             </SidePanel>
@@ -178,23 +173,35 @@ const { isOverDropZone } = useDropZone(main, {
 <style scoped>
 .layout {
     display: grid;
-    grid-template-columns: 1fr clamp(300px, 25vw, 500px);
+    grid-template-columns: 1fr clamp(300px, 35vw, 500px);
     grid-template-rows: 1fr;
     height: 100%;
-    gap: 32px;
     overflow-y: hidden;
 
     main {
         position: relative;
-        padding: 32px 32px;
+        padding: 32px;
         overflow-y: auto;
+
+        #pages {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            align-items: center;
+        }
+
+        @media print {
+            #pages {
+                display: block;
+            }
+        }
     }
 
     aside {
         display: grid;
         grid-template-rows: auto 1fr auto;
 
-        padding: 32px 32px;
+        padding: 32px;
         border-left: 1px solid #fff3;
         box-shadow: 0 2px 4px 0 #0008;
     }
@@ -213,26 +220,5 @@ const { isOverDropZone } = useDropZone(main, {
         right: 32px;
         left: auto;
     }
-}
-
-#pages {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    gap: 16px;
-
-    @media print {
-        display: block;
-    }
-}
-
-#print-buttons {
-    position: sticky;
-    bottom: 0;
-    backdrop-filter: blur(4px);
-    padding: 8px;
-    padding-top: 16px;
-    margin: -8px;
-    gap: 4px;
 }
 </style>

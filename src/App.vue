@@ -36,11 +36,12 @@ const aboutOpen = ref(false);
             <nav v-else>
             </nav>
 
-            <a @click="aboutOpen = true">
-                <Icon>info</Icon>
-            </a>
-
-            <div id="clock">{{ format(now, 'HH:mm:ss') }}</div>
+            <div class="flex" style="align-items: center; gap: 0;">
+                <a @click="aboutOpen = true" title="Over deze website">
+                    <Icon>info</Icon>
+                </a>
+                <div id="clock">{{ format(now, 'HH:mm:ss') }}</div>
+            </div>
         </div>
     </header>
 
@@ -48,30 +49,25 @@ const aboutOpen = ref(false);
 
     <Transition>
         <ModalDialog v-if="aboutOpen" @dismiss="aboutOpen = false">
-            <div class="block" id="faq">
-                <div class="svg-icon">
-                </div>
-                <div class="content">
-                    <h3>Problemen of feedback?</h3>
-                    <p>Spreek me aan, stuur me een appje of bereik me via e-mail (selecteer het envelop-icoon
-                        hieronder).
-                    </p>
-                    <p><a @click="dismissedNotification = false"
-                            style="text-decoration: underline; color: var(--yellow1)">
-                            Waarom is de website niet meer zoals eerst?
-                        </a></p>
-                </div>
-            </div>
-
-            <div class="flex icons">
-                <a title="E-mail" href="mailto:quinten@althues.nl">
-                    <Icon>mail</Icon>
-                </a>
-                <a title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
-                    <Icon>code</Icon>
-                </a>
-            </div>
+            <h3>Over</h3>
             <p>Quinten Althues © 2024-{{ new Date().getFullYear() }}</p>
+            <p>
+                <b>Problemen of feedback?</b> Spreek me vooral aan in Pathé Utrecht Leidsche Rijn of bereik me via
+                WhatsApp of e-mail (selecteer de knop hieronder)!
+            </p>
+            <br>
+            <div class="flex" style="gap: 24px;">
+                <Button class="tertiary" title="E-mail" href="mailto:quinten@althues.nl">
+                    E-mail
+                </Button>
+                <Button class="tertiary" title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
+                    GitHub
+                </Button>
+            </div>
+            <br>
+            <Button class="tertiary" @click="dismissedNotification = false">
+                Waarom is de website niet meer zoals eerst?
+            </Button>
         </ModalDialog>
     </Transition>
 
@@ -135,7 +131,7 @@ nav {
     display: flex;
 }
 
-nav a {
+header a {
     margin-right: 2em;
     color: #ffffffb3;
     font-weight: 500;
@@ -148,9 +144,9 @@ nav a {
     }
 }
 
-nav a:hover,
-nav a.router-link-active,
-nav a.active {
+header a:hover,
+header a.router-link-active,
+header a.active {
     color: #fff;
     text-shadow: 0px 0px 1px #fff;
 

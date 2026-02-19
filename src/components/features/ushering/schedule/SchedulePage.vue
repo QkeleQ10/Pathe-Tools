@@ -47,7 +47,7 @@ defineExpose({
             <div class="print-component" ref="printComponent" :style="`font-size: ${fontSize}px;`"
                 :class="{ scheduled: sortBy === 'scheduledTime' }">
                 <div class="scheduled-disclaimer" v-if="sortBy === 'scheduledTime'">{{ "INLOPEN ".repeat(30) }}</div>
-                <div class="header" v-if="'flags' in metadata">
+                <div class="header" v-if="'flags' in metadata" contenteditable>
                     <span>
                         {{ sortBy === 'scheduledTime' ? 'Inlopen' : 'Uitlopen' }}
                         van
@@ -83,7 +83,7 @@ defineExpose({
                         :key="i" :show="show" :sortBy="sortBy" />
                 </table>
                 <span contenteditable class="custom-content"></span>
-                <div class="footer">
+                <div class="footer" contenteditable>
                     <span v-if="'lastModified' in metadata">
                         Gegevens: {{ new Date(metadata.lastModified).toLocaleString('nl-NL', {
                             weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour:
@@ -306,7 +306,7 @@ table.timetable {
 
 .scheduled-disclaimer {
     position: absolute;
-    left: 10px;
+    left: 11px;
     top: 0;
     width: max-content;
     transform: rotate(90deg);

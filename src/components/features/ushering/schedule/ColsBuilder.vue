@@ -361,6 +361,8 @@ function getAddButtonPosition(index: number): string {
 
 <template>
     <div class="cols-builder">
+        <small>Deze instelling is nog niet gebruiksvriendelijk en zal ik binnenkort onder handen nemen.</small>
+        <br><br>
         <div class="columns-wrapper">
             <div class="columns" ref="columnsContainer">
                 <template v-for="(col, i) in columns" :key="i">

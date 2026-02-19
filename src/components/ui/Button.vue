@@ -1,5 +1,5 @@
 <template>
-    <button class="center" type="button">
+    <button type="button">
         <slot></slot>
     </button>
 </template>
@@ -8,7 +8,7 @@
 button {
     display: inline-flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     vertical-align: middle;
     height: 48px;
     min-width: 56px;
@@ -47,9 +47,7 @@ button {
     }
 }
 
-button.center {
-    justify-content: center;
-}
+button.center {}
 
 button.full {
     width: 100%;
@@ -91,6 +89,8 @@ button.tertiary {
     height: auto;
     line-height: normal;
     padding: 0;
+    width: auto;
+    justify-content: flex-start;
 
     &:hover {
         background-color: var(--yellow1a);

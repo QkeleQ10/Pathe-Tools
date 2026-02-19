@@ -152,9 +152,8 @@ function addRule() {
     <p v-else>
         Geen regels gevonden.
     </p>
-    <Button v-if="!toggleOnly" class="secondary add-rule" @click="addRule">
-        <Icon>add</Icon>
-        Nieuwe regel
+    <Button v-if="!toggleOnly" class="tertiary add-rule" @click="addRule">
+        Regel toevoegen
     </Button>
 </template>
 
@@ -224,9 +223,5 @@ function addRule() {
         margin-top: 8px;
         margin-bottom: 8px;
     }
-}
-
-.add-rule {
-    margin-top: 8px;
 }
 </style>

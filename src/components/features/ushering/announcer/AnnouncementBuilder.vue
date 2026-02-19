@@ -25,7 +25,7 @@ function sentenceCase(string: string) {
 </script>
 
 <template>
-    <Button v-if="!noButton" class="secondary announcement-builder-button" @click="showAnnouncementBuilder = true"
+    <Button v-if="!noButton" class="secondary full left" @click="showAnnouncementBuilder = true"
         v-bind="$attrs">
         <slot>
             <Icon>build</Icon>

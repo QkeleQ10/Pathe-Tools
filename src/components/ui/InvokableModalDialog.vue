@@ -1,4 +1,8 @@
 <script setup lang="ts">
+defineProps<{
+    buttonClass?: string;
+}>();
+
 const active = defineModel<boolean>('active', {
     default: false,
     type: Boolean,
@@ -7,7 +11,7 @@ const active = defineModel<boolean>('active', {
 
 <template>
     <slot name="invoker">
-        <Button class="secondary full left" @click="active = true">
+        <Button :class="buttonClass || 'secondary full left'" @click="active = true">
             <slot name="button-content">
                 Dialog
             </slot>
