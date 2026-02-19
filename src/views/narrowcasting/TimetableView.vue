@@ -556,10 +556,9 @@ function formatStatus(i: number) {
     return !available.value[i] && sending.value[i] ? "Zoeken..." :
         !available.value[i] ? "Niet verbonden" :
             sending.value[i] ? "Verzenden..." :
-                !sendStatus.value[i] ? "Nog niets verzonden" :
+                sendStatus.value[i] === 'error' ? `Fout ${sendTime.value[i] ? `om ${format(sendTime.value[i]!, 'HH:mm:ss')}` : ''}` :
                     sendStatus.value[i] === 'ok' ? `OK ${sendTime.value[i] ? `om ${format(sendTime.value[i]!, 'HH:mm:ss')}` : ''}` :
-                        sendStatus.value[i] === 'error' ? `Fout ${sendTime.value[i] ? `om ${format(sendTime.value[i]!, 'HH:mm:ss')}` : ''}` :
-                            sendStatus.value[i]
+                        "Nog niets verzonden";
 }
 
 function showFormattingInfo() {
