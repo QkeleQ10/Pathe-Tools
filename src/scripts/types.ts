@@ -185,3 +185,12 @@ export type PatheApiShowDetails = {
     extraInformation: string | null;
     logoTitle: string | null;
 }
+
+export interface DisplayLine {
+    fcolor: 0x00 | 0x01 | 0x02 | 0x03;
+    bcolor: 0x00 | 0x01 | 0x02 | 0x03;
+    enabled: boolean;
+    textString: string;
+    align: 'left' | 'center' | 'right' | 'marquee' | 'marquee-reverse';
+    speed: number;
+}

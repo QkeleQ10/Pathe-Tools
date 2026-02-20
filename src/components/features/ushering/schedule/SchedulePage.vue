@@ -46,7 +46,8 @@ defineExpose({
         <div class="print-component-wrapper">
             <div class="print-component" ref="printComponent" :style="`font-size: ${fontSize}px;`"
                 :class="{ scheduled: sortBy === 'scheduledTime' }">
-                <div class="header" v-if="'flags' in metadata">
+                <div class="scheduled-disclaimer" v-if="sortBy === 'scheduledTime'">{{ "INLOPEN ".repeat(30) }}</div>
+                <div class="header" v-if="'flags' in metadata" contenteditable>
                     <span>
                         {{ sortBy === 'scheduledTime' ? 'Inlopen' : 'Uitlopen' }}
                         van
@@ -82,7 +83,7 @@ defineExpose({
                         :key="i" :show="show" :sortBy="sortBy" />
                 </table>
                 <span contenteditable class="custom-content"></span>
-                <div class="footer">
+                <div class="footer" contenteditable>
                     <span v-if="'lastModified' in metadata">
                         Gegevens: {{ new Date(metadata.lastModified).toLocaleString('nl-NL', {
                             weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour:
@@ -179,6 +180,10 @@ div.header {
 
     &::first-letter {
         text-transform: uppercase;
+    }
+
+    .scheduled & {
+        left: 10px;
     }
 }
 
@@ -296,7 +301,19 @@ table.timetable {
 }
 
 .print-component.scheduled {
-    border-left: 8px solid transparent;
-    border-image: url("/src/assets/squiggle.svg") 14 repeat;
+    margin-left: 10px;
+}
+
+.scheduled-disclaimer {
+    position: absolute;
+    left: 11px;
+    top: 0;
+    width: max-content;
+    transform: rotate(90deg);
+    transform-origin: left top;
+    font-size: 10px;
+    color: var(--color);
+    opacity: .5;
+    font-weight: bold;
 }
 </style>

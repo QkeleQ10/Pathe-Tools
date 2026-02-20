@@ -13,9 +13,10 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
 </script>
 
 <template>
-    <section id="upload">
+    <div id="upload">
         <div class="section-content">
-            <FileUploadBlock @files-uploaded="store.filesUploaded" accept="text/csv,.csv,text/tsv,.tsv">
+            <FileUploadBlock @files-uploaded="store.filesUploaded" accept="text/csv,.csv,text/tsv,.tsv"
+                :highlight="!store.table.length">
                 <p v-if="'name' in store.metadata" style="margin: 0; flex-grow: 1;"
                     :title="[`Bestandsnaam: ${store.metadata.name}`, `Gewijzigd op: ${format(store.metadata.lastModified, 'PPpp', { locale: nl })}`, `Geüpload op: ${format(store.metadata.uploadedDate, 'PPpp', { locale: nl })}`].join('\n')">
                     <span v-if="store.metadata.flags.includes('times-only')">{{ store.metadata.name }}</span>
@@ -32,9 +33,7 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                     Geen gegevens
                     <br>
                     <small>Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) met de knop of
-                        door
-                        hem
-                        hierheen te slepen.</small>
+                        door hem hierheen te slepen.</small>
                 </p>
                 <template #buttons>
                     <slot name="buttons"></slot>
@@ -66,14 +65,13 @@ watch(store, () => hideFileTypeNotice.value = false, { deep: true });
                 </p>
             </ModalDialog>
         </Transition>
-    </section>
+    </div>
 </template>
 
 <style scoped>
 #upload {
-    width: 90%;
-
     .floating {
+        width: 90%;
         display: flex;
         justify-content: end;
     }

@@ -131,7 +131,7 @@ const { handlePrint } = useVueToPrint({
                     tussen uitlopen daar ook op aangepast.</small>
             </div>
             <br>
-            <Button class="full" @click="handlePrint">
+            <Button class="secondary full" @click="handlePrint">
                 <Icon>print</Icon>
                 Handleiding afdrukken
             </Button>
@@ -156,7 +156,7 @@ const { handlePrint } = useVueToPrint({
     </Tabs>
 </template>
 
-<style>
+<style scoped>
 #info-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

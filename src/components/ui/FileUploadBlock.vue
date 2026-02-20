@@ -5,15 +5,16 @@ const emit = defineEmits<{
 const props = defineProps<{
 	accept?: string;
 	multiple?: boolean;
+	highlight?: boolean;
 }>();
 </script>
 
 <template>
-	<div class="flex block blur">
+	<div class="flex block blur" style="flex-direction: column;">
 		<slot></slot>
 		<div class="buttons">
 			<FileUploadButton id="file-upload-area" @files-uploaded="(files) => emit('files-uploaded', files)"
-				:accept="props.accept" :multiple="props.multiple">
+				:accept="props.accept" :multiple="props.multiple" :primary="highlight">
 			</FileUploadButton>
 			<slot name="buttons">
 			</slot>

@@ -10,24 +10,17 @@ import TimetableUploadSection from '@features/sections/TimetableUploadSection.vu
 import SchedulePage from '@features/ushering/schedule/SchedulePage.vue'
 import UserGuide from '@/components/features/ushering/schedule/UserGuide.vue'
 import ColsBuilder, { defaultColumns } from '@/components/features/ushering/schedule/ColsBuilder.vue'
+import Settings from '@/components/features/ushering/schedule/Settings.vue'
 
 const store = useTmsScheduleStore()
 const stingers = useStorage<string[]>('credits-stingers', [])
 
 const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', 'creditsTime');
-const trueColours = useStorage('true-colours', false);
+const trueColours = ref(true);
 
-const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
-
-const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
-const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
 const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
-const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
-const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
 
 const fontSize = useStorage('schedule-font-size', 12.5) // font size in pixels
-
-const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
 
 const main = ref<HTMLElement>(null)
 
@@ -83,25 +76,6 @@ const pages = computed<TimetableShow[][]>(() => {
 // Array to hold refs to SchedulePage components
 const schedulePageRefs = ref<any[]>([]);
 
-const showStingersModal = ref(false)
-
-async function addStinger() {
-    try {
-        await stingers.value.push(prompt("Titel film invoeren:"))
-    } catch (error) {
-        console.error('Failed to add stinger:', error)
-    }
-}
-
-async function removeStinger(title: string) {
-    try {
-        await stingers.value.splice(stingers.value.indexOf(title), 1)
-    } catch (error) {
-        console.error('Failed to remove stinger:', error)
-    }
-}
-
-
 const { handlePrint } = useVueToPrint({
     content: useTemplateRef('pages'),
     documentTitle:
@@ -118,186 +92,117 @@ const { isOverDropZone } = useDropZone(main, {
 </script>
 
 <template>
-    <main ref="main">
-        <TimetableUploadSection>
-            <template #buttons>
-                <InvokableModalDialog>
-                    <template #button-content>
-                        <Icon>help</Icon> Handleiding
-                    </template>
-                    <template #dialog-content>
-                        <UserGuide />
-                    </template>
-                </InvokableModalDialog>
-            </template>
-        </TimetableUploadSection>
-        <section id="edit">
-            <div class="section-content flex" style="flex-wrap: wrap-reverse;">
-                <div style="flex: 210mm 0 0;">
-                    <div class="flex" style="justify-content: space-between; align-items: center; padding-right: 16px;">
-                        <h2>Tijdenlijstje bewerken</h2>
-                        <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch>
-                    </div>
-                    <p id="upload-hint" v-if="!pages?.[0]?.length">Upload eerst een bestand.</p>
+    <div ref="main" class="content">
+        <div class="layout">
+            <main>
+                <template v-if="pages?.[0]?.length">
                     <div id="pages" ref="pages" :class="{ gray: trueColours }">
                         <SchedulePage v-for="(page, i) in pages" :ref="el => schedulePageRefs[i] = el" :shows="page"
                             :metadata="store.metadata" :page-num="i" :num-pages="pages.length" :fontSize="fontSize"
                             :sortBy="sortBy" />
                     </div>
+                </template>
+                <template v-else>
+                    <h1>Tijdenlijstje</h1>
+                    <p>Upload eerst een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) door hem naar
+                        deze pagina te slepen.</p>
+                </template>
+            </main>
+
+            <SidePanel>
+                <div class="flex" style="flex-direction: column;">
+                    <TimetableUploadSection />
+
+                    <template v-if="pages.length === 1">
+                        <Button class="primary full left" style="flex: 2;"
+                            @click="sortBy = 'creditsTime'; nextTick(() => schedulePageRefs[0]?.handlePrint())">
+                            <Icon>print</Icon>
+                            Uitlopenlijst afdrukken
+                        </Button>
+                        <Button class="secondary full left" style="flex: 1;"
+                            @click="sortBy = 'scheduledTime'; nextTick(() => schedulePageRefs[0]?.handlePrint())">
+                            <Icon>print</Icon>
+                            Inlopenlijst afdrukken
+                        </Button>
+                    </template>
+
+                    <template v-else>
+                        <Button class="primary full left" v-if="pages.length > 1" @click="handlePrint()"
+                            style="flex: 2;">
+                            <Icon>print</Icon>
+                            Alles afdrukken
+                        </Button>
+                        <Button class="secondary full left" v-for="(page, i) in pages" :key="i"
+                            @click="schedulePageRefs[i]?.handlePrint()" style="flex: 1;">
+                            <Icon>print</Icon>
+                            {{ pages.length > 1
+                                ? 'Deel ' + (i + 1) + ' afdrukken'
+                                : 'Afdrukken' }}
+                        </Button>
+                    </template>
+
+                    <Settings />
+
+                    <InvokableModalDialog>
+                        <template #button-content>
+                            <Icon>help</Icon> Handleiding
+                        </template>
+                        <template #dialog-content>
+                            <UserGuide />
+                        </template>
+                    </InvokableModalDialog>
                 </div>
-                <SidePanel style="flex: 150px 1 0;">
-                    <h2>Opties</h2>
 
-                    <fieldset>
-                        <legend>Kolommen</legend>
-                        <ColsBuilder style="min-width: 600px;" v-model="columns" />
-                    </fieldset>
-                    <fieldset>
-                        <legend>Uitloop</legend>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <InputGroup type="number" id="shortGapInterval" v-model.number="shortGapInterval" min="0"
-                                max="20">
-                                <template #label>Dubbele uitloop tot</template>
-                                <span class="unit">minuten</span>
-                            </InputGroup>
-                            <InputGroup type="number" id="longGapInterval" v-model.number="longGapInterval" min="20"
-                                max="80">
-                                <template #label>Gat tussen uitlopen vanaf</template>
-                                <span class="unit">minuten</span>
-                            </InputGroup>
-                        </div>
-                        <small>
-                            <span v-if="shortGapInterval > 0">
-                                Uitlopen met minder dan {{ shortGapInterval }} minuten ertussen krijgen een
-                                boogje.
-                            </span>
-                            <span v-else>
-                                Uitlopen met weinig tijd ertussen worden niet gemarkeerd.
-                            </span>
-                            <span v-if="longGapInterval > 0">
-                                Gaten van meer dan {{ longGapInterval }} minuten krijgen een stippellijntje.
-                            </span>
-                            <span v-else>
-                                Uitlopen met veel tijd ertussen worden niet gemarkeerd.
-                            </span>
-                            <br>
-                            Als een voorstelling een post-credits-scène heeft, dan wordt de tijd 'Einde voorstelling'
-                            gebruikt
-                            voor het berekenen van de tijd tot de volgende uitloop.
-                        </small>
-                    </fieldset>
-                    <fieldset
-                        v-show="!(pages[0]?.length && !pages.flatMap(e => e).some(row => row.auditorium?.includes('4DX')))">
-                        <legend>4DX-inloop</legend>
-                        <InputGroup type="number" id="plfTimeBefore" v-model.number="plfTimeBefore" min="0" max="30">
-                            <template #label>Tijd voor aanvang</template>
-                            <span class="unit">minuten</span>
-                        </InputGroup>
-                        <small v-if="plfTimeBefore > 0">
-                            Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
-                            streeplijntje. De 4DX-inloop begint {{ plfTimeBefore }} minuten
-                            voor de aanvangstijd en eindigt wanneer de hoofdfilm begint.
-                        </small>
-                    </fieldset>
-                    <fieldset>
-                        <legend>Overig</legend>
-                        <InputGroup type="select" id="displayCreditsDuration" v-model="displayCreditsDuration">
-                            <template #label>Tijd tussen aftiteling en einde voorstelling tonen</template>
-                            <template #input>
-                                <option :value="0">Nooit tonen</option>
-                                <option :value="1">Alleen bij post-credits-scènes</option>
-                                <option :value="2">Altijd tonen</option>
-                            </template>
-                        </InputGroup>
-                        <InputGroup type="select" id="displayPreshowDuration" v-model="displayPreshowDuration">
-                            <template #label>Tijd tussen inloop en start hoofdfilm tonen</template>
-                            <template #input>
-                                <option :value="0">Nooit tonen</option>
-                                <option :value="1">Alleen bij 4DX-inloop</option>
-                                <option :value="2">Altijd tonen</option>
-                            </template>
-                        </InputGroup>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <InputGroup type="select" id="fontSize" v-model="fontSize">
-                                <template #label>Lettergrootte</template>
-                                <template #input>
-                                    <option :value="11">Kleiner</option>
-                                    <option :value="12.5">Normaal</option>
-                                    <option :value="14">Groter</option>
-                                </template>
-                            </InputGroup>
-                            <InputGroup type="select" id="sortBy" v-model="sortBy">
-                                <template #label>Sorteren op</template>
-                                <template #input>
-                                    <option :value="'creditsTime'">Aftitelingstijd</option>
-                                    <option :value="'scheduledTime'">Aanvangstijd</option>
-                                </template>
-                            </InputGroup>
-                        </div>
-                        <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration"
-                            min="0" max="30">
-                            <template #label>Duur filmpauzes</template>
-                            <span class="unit">minuten</span>
-                        </InputGroup>
-                    </fieldset>
+                <div class="spacer"></div>
 
-                    <fieldset id="print-buttons" class="buttons flex">
-                        <legend>Afdrukken</legend>
-                        <template v-if="pages.length === 1">
-                            <Button class="primary full" style="flex: 2;"
-                                @click="sortBy = 'creditsTime'; nextTick(() => schedulePageRefs[0]?.handlePrint())">
-                                <Icon>print</Icon>
-                                Uitlopenlijst
-                            </Button>
-                            <Button class="secondary full" style="flex: 1;"
-                                @click="sortBy = 'scheduledTime'; nextTick(() => schedulePageRefs[0]?.handlePrint())">
-                                <Icon>print</Icon>
-                                Inlopenlijst
-                            </Button>
-                        </template>
-                        <template v-else>
-                            <Button class="primary full" v-if="pages.length > 1" @click="handlePrint()"
-                                style="flex: 2;">
-                                <Icon>print</Icon>
-                                Alles
-                            </Button>
-                            <Button class="secondary full" v-for="(page, i) in pages" :key="i"
-                                @click="schedulePageRefs[i]?.handlePrint()" style="flex: 1;">
-                                <Icon>print</Icon>
-                                {{ pages.length > 1
-                                    ? 'Deel ' + (i + 1)
-                                    : 'Afdrukken' }}
-                            </Button>
-                        </template>
-                    </fieldset>
-                </SidePanel>
-            </div>
-        </section>
+                <div class="flex" style="flex-direction: column;">
+                    <span>Klik op tekst in het voorbeeld om te bewerken.</span>
+                    <!-- <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch> -->
+                </div>
+
+            </SidePanel>
+        </div>
 
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
         </div>
-    </main>
+    </div>
 </template>
 
 <style scoped>
-#pages {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+.layout {
+    display: grid;
+    grid-template-columns: 1fr clamp(300px, 35vw, 500px);
+    grid-template-rows: 1fr;
+    height: 100%;
+    overflow-y: hidden;
 
-    @media print {
-        display: block;
+    main {
+        position: relative;
+        padding: 32px;
+        overflow-y: auto;
+
+        #pages {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            align-items: center;
+        }
+
+        @media print {
+            #pages {
+                display: block;
+            }
+        }
     }
-}
 
-#print-buttons {
-    position: sticky;
-    bottom: 0;
-    backdrop-filter: blur(4px);
-    padding: 8px;
-    padding-top: 16px;
-    margin: -8px;
-    gap: 4px;
+    aside {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+
+        padding: 32px;
+        border-left: 1px solid #fff3;
+        box-shadow: 0 2px 4px 0 #0008;
+    }
 }
 </style>

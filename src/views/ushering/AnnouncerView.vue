@@ -7,9 +7,10 @@ import { assembleAudioClient } from '@/scripts/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
 import AnnouncementBuilder from '@features/ushering/announcer/AnnouncementBuilder.vue';
-import RuleList from '@features/ushering/announcer/RuleList.vue';
 import ScheduledAnnouncement from '@features/ushering/announcer/ScheduledAnnouncement.vue';
-import VoicesSelector from '@features/ushering/announcer/VoicesSelector.vue';
+import Settings, { presetRulesDefault } from '@/components/features/ushering/announcer/Settings.vue';
+import { format } from 'date-fns';
+import { nl } from 'date-fns/locale';
 
 const store = useTmsScheduleStore()
 const now = inject<Ref<Date>>('now');
@@ -18,194 +19,10 @@ const userHasInteracted = inject<Ref<boolean>>('userHasInteracted');
 
 const main = useTemplateRef('main');
 
-const showRuleEditor = ref(false);
-
-const presetRulesDefault: AnnouncementRule[] = [
-    {
-        id: 'plfStart',
-        name: '4DX-inloop',
-        segments: [
-            { spriteName: 'start', offset: 0 },
-            { spriteName: 'auditorium#', offset: 0 }
-        ],
-        enabled: true,
-        trigger: {
-            property: 'scheduledTime',
-            preponeMinutes: 15,
-        },
-        filter: {
-            plfOnly: true,
-            lastShowOnly: false,
-            firstShowOnly: false,
-            playlistTitleIncludes: '',
-            playlistTitleExcludes: '',
-        }
-    },
-    {
-        id: 'start',
-        name: 'Start',
-        segments: [
-            { spriteName: 'start', offset: 0 },
-            { spriteName: 'auditorium#', offset: 0 }
-        ],
-        enabled: false,
-        trigger: {
-            property: 'scheduledTime',
-            preponeMinutes: 0,
-        },
-        filter: {
-            plfOnly: false,
-            lastShowOnly: false,
-            firstShowOnly: false,
-            playlistTitleIncludes: '',
-            playlistTitleExcludes: '',
-        }
-    },
-    {
-        id: 'startmainshow',
-        name: 'Start hoofdfilm',
-        segments: [
-            { spriteName: 'startmainshow', offset: 0 },
-            { spriteName: 'auditorium#', offset: 0 }
-        ],
-        enabled: false,
-        trigger: {
-            property: 'mainShowTime',
-            preponeMinutes: 0,
-        },
-        filter: {
-            plfOnly: false,
-            lastShowOnly: false,
-            firstShowOnly: false,
-            playlistTitleIncludes: '',
-            playlistTitleExcludes: '',
-        }
-    },
-    {
-        id: 'intermission',
-        name: 'Pauze',
-        segments: [
-            { spriteName: 'intermission', offset: 0 },
-            { spriteName: 'auditorium#', offset: 0 }
-        ],
-        enabled: true,
-        trigger: {
-            property: 'intermissionTime',
-            preponeMinutes: 1,
-        },
-        filter: {
-            plfOnly: false,
-            lastShowOnly: false,
-            firstShowOnly: false,
-            playlistTitleIncludes: '',
-            playlistTitleExcludes: '',
-        }
-    },
-    {
-        id: 'credits',
-        name: 'Aftiteling',
-        segments: [
-            { spriteName: 'credits', offset: 0 },
-            { spriteName: 'auditorium#', offset: 0 }
-        ],
-        enabled: true,
-        trigger: {
-            property: 'creditsTime',
-            preponeMinutes: 1,
-        },
-        filter: {
-            plfOnly: false,
-            lastShowOnly: false,
-            firstShowOnly: false,
-            playlistTitleIncludes: '',
-            playlistTitleExcludes: '',
-        }
-    },
-    {
-        id: 'endshow',
-        name: 'Einde voorstelling',
-        segments: [
-            { spriteName: 'endshow', offset: 0 },
-            { spriteName: 'auditorium#', offset: 0 }
-        ],
-        enabled: false,
-        trigger: {
-            property: 'endTime',
-            preponeMinutes: 0,
-        },
-        filter: {
-            plfOnly: false,
-            lastShowOnly: false,
-            firstShowOnly: false,
-            playlistTitleIncludes: '',
-            playlistTitleExcludes: '',
-        }
-    },
-    {
-        id: 'startfinalmainshow',
-        name: 'Start laatste hoofdfilm',
-        segments: [
-            { spriteName: 'start', offset: 0 },
-            { spriteName: 'final', offset: 0 },
-            { spriteName: 'mainshow', offset: 0 }
-        ],
-        enabled: true,
-        trigger: {
-            property: 'mainShowTime',
-            preponeMinutes: 0,
-        },
-        filter: {
-            plfOnly: false,
-            lastShowOnly: true,
-            firstShowOnly: false,
-            playlistTitleIncludes: '',
-            playlistTitleExcludes: '',
-        }
-    },
-    {
-        id: 'endfinalshow',
-        name: 'Einde laatste voorstelling',
-        segments: [
-            { spriteName: 'end', offset: 0 },
-            { spriteName: 'final', offset: 0 },
-            { spriteName: 'show', offset: 0 }
-        ],
-        enabled: true,
-        trigger: {
-            property: 'endTime',
-            preponeMinutes: 0,
-        },
-        filter: {
-            plfOnly: false,
-            lastShowOnly: true,
-            firstShowOnly: false,
-            playlistTitleIncludes: '',
-            playlistTitleExcludes: '',
-        }
-    },
-] as const;
-
-const presetRulesOverrides = useStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {}, localStorage, { mergeDefaults: true });
-const presetRules = ref<AnnouncementRule[]>(
-    presetRulesDefault.map(rule => ({
-        ...rule,
-        enabled: presetRulesOverrides.value[rule.id] ?? rule.enabled,
-    }))
-);
-watch(presetRules, () => {
-    presetRulesOverrides.value = Object.fromEntries(
-        presetRules.value
-            .filter(rule => rule.enabled !== presetRulesDefault.find(r => r.id === rule.id)?.enabled)
-            .map(rule => [rule.id, rule.enabled])
-    );
-}, { deep: true });
-
+const presetRules = inject<Ref<AnnouncementRule[]>>('presetRules', ref(presetRulesDefault));
 const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true });
 
-const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
-
 const preferredVoices = useStorage<(keyof typeof voices)[]>('preferred-voices', [defaultVoiceKey], localStorage, { mergeDefaults: true });
-const voiceBehaviour = useStorage('voice-behaviour', 'roundrobin', localStorage);
 
 const chimeSound = useStorage('chime-sound', 0, localStorage); // which chime sound to use before announcements
 
@@ -441,153 +258,123 @@ const { isOverDropZone } = useDropZone(main, {
 </script>
 
 <template>
-    <main ref="main">
-        <TimetableUploadSection />
-        <section>
-            <div class="section-content flex" style="flex-wrap: wrap-reverse;">
-                <div style="flex: 50% 1 1;">
-                    <div class="flex" style="justify-content: space-between; align-items: center">
-                        <h2>Geplande omroepen</h2>
-                        <AnnouncementBuilder v-model="customAnnouncementSegments">
-                            <Icon>add</Icon>
-                            <span>Nieuwe omroep</span>
-                            <template #footer>
-                                <h3>Afspeelopties</h3>
-                                <div class="flex buttons">
-                                    <InputDate identifier="customAnnouncementDate" v-model="customAnnouncementDate"
-                                        style="height: 48px">
-                                        Inplannen voor</InputDate>
-                                    <Button
-                                        @click="scheduledAnnouncements.push({ time: new Date(customAnnouncementDate), segments: customAnnouncementSegments.map(segment => ({ ...segment })), audio: null })">
-                                        <Icon>timer</Icon>
-                                        Omroep inplannen
-                                    </Button>
-                                    <Button class="secondary add-rule"
-                                        @click="previewAnnouncement(customAnnouncementSegments)">
-                                        <Icon>play_arrow</Icon>
-                                        Nu afspelen
-                                    </Button>
-                                </div>
-                            </template>
-                        </AnnouncementBuilder>
-                    </div>
-                    <ul id="upcoming-announcements" class="scrollable-list" style="max-height: 700px;">
-                        <TransitionGroup name="list">
-                            <ScheduledAnnouncement
-                                v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
-                                :announcement="announcement"
-                                :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
-                                @preview="playAnnouncement(announcement)"
-                                @delete="scheduledAnnouncements.splice(scheduledAnnouncements.indexOf(announcement), 1)" />
-                        </TransitionGroup>
-                    </ul>
-                    <p v-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1"
-                        key="0">Er zijn geen omroepen gepland.</p>
-                    <p v-if="store.table.length < 1">Upload eerst een bestand.</p>
+    <div ref="main" class="content">
+        <div class="layout">
+            <main>
+                <h1>Omroepen</h1>
+                <template v-if="store.table.length < 1">
+                    <p>
+                        <template
+                            v-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1">Er
+                            zijn geen omroepen gepland. <br></template>
+                        Upload eerst een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) door hem naar
+                        deze pagina te slepen. <br>
+                        Je kunt ook handmatig omroepen inplannen.
+                    </p>
+                </template>
+                <template
+                    v-else-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1">
+                    <p>
+                        Er zijn geen omroepen gepland. <br>
+                        Het geüploade bestand bevat voorstellingen van {{
+                            format(store.table[0].endTime, 'PPPP', {
+                                locale: nl
+                            }) }}. <br>
+                        Upload eventueel een recenter bestand of plan handmatig omroepen in.
+                    </p>
+                </template>
+                <ul id="upcoming-announcements" class="scrollable-list" style="max-height: none;">
+                    <TransitionGroup name="list">
+                        <ScheduledAnnouncement
+                            v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
+                            :announcement="announcement"
+                            :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
+                            @preview="playAnnouncement(announcement)"
+                            @delete="scheduledAnnouncements.splice(scheduledAnnouncements.indexOf(announcement), 1)" />
+                    </TransitionGroup>
+                </ul>
+            </main>
+
+            <SidePanel>
+                <div class="flex" style="flex-direction: column;">
+
+                    <TimetableUploadSection />
+
+                    <AnnouncementBuilder v-model="customAnnouncementSegments">
+                        <Icon>add</Icon>
+                        <span>Nieuwe omroep</span>
+                        <template #footer>
+                            <h3>Afspeelopties</h3>
+                            <div class="flex buttons">
+                                <InputDate identifier="customAnnouncementDate" v-model="customAnnouncementDate"
+                                    style="height: 48px">
+                                    Inplannen voor</InputDate>
+                                <Button class="primary"
+                                    @click="scheduledAnnouncements.push({ time: new Date(customAnnouncementDate), segments: customAnnouncementSegments.map(segment => ({ ...segment })), audio: null })">
+                                    <Icon>timer</Icon>
+                                    Omroep inplannen
+                                </Button>
+                                <Button class="secondary add-rule"
+                                    @click="previewAnnouncement(customAnnouncementSegments)">
+                                    <Icon>play_arrow</Icon>
+                                    Nu afspelen
+                                </Button>
+                            </div>
+                        </template>
+                    </AnnouncementBuilder>
+
+                    <Button class="secondary full left" @click="scheduleAnnouncements()"
+                        @contextmenu="scheduleAnnouncements(true)">
+                        <Icon>refresh</Icon>
+                        <span>Omroepen vernieuwen</span>
+                    </Button>
+
+                    <Settings @regenerate="regenerate" @previewAnnouncement="previewAnnouncement"
+                        @scheduleAnnouncements="scheduleAnnouncements" />
+
                 </div>
-
-                <SidePanel style="flex: 35% 1 1;">
-                    <h2>Opties</h2>
-
-                    <fieldset>
-                        <legend>Algemeen</legend>
-                        <div class="flex buttons">
-                            <Button class="secondary full" @click="scheduleAnnouncements()"
-                                @contextmenu="scheduleAnnouncements(true)">
-                                <Icon>refresh</Icon>
-                                <span>Omroepen voorbereiden</span>
-                            </Button>
-                            <Button class="secondary full" @click="showRuleEditor = true">
-                                <Icon>edit</Icon>
-                                <span>Regels bewerken
-                                    <small v-if="customRules.filter(r => r.enabled).length">(eigen regels:
-                                        {{customRules.filter(r => r.enabled).length}} actief)</small>
-                                </span>
-                            </Button>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Stem</legend>
-                        <VoicesSelector v-model="preferredVoices" @update:modelValue="regenerate()" />
-                        <!-- <InputGroup type="select" id="voiceBehaviour" v-model="voiceBehaviour">
-                            <template #label>Gedrag bij meerdere stemmen</template>
-                            <template #input>
-                                <option value="roundrobin">Willekeurig kiezen</option>
-                            </template>
-                        </InputGroup> -->
-                    </fieldset>
-
-                    <fieldset style="position: relative;">
-                        <legend>Geluidsfragmenten</legend>
-                        <div class="manual-sounds-list" v-for="ids in [
-                            [...voices.chimes.sounds,
-                            ...defaultVoice.sounds.filter(id => !id.startsWith('auditorium'))],
-                            defaultVoice.sounds.filter(id => id.startsWith('auditorium')),
-                            ...preferredVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
-                        ]" v-show="ids?.length > 0">
-                            <Button class="secondary manual-sound-button" v-for="id of ids"
-                                @click="previewAnnouncement([{ spriteName: id, offset: 0 }], undefined, false)"
-                                :class="{ translucent: !id.startsWith('chime') && !preferredVoices.some(e => voices[e].sounds.includes(id)) }">
-                                <Icon v-if="id.startsWith('chime')" style="--size: 16px; margin-right: 0;">music_note
-                                </Icon>
-                                <span v-else>
-                                    {{ getSoundInfo(id).name }}
-                                </span>
-                            </Button>
-                        </div>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Overig</legend>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <InputGroup type="select" id="chimeSound" v-model="chimeSound"
-                                @update:modelValue="regenerate()">
-                                <template #label>Geluid vóór omroep</template>
-                                <template #input>
-                                    <option :value="0">Geluid 1</option>
-                                    <option :value="-1">Geen geluid</option>
-                                </template>
-                            </InputGroup>
-                            <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration"
-                                min="0" max="30">
-                                <template #label>Duur filmpauzes</template>
-                                <span class="unit">minuten</span>
-                            </InputGroup>
-                        </div>
-                    </fieldset>
-                </SidePanel>
-            </div>
-        </section>
-
-        <Transition>
-            <ModalDialog v-if="showRuleEditor" @dismiss="showRuleEditor = false">
-                <Tabs>
-                    <Tab value="Standaardregels">
-                        <RuleList v-model="presetRules" :toggleOnly="true" @change="scheduleAnnouncements" />
-                    </Tab>
-                    <Tab value="Eigen regels">
-                        <RuleList v-model="customRules" :toggleOnly="false" @change="scheduleAnnouncements" />
-                    </Tab>
-                </Tabs>
-            </ModalDialog>
-        </Transition>
+            </SidePanel>
+        </div>
 
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
         </div>
-    </main>
-    <Transition>
-        <div class="snackbar warning" v-if="!userHasInteracted">
-            <h3>Let op: klik om geluid te activeren</h3>
-            <p>
-                De browser blokkeert geluiden tot er op de pagina is geklikt.
-            </p>
-        </div>
-    </Transition>
+
+        <Transition>
+            <div class="snackbar warning" v-if="!userHasInteracted">
+                <h3>Let op: klik om geluid te activeren</h3>
+                <p>
+                    De browser blokkeert geluiden tot er op de pagina is geklikt.
+                </p>
+            </div>
+        </Transition>
+    </div>
 </template>
 
 <style scoped>
+.layout {
+    display: grid;
+    grid-template-columns: 1fr clamp(300px, 35vw, 500px);
+    grid-template-rows: 1fr;
+    height: 100%;
+    overflow-y: hidden;
+
+    main {
+        position: relative;
+        padding: 32px;
+        overflow-y: auto;
+    }
+
+    aside {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+
+        padding: 32px;
+        border-left: 1px solid #fff3;
+        box-shadow: 0 2px 4px 0 #0008;
+    }
+}
+
 #upcoming-announcements {
     list-style: none;
     padding: 0;
@@ -661,81 +448,6 @@ const { isOverDropZone } = useDropZone(main, {
             justify-self: center;
             opacity: 0.5;
         }
-    }
-}
-
-.queue>div {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    width: 100%;
-    padding: 8px;
-    border-radius: 5px;
-    background-color: #ffffff14;
-    margin-top: 6px;
-
-    &.announcing {
-        background-color: #ffffff96;
-        color: #000;
-    }
-}
-
-.parameters-warning {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: center;
-    padding: 16px;
-    padding-top: 22px;
-    border-radius: 5px;
-    background-color: #22222288;
-    backdrop-filter: blur(5px);
-    z-index: 10;
-}
-
-.manual-sounds-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 10px;
-
-    .manual-sound-button {
-        height: 26px;
-        min-width: 0;
-        padding-left: 8px;
-        padding-right: 8px;
-        font-size: 13px;
-        font-weight: normal;
-        overflow: hidden;
-        border-radius: 4px;
-
-        &>span::first-letter {
-            text-transform: uppercase;
-        }
-    }
-}
-
-.pulsate {
-    animation: pulsate 1000ms infinite;
-}
-
-@keyframes pulsate {
-    from {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.15;
-    }
-
-    to {
-        opacity: 1;
     }
 }
 </style>

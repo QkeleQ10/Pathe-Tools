@@ -4,6 +4,7 @@ import { inject, computed, Ref } from 'vue';
 const props = defineProps<{
     categoryId: string;
     label: string;
+    icon?: string;
 }>();
 
 const activeCategory = inject<Ref<string>>('activeCategory');
@@ -19,11 +20,8 @@ const handleClick = () => {
 </script>
 
 <template>
-    <button 
-        class="settings-category-button" 
-        :class="{ active: isActive }"
-        @click="handleClick"
-    >
+    <button class="settings-category-button" :class="{ active: isActive }" @click="handleClick">
+        <Icon>{{ icon }}</Icon>
         {{ label }}
     </button>
 </template>
@@ -32,6 +30,7 @@ const handleClick = () => {
 .settings-category-button {
     display: flex;
     align-items: center;
+    gap: 12px;
     height: 40px;
     padding: 0 16px;
     border-radius: 6px;
@@ -47,6 +46,11 @@ const handleClick = () => {
     outline: none;
     white-space: nowrap;
 
+    .icon {
+        font-variation-settings: "FILL" 0;
+        transition: font-variation-settings 200ms ease-out;
+    }
+
     &:hover {
         background: #ffffff0d;
         color: #fff;
@@ -61,6 +65,10 @@ const handleClick = () => {
         background: #ffffff1a;
         color: #fff;
         font-weight: 600;
+
+        .icon {
+            font-variation-settings: "FILL" 1;
+        }
     }
 }
 </style>
