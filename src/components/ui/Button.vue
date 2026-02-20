@@ -47,8 +47,6 @@ button {
     }
 }
 
-button.center {}
-
 button.full {
     width: 100%;
     max-width: none;

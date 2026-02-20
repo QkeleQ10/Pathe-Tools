@@ -55,16 +55,14 @@ onUnmounted(() => {
 .settings-section {
     margin-bottom: 24px;
     scroll-margin-top: 32px;
-    padding: 0;
+    padding: 24px 32px;
 
     border: none;
     background-color: #ffffff0d;
-    padding: 24px 32px;
     border-radius: 6px;
 
     &:not(:first-child) {
         padding-top: 24px;
-        /* border-top: 1px solid #4a4b4d; */
     }
 
     &:last-child {

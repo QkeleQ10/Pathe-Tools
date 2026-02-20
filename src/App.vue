@@ -162,43 +162,4 @@ header a.active {
 #clock {
     color: #ffffffb3;
 }
-
-#faq {
-    width: 70%;
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: 32px;
-    margin-top: -132px;
-    padding: 48px 64px;
-
-    .svg-icon {
-        float: left;
-        width: 82px;
-        margin-right: 16px;
-
-        svg {
-            rotate: -14deg;
-        }
-    }
-
-    .content {
-        margin-top: 8px;
-
-        button {
-            margin-top: 16px;
-        }
-    }
-
-    h3 {
-        font-size: 24px;
-        margin: 0;
-        color: #fff;
-    }
-
-    p {
-        font-size: 16px;
-        margin-block: 8px;
-        color: #ffffffb3;
-    }
-}
 </style>

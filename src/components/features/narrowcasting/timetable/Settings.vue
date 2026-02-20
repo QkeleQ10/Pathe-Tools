@@ -8,9 +8,9 @@ const dialogActive = ref(false);
 
 const emit = defineEmits(['loadWalkIns']);
 
-const lastSentPacket = inject<string>('lastSentPacket');
-const lastReceivedPacket = inject<any>('lastReceivedPacket');
-const presetConfigurations = inject<{ [key: string]: { name: string, lines: () => DisplayLine[] } }>('presetConfigurations');
+const lastSentPacket = inject<string>('lastSentPacket', null);
+const lastReceivedPacket = inject<any>('lastReceivedPacket', null);
+const presetConfigurations = inject<{ [key: string]: { name: string, lines: () => DisplayLine[] } }>('presetConfigurations', {});
 
 
 const addresses = useStorage('addresses', ["10.10.87.81", "10.10.87.82"]);
@@ -381,7 +381,3 @@ function showFormattingInfo() {
     }
 }
 </style>
-
-<script lang="ts">
-
-</script>

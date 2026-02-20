@@ -16,7 +16,6 @@ const store = useTmsScheduleStore()
 const stingers = useStorage<string[]>('credits-stingers', [])
 
 const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', 'creditsTime');
-// const trueColours = useStorage('true-colours', false);
 const trueColours = ref(true);
 
 const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
@@ -204,21 +203,6 @@ const { isOverDropZone } = useDropZone(main, {
         padding: 32px;
         border-left: 1px solid #fff3;
         box-shadow: 0 2px 4px 0 #0008;
-    }
-}
-
-.float {
-    position: absolute;
-    top: 32px;
-
-    &.left {
-        left: 32px;
-        right: auto;
-    }
-
-    &.right {
-        right: 32px;
-        left: auto;
     }
 }
 </style>
