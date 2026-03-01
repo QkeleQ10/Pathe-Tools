@@ -2,7 +2,9 @@
 import { provide, ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { format } from 'date-fns';
-import { useStorage } from '@vueuse/core';
+import { useStorage, useWindowSize } from '@vueuse/core';
+
+const { width: windowWidth, height: windowHeight } = useWindowSize()
 
 const now = ref(new Date())
 setInterval(updateNowValue, 1000)
@@ -28,10 +30,12 @@ const aboutOpen = ref(false);
                 <RouterLink to="/">
                     <Icon>home</Icon>
                 </RouterLink>
-                <RouterLink to="/ushering/schedule">Tijdenlijstje</RouterLink>
-                <RouterLink to="/ushering/announcer">Omroepen</RouterLink>
-                <RouterLink to="/narrowcasting/timetable">Timetable</RouterLink>
-                <RouterLink to="/poc/intermission">Filmpauze</RouterLink>
+                <template v-if="windowWidth >= 768">
+                    <RouterLink to="/ushering/schedule">Tijdenlijstje</RouterLink>
+                    <RouterLink to="/ushering/announcer">Omroepen</RouterLink>
+                    <RouterLink to="/narrowcasting/timetable">Timetable</RouterLink>
+                    <RouterLink to="/poc/intermission">Filmpauze</RouterLink>
+                </template>
             </nav>
             <nav v-else>
             </nav>
@@ -115,6 +119,7 @@ header {
     box-shadow: 0 2px 4px 0 #0008;
 
     z-index: 1;
+    overflow-x: auto;
 
     div.wrapper {
         width: 100%;

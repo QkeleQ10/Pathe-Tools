@@ -130,104 +130,106 @@ const { isOverDropZone } = useDropZone(main, {
 </script>
 
 <template>
-    <main ref="main">
-        <TmsXmlUploadSection />
-        <section>
-            <div class="section-content flex" style="flex-wrap: wrap;">
-                <div style="flex: 50% 1 1;">
-                    <h2>Filminformatie</h2>
-                    <div class="film" v-if="store.metadata?.name">
-                        <div class="room">
-                            <Icon fill style="--size: 24px; opacity: 0.5;">theaters</Icon>
-                        </div>
-                        <h3 class="title">{{ filmTitle }}</h3>
-                        <div class="time" v-if="!reels.some(reel => reel.frameRate !== reels[0].frameRate)">
-                            {{ formatDuration(filmDuration, reels[0].frameRate) }}
-                            <span :class="{ bold: reels[0].frameRate !== 24, colour: reels[0].frameRate !== 24 }">
-                                ({{ reels[0].frameRate }} fps)
-                            </span>
-                        </div>
-                        <div class="time" v-else>Framerate verschilt per reel</div>
-                        <div class="flex chips">
-                            <Chip v-if="filmIs3d">
-                                <Icon fill>eyeglasses</Icon>3D
-                            </Chip>
-                            <Chip class="secondary" v-if="filmSpokenLanguage">
-                                <Icon fill>volume_up</Icon> {{ filmSpokenLanguage }}
-                            </Chip>
-                            <Chip class="secondary" v-if="filmSubtitleLanguage">
-                                <Icon fill>subtitles</Icon> {{ filmSubtitleLanguage }}
-                            </Chip>
-                        </div>
-                        <div class="extra">
-                            <h4>Reels</h4>
-                            <div class="flex proportional-reels">
-                                <div v-for="(reel, i) in reels" class="reel"
-                                    :style="{ '--propFrac': reel.properDuration }"
-                                    :title="formatReelInformation(reel, i)"
-                                    :class="{ 'after-intermission': mostCentralGap === reel.properStart && Math.abs(mostCentralGap - 0.5) < (intermissionPercentageDev / 100) }">
-                                </div>
+    <div ref="main" class="content">
+        <div class="layout">
+
+            <main>
+                <h1>Filminformatie</h1>
+                <div class="film" v-if="store.metadata?.name">
+                    <div class="room">
+                        <Icon fill style="--size: 24px; opacity: 0.5;">theaters</Icon>
+                    </div>
+                    <h3 class="title">{{ filmTitle }}</h3>
+                    <div class="time" v-if="!reels.some(reel => reel.frameRate !== reels[0].frameRate)">
+                        {{ formatDuration(filmDuration, reels[0].frameRate) }}
+                        <span :class="{ bold: reels[0].frameRate !== 24, colour: reels[0].frameRate !== 24 }">
+                            ({{ reels[0].frameRate }} fps)
+                        </span>
+                    </div>
+                    <div class="time" v-else>Framerate verschilt per reel</div>
+                    <div class="flex chips">
+                        <Chip v-if="filmIs3d">
+                            <Icon fill>eyeglasses</Icon>3D
+                        </Chip>
+                        <Chip class="secondary" v-if="filmSpokenLanguage">
+                            <Icon fill>volume_up</Icon> {{ filmSpokenLanguage }}
+                        </Chip>
+                        <Chip class="secondary" v-if="filmSubtitleLanguage">
+                            <Icon fill>subtitles</Icon> {{ filmSubtitleLanguage }}
+                        </Chip>
+                    </div>
+                    <div class="extra">
+                        <h4>Reels</h4>
+                        <div class="flex proportional-reels">
+                            <div v-for="(reel, i) in reels" class="reel" :style="{ '--propFrac': reel.properDuration }"
+                                :title="formatReelInformation(reel, i)"
+                                :class="{ 'after-intermission': mostCentralGap === reel.properStart && Math.abs(mostCentralGap - 0.5) < (intermissionPercentageDev / 100) }">
                             </div>
-                            <table class="reels">
-                                <thead>
-                                    <tr>
-                                        <td>Reel</td>
-                                        <td>Duur (hh:mm:ss:ff)</td>
-                                        <td>Starttijd (hh:mm:ss:ff)</td>
-                                    </tr>
-                                </thead>
-                                <tr v-for="(reel, i) in reels" :title="formatReelInformation(reel, i)">
-                                    <td>{{ i + 1 }}</td>
-                                    <td>{{ formatDuration(reel.duration, reel.frameRate) }}
-                                        <span v-if="reel.frameRate !== reels[0].frameRate" class="bold colour">
-                                            ({{ reel.frameRate }} fps)
-                                        </span>
-                                    </td>
-                                    <td>{{ formatDuration(reel.properStart * filmDuration, reel.frameRate) }}
-                                        ({{ (reel.properStart * 100).toLocaleString('nl-NL',
-                                            { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%)
-                                    </td>
+                        </div>
+                        <table class="reels">
+                            <thead>
+                                <tr>
+                                    <td>Reel</td>
+                                    <td>Duur (hh:mm:ss:ff)</td>
+                                    <td>Starttijd (hh:mm:ss:ff)</td>
                                 </tr>
-                            </table>
-                            <div class="extra-extra">
-                                <h4>Pauzesuggestie</h4>
-                                <p v-if="Math.abs(mostCentralGap - 0.5) < (intermissionPercentageDev / 100)">
-                                    Een pauze zou kunnen worden ingepland tussen de {{ reelAfterGapIndex }}<sup>e</sup>
-                                    en de
-                                    {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel
-                                    (na {{ formatDuration(mostCentralGap * filmDuration, reels[0].frameRate) }} of {{
-                                        (mostCentralGap * 100).toLocaleString('nl-NL',
-                                            { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%).
-                                </p>
-                                <p v-else-if="reels.length > 1">
-                                    Er is geen reel die tussen {{ 50 -
-                                        intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
-                                    film
-                                    eindigt.
-                                    <a v-if="(Math.abs(mostCentralGap - 0.5) - (intermissionPercentageDev / 100)) < 0.05"
-                                        class="link"
-                                        @click="intermissionPercentageDev = Math.ceil(Math.abs(mostCentralGap - 0.5) * 100)">
-                                        Maximale afwijking bijstellen tot {{ Math.ceil(Math.abs(mostCentralGap - 0.5) *
-                                            100) }}%?</a>
-                                    <br>
-                                    Een pauze zou kunnen worden ingepland tijdens de
-                                    {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel (bijvoorbeeld na
-                                    <b>{{ formatDuration(0.5 * filmDuration, reels[0].frameRate) }}</b> of 50%).
-                                    <br>
-                                </p>
-                                <p v-else>
-                                    Er is maar één reel.
-                                    <br>
-                                    Een pauze zou halverwege kunnen worden ingepland (bijvoorbeeld na
-                                    <b>{{ formatDuration(0.5 * filmDuration, reels[0].frameRate) }}</b> of 50%).
-                                </p>
-                            </div>
+                            </thead>
+                            <tr v-for="(reel, i) in reels" :title="formatReelInformation(reel, i)">
+                                <td>{{ i + 1 }}</td>
+                                <td>{{ formatDuration(reel.duration, reel.frameRate) }}
+                                    <span v-if="reel.frameRate !== reels[0].frameRate" class="bold colour">
+                                        ({{ reel.frameRate }} fps)
+                                    </span>
+                                </td>
+                                <td>{{ formatDuration(reel.properStart * filmDuration, reel.frameRate) }}
+                                    ({{ (reel.properStart * 100).toLocaleString('nl-NL',
+                                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%)
+                                </td>
+                            </tr>
+                        </table>
+                        <div class="extra-extra">
+                            <h4>Pauzesuggestie</h4>
+                            <p v-if="Math.abs(mostCentralGap - 0.5) < (intermissionPercentageDev / 100)">
+                                Een pauze zou kunnen worden ingepland tussen de {{ reelAfterGapIndex }}<sup>e</sup>
+                                en de
+                                {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel
+                                (na {{ formatDuration(mostCentralGap * filmDuration, reels[0].frameRate) }} of {{
+                                    (mostCentralGap * 100).toLocaleString('nl-NL',
+                                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%).
+                            </p>
+                            <p v-else-if="reels.length > 1">
+                                Er is geen reel die tussen {{ 50 -
+                                    intermissionPercentageDev }}% en {{ 50 + intermissionPercentageDev }}% van de
+                                film
+                                eindigt.
+                                <a v-if="(Math.abs(mostCentralGap - 0.5) - (intermissionPercentageDev / 100)) < 0.05"
+                                    class="link"
+                                    @click="intermissionPercentageDev = Math.ceil(Math.abs(mostCentralGap - 0.5) * 100)">
+                                    Maximale afwijking bijstellen tot {{ Math.ceil(Math.abs(mostCentralGap - 0.5) *
+                                        100) }}%?</a>
+                                <br>
+                                Een pauze zou kunnen worden ingepland tijdens de
+                                {{ reelAfterGapIndex + 1 }}<sup>e</sup> reel (bijvoorbeeld na
+                                <b>{{ formatDuration(0.5 * filmDuration, reels[0].frameRate) }}</b> of 50%).
+                                <br>
+                            </p>
+                            <p v-else>
+                                Er is maar één reel.
+                                <br>
+                                Een pauze zou halverwege kunnen worden ingepland (bijvoorbeeld na
+                                <b>{{ formatDuration(0.5 * filmDuration, reels[0].frameRate) }}</b> of 50%).
+                            </p>
                         </div>
                     </div>
-                    <p v-else>Geen bestand geüpload</p>
                 </div>
-                <SidePanel style="flex: 229px 1 1;">
-                    <h2>Opties</h2>
+                <p v-else>Geen bestand geüpload</p>
+            </main>
+
+            <SidePanel>
+                <div class="flex" style="flex-direction: column;">
+
+                    <TmsXmlUploadSection />
+
                     <fieldset>
                         <legend>Pauzesuggestie</legend>
                         <InputGroup type="number" id="intermissionPercentageDev"
@@ -240,14 +242,16 @@ const { isOverDropZone } = useDropZone(main, {
                             film.
                         </small>
                     </fieldset>
-                </SidePanel>
-            </div>
-        </section>
+
+                </div>
+            </SidePanel>
+
+        </div>
 
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
         </div>
-    </main>
+    </div>
 </template>
 
 <style scoped>

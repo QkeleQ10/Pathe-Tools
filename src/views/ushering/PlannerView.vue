@@ -68,143 +68,142 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 </script>
 
 <template>
-    <main ref="main">
-        <TimetableUploadSection />
+    <div ref="main" class="content">
+        <div class="layout">
 
-        <section id="planner">
-            <div class="section-content flex" style="flex-wrap: wrap-reverse;">
-                <div style="flex: 1200px 1 1;">
-                    <h2>Planner (bèta)
-                        <span v-if="isHovering && now" style="float:right;">
-                            {{ format(new Date(rangeStart.getTime() + hoverPos * (rangeEnd.getTime() -
-                                rangeStart.getTime())), 'HH:mm', { locale: nl }) }}
-                        </span>
-                    </h2>
-                    <p id="upload-hint" v-if="!store.table.length">Upload eerst een bestand.</p>
+            <main>
+                <h1>Planner (bèta)
+                    <span v-if="isHovering && now" style="float:right;">
+                        {{ format(new Date(rangeStart.getTime() + hoverPos * (rangeEnd.getTime() -
+                            rangeStart.getTime())), 'HH:mm', { locale: nl }) }}
+                    </span>
+                </h1>
+                <p id="upload-hint" v-if="!store.table.length">Upload eerst een bestand.</p>
 
-
-                    <div class="planner-section">
-                        <h3>Werkdruk</h3>
-                        <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
-                            v-model:hover-pos="hoverPos" title="Ushering">
-                            <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
-                                <div class="exit-workload" :style="{
-                                    left: (normaliseDate(show.creditsTime) * 100) + '%',
-                                    width: (normaliseDate(new Date(show.endTime.getTime() + 1200000)) - normaliseDate(show.creditsTime)) * 100 + '%',
-                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                    '--admits': show.admits ?? 100,
-                                }">
-                                </div>
-                            </template>
-                            <template v-for="show in showsWithAdmits.filter(show => show.intermissionTime)"
-                                :key="show.playlist + show.scheduledTime">
-                                <div class="intermission-workload" :style="{
-                                    left: (normaliseDate(show.intermissionTime) * 100) + '%',
-                                    width: (normaliseDate(new Date(show.intermissionTime.getTime() + 300000)) - normaliseDate(show.intermissionTime)) * 100 + '%',
-                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                    '--admits': show.admits ?? 100,
-                                }">
-                                </div>
-                            </template>
-                            <template v-for="show in showsWithAdmits.filter(show => show.extras.includes('4DX'))"
-                                :key="show.playlist + show.scheduledTime">
-                                <div class="plf-workload" :style="{
-                                    left: (normaliseDate(new Date(show.scheduledTime.getTime() - 900000)) * 100) + '%',
-                                    width: (normaliseDate(show.mainShowTime || new Date(show.scheduledTime.getTime() + 900000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 900000))) * 100 + '%',
-                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                    '--admits': show.admits ?? 100,
-                                }">
-                                </div>
-                            </template>
-                        </Waterfall>
-
-                        <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
-                            v-model:hover-pos="hoverPos" title="Portier en F&B">
-                            <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
-                                <div class="enter-workload" :style="{
-                                    left: (normaliseDate(new Date(show.scheduledTime.getTime() - 1200000)) * 100) + '%',
-                                    width: (normaliseDate(new Date(show.scheduledTime.getTime() + 1200000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 1200000))) * 100 + '%',
-                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                    '--admits': show.admits ?? 100,
-                                }">
-                                </div>
-                            </template>
-                        </Waterfall>
-
-                        <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
-                            v-model:hover-pos="hoverPos" title="Totaal">
-                            <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
-                                <div class="exit-workload" :style="{
-                                    left: (normaliseDate(show.creditsTime) * 100) + '%',
-                                    width: (normaliseDate(new Date(show.endTime.getTime() + 1200000)) - normaliseDate(show.creditsTime)) * 100 + '%',
-                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                    '--admits': show.admits ?? 100,
-                                }">
-                                </div>
-                            </template>
-                            <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
-                                <div class="enter-workload" :style="{
-                                    left: (normaliseDate(new Date(show.scheduledTime.getTime() - 1200000)) * 100) + '%',
-                                    width: (normaliseDate(new Date(show.scheduledTime.getTime() + 1200000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 1200000))) * 100 + '%',
-                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                    '--admits': show.admits ?? 100,
-                                }">
-                                </div>
-                            </template>
-                            <template v-for="show in showsWithAdmits.filter(show => show.intermissionTime)"
-                                :key="show.playlist + show.scheduledTime">
-                                <div class="intermission-workload" :style="{
-                                    left: (normaliseDate(show.intermissionTime) * 100) + '%',
-                                    width: (normaliseDate(new Date(show.intermissionTime.getTime() + 300000)) - normaliseDate(show.intermissionTime)) * 100 + '%',
-                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                    '--admits': show.admits ?? 100,
-                                }">
-                                </div>
-                            </template>
-                            <template v-for="show in showsWithAdmits.filter(show => show.extras.includes('4DX'))"
-                                :key="show.playlist + show.scheduledTime">
-                                <div class="plf-workload" :style="{
-                                    left: (normaliseDate(new Date(show.scheduledTime.getTime() - 900000)) * 100) + '%',
-                                    width: (normaliseDate(show.mainShowTime || new Date(show.scheduledTime.getTime() + 900000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 900000))) * 100 + '%',
-                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                    '--admits': show.admits ?? 100,
-                                }">
-                                </div>
-                            </template>
-                        </Waterfall>
-                    </div>
-
-                    <div class="planner-section">
-                        <h3>Zalen</h3>
-                        <template v-for="auditorium in auditoriums" :key="auditorium">
-                            <Waterfall :now="normaliseDate(now)" v-model:is-hovering="isHovering"
-                                v-model:hover-pos="hoverPos" :title="auditorium">
-                                <template v-for="show in showsWithAdmits.filter(s => s.auditorium === auditorium)"
-                                    :key="show.playlist + show.scheduledTime">
-                                    <div class="show" :style="{
-                                        left: (normaliseDate(show.scheduledTime) * 100) + '%',
-                                        width: (normaliseDate(show.endTime) - normaliseDate(show.scheduledTime)) * 100 + '%',
-                                        '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length)
-                                    }">
-                                        <span>{{ show.playlist }}</span>
-                                        <br>
-                                        <span class="time">
-                                            {{ format(show.scheduledTime, 'HH:mm', { locale: nl }) }} - {{
-                                                format(show.endTime, 'HH:mm', { locale: nl }) }}
-                                        </span>
-                                        <span class="admits">
-                                            <Input class="contents-only" v-model.number="show.admits" type="number"
-                                                autocomplete="off" min="0" />
-                                        </span>
-                                    </div>
-                                </template>
-                            </Waterfall>
+                <div class="planner-section">
+                    <h3>Werkdruk</h3>
+                    <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
+                        v-model:hover-pos="hoverPos" title="Ushering">
+                        <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
+                            <div class="exit-workload" :style="{
+                                left: (normaliseDate(show.creditsTime) * 100) + '%',
+                                width: (normaliseDate(new Date(show.endTime.getTime() + 1200000)) - normaliseDate(show.creditsTime)) * 100 + '%',
+                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
+                                '--admits': show.admits ?? 100,
+                            }">
+                            </div>
                         </template>
-                    </div>
+                        <template v-for="show in showsWithAdmits.filter(show => show.intermissionTime)"
+                            :key="show.playlist + show.scheduledTime">
+                            <div class="intermission-workload" :style="{
+                                left: (normaliseDate(show.intermissionTime) * 100) + '%',
+                                width: (normaliseDate(new Date(show.intermissionTime.getTime() + 300000)) - normaliseDate(show.intermissionTime)) * 100 + '%',
+                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
+                                '--admits': show.admits ?? 100,
+                            }">
+                            </div>
+                        </template>
+                        <template v-for="show in showsWithAdmits.filter(show => show.extras.includes('4DX'))"
+                            :key="show.playlist + show.scheduledTime">
+                            <div class="plf-workload" :style="{
+                                left: (normaliseDate(new Date(show.scheduledTime.getTime() - 900000)) * 100) + '%',
+                                width: (normaliseDate(show.mainShowTime || new Date(show.scheduledTime.getTime() + 900000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 900000))) * 100 + '%',
+                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
+                                '--admits': show.admits ?? 100,
+                            }">
+                            </div>
+                        </template>
+                    </Waterfall>
+
+                    <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
+                        v-model:hover-pos="hoverPos" title="Portier en F&B">
+                        <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
+                            <div class="enter-workload" :style="{
+                                left: (normaliseDate(new Date(show.scheduledTime.getTime() - 1200000)) * 100) + '%',
+                                width: (normaliseDate(new Date(show.scheduledTime.getTime() + 1200000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 1200000))) * 100 + '%',
+                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
+                                '--admits': show.admits ?? 100,
+                            }">
+                            </div>
+                        </template>
+                    </Waterfall>
+
+                    <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
+                        v-model:hover-pos="hoverPos" title="Totaal">
+                        <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
+                            <div class="exit-workload" :style="{
+                                left: (normaliseDate(show.creditsTime) * 100) + '%',
+                                width: (normaliseDate(new Date(show.endTime.getTime() + 1200000)) - normaliseDate(show.creditsTime)) * 100 + '%',
+                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
+                                '--admits': show.admits ?? 100,
+                            }">
+                            </div>
+                        </template>
+                        <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
+                            <div class="enter-workload" :style="{
+                                left: (normaliseDate(new Date(show.scheduledTime.getTime() - 1200000)) * 100) + '%',
+                                width: (normaliseDate(new Date(show.scheduledTime.getTime() + 1200000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 1200000))) * 100 + '%',
+                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
+                                '--admits': show.admits ?? 100,
+                            }">
+                            </div>
+                        </template>
+                        <template v-for="show in showsWithAdmits.filter(show => show.intermissionTime)"
+                            :key="show.playlist + show.scheduledTime">
+                            <div class="intermission-workload" :style="{
+                                left: (normaliseDate(show.intermissionTime) * 100) + '%',
+                                width: (normaliseDate(new Date(show.intermissionTime.getTime() + 300000)) - normaliseDate(show.intermissionTime)) * 100 + '%',
+                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
+                                '--admits': show.admits ?? 100,
+                            }">
+                            </div>
+                        </template>
+                        <template v-for="show in showsWithAdmits.filter(show => show.extras.includes('4DX'))"
+                            :key="show.playlist + show.scheduledTime">
+                            <div class="plf-workload" :style="{
+                                left: (normaliseDate(new Date(show.scheduledTime.getTime() - 900000)) * 100) + '%',
+                                width: (normaliseDate(show.mainShowTime || new Date(show.scheduledTime.getTime() + 900000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 900000))) * 100 + '%',
+                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
+                                '--admits': show.admits ?? 100,
+                            }">
+                            </div>
+                        </template>
+                    </Waterfall>
                 </div>
 
-                <SidePanel style="flex: 300px 0 0;">
-                    <h2>Extra's</h2>
+                <div class="planner-section">
+                    <h3>Zalen</h3>
+                    <template v-for="auditorium in auditoriums" :key="auditorium">
+                        <Waterfall :now="normaliseDate(now)" v-model:is-hovering="isHovering"
+                            v-model:hover-pos="hoverPos" :title="auditorium">
+                            <template v-for="show in showsWithAdmits.filter(s => s.auditorium === auditorium)"
+                                :key="show.playlist + show.scheduledTime">
+                                <div class="show" :style="{
+                                    left: (normaliseDate(show.scheduledTime) * 100) + '%',
+                                    width: (normaliseDate(show.endTime) - normaliseDate(show.scheduledTime)) * 100 + '%',
+                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length)
+                                }">
+                                    <span>{{ show.playlist }}</span>
+                                    <br>
+                                    <span class="time">
+                                        {{ format(show.scheduledTime, 'HH:mm', { locale: nl }) }} - {{
+                                            format(show.endTime, 'HH:mm', { locale: nl }) }}
+                                    </span>
+                                    <span class="admits">
+                                        <Input class="contents-only" v-model.number="show.admits" type="number"
+                                            autocomplete="off" min="0" />
+                                    </span>
+                                </div>
+                            </template>
+                        </Waterfall>
+                    </template>
+                </div>
+            </main>
+
+            <SidePanel>
+                <div class="flex" style="flex-direction: column;">
+                    <TimetableUploadSection />
+
                     <Tabs>
 
                         <Tab value="Uitlopen">
@@ -214,10 +213,14 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                                     :key="show.playlist + show.scheduledTime">
                                     <div class="show">
                                         <div>{{ show.auditorium.replace(/^\w+\s/, '') }}</div>
-                                        <div>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}</div>
-                                        <div style="opacity: 1;">{{ !showStarted(show, now) ? show.admits : '' }}</div>
-                                        <div>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}</div>
-                                        <div style="opacity: 1;">{{ showStarted(show, now) ? show.admits : '' }}</div>
+                                        <div>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}
+                                        </div>
+                                        <div style="opacity: 1;">{{ !showStarted(show, now) ? show.admits : '' }}
+                                        </div>
+                                        <div>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}
+                                        </div>
+                                        <div style="opacity: 1;">{{ showStarted(show, now) ? show.admits : '' }}
+                                        </div>
                                     </div>
                                 </template>
                             </div>
@@ -230,10 +233,14 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                                     :key="show.playlist + show.scheduledTime">
                                     <div class="show">
                                         <div>{{ show.auditorium.replace(/^\w+\s/, '') }}</div>
-                                        <div>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}</div>
-                                        <div style="opacity: 1;">{{ !showStarted(show, now) ? show.admits : '' }}</div>
-                                        <div>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}</div>
-                                        <div style="opacity: 1;">{{ showStarted(show, now) ? show.admits : '' }}</div>
+                                        <div>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}
+                                        </div>
+                                        <div style="opacity: 1;">{{ !showStarted(show, now) ? show.admits : '' }}
+                                        </div>
+                                        <div>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}
+                                        </div>
+                                        <div style="opacity: 1;">{{ showStarted(show, now) ? show.admits : '' }}
+                                        </div>
                                     </div>
                                 </template>
                             </div>
@@ -249,14 +256,15 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                         </Tab>
 
                     </Tabs>
-                </SidePanel>
-            </div>
-        </section>
+                </div>
+            </SidePanel>
+
+        </div>
 
         <div v-if="isOverDropZone" class="dropzone">
             Laat los om bestand te uploaden
         </div>
-    </main>
+    </div>
 </template>
 
 <style scoped>

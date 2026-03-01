@@ -7,10 +7,10 @@ const store = useTmsXmlStore()
 </script>
 
 <template>
-	<section id="upload">
+	<div id="upload">
 		<div class="section-content">
-			<!-- <h2>Gegevensbestand</h2> -->
-			<FileUploadBlock @files-uploaded="store.uploadXml" accept="text/xml,.xml">
+			<FileUploadBlock @files-uploaded="store.uploadXml" accept="text/xml,.xml"
+				:highlight="JSON.stringify(store.obj).length <= 2">
 				<p v-if="'name' in store.metadata" style="margin: 0; flex-grow: 1;">
 					{{ store.metadata.name }}
 					<br>
@@ -27,14 +27,13 @@ const store = useTmsXmlStore()
 				</p>
 			</FileUploadBlock>
 		</div>
-	</section>
+	</div>
 </template>
 
 <style scoped>
 #upload {
-	width: 90%;
-
 	.floating {
+		width: 90%;
 		display: flex;
 		justify-content: end;
 	}

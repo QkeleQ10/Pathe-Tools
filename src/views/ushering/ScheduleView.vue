@@ -94,6 +94,7 @@ const { isOverDropZone } = useDropZone(main, {
 <template>
     <div ref="main" class="content">
         <div class="layout">
+
             <main>
                 <template v-if="pages?.[0]?.length">
                     <div id="pages" ref="pages" :class="{ gray: trueColours }">
@@ -159,8 +160,8 @@ const { isOverDropZone } = useDropZone(main, {
                     <span>Klik op tekst in het voorbeeld om te bewerken.</span>
                     <!-- <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch> -->
                 </div>
-
             </SidePanel>
+
         </div>
 
         <div v-if="isOverDropZone" class="dropzone">
@@ -170,39 +171,24 @@ const { isOverDropZone } = useDropZone(main, {
 </template>
 
 <style scoped>
-.layout {
-    display: grid;
-    grid-template-columns: 1fr clamp(300px, 35vw, 500px);
-    grid-template-rows: 1fr;
-    height: 100%;
-    overflow-y: hidden;
+#pages {
+    width: min-content;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: -16px;
 
-    main {
-        position: relative;
-        padding: 32px;
-        overflow-y: auto;
-
-        #pages {
-            display: flex;
-            flex-direction: column;
-            gap: 32px;
-            align-items: center;
-        }
-
-        @media print {
-            #pages {
-                display: block;
-            }
-        }
+    .page {
+        margin-bottom: 16px;
     }
+}
 
-    aside {
-        display: grid;
-        grid-template-rows: auto 1fr auto;
+@media print {
+    #pages {
+        display: block;
 
-        padding: 32px;
-        border-left: 1px solid #fff3;
-        box-shadow: 0 2px 4px 0 #0008;
+        .page {
+            margin: 0;
+        }
     }
 }
 </style>

@@ -78,7 +78,7 @@ provide('scrollToCategory', scrollToCategory);
     color: #fff;
     padding: 24px 32px;
     border-radius: 10px;
-    max-width: 1000px;
+    max-width: min(1000px, 95vw);
     width: 100%;
     max-height: min(85vh, 800px);
     height: 80vh;

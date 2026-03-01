@@ -352,29 +352,6 @@ const { isOverDropZone } = useDropZone(main, {
 </template>
 
 <style scoped>
-.layout {
-    display: grid;
-    grid-template-columns: 1fr clamp(300px, 35vw, 500px);
-    grid-template-rows: 1fr;
-    height: 100%;
-    overflow-y: hidden;
-
-    main {
-        position: relative;
-        padding: 32px;
-        overflow-y: auto;
-    }
-
-    aside {
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-
-        padding: 32px;
-        border-left: 1px solid #fff3;
-        box-shadow: 0 2px 4px 0 #0008;
-    }
-}
-
 #upcoming-announcements {
     list-style: none;
     padding: 0;

@@ -365,6 +365,8 @@ async function sendData(hex: string = generatePacket().toString(), force = false
     await Promise.allSettled(
         connectedIps.map(async (ip, i) => {
             try {
+                sendStatus.value[i] = null;
+
                 const res = await fetch("http://localhost:5000/send-and-receive", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -558,7 +560,8 @@ function formatStatus(i: number) {
             sending.value[i] ? "Verzenden..." :
                 sendStatus.value[i] === 'error' ? `Fout ${sendTime.value[i] ? `om ${format(sendTime.value[i]!, 'HH:mm:ss')}` : ''}` :
                     sendStatus.value[i] === 'ok' ? `OK ${sendTime.value[i] ? `om ${format(sendTime.value[i]!, 'HH:mm:ss')}` : ''}` :
-                        "Nog niets verzonden";
+                        sendStatus.value[i];
+    // "Nog niets verzonden";
 }
 
 function showFormattingInfo() {
@@ -726,29 +729,6 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 </template>
 
 <style scoped>
-.layout {
-    display: grid;
-    grid-template-columns: 1fr clamp(300px, 35vw, 500px);
-    grid-template-rows: 1fr;
-    height: 100%;
-    overflow-y: hidden;
-
-    main {
-        position: relative;
-        padding: 32px;
-        overflow-y: auto;
-    }
-
-    aside {
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-
-        padding: 32px;
-        border-left: 1px solid #fff3;
-        box-shadow: 0 2px 4px 0 #0008;
-    }
-}
-
 pre {
     height: auto;
     white-space: break-spaces;
