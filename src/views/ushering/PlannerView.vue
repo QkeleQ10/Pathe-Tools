@@ -2,7 +2,7 @@
 import { ref, computed, inject, useTemplateRef, Ref } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { Show, TimetableShow } from '@/scripts/types.ts'
+import { Show, UsherShow } from '@/scripts/types.ts'
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -23,27 +23,27 @@ const showsWithAdmits = ref<(Show & { admits?: number })[]>([]);
 store.$subscribe(() => {
     if (!store.table.length) return;
     console.log(store.table)
-    showsWithAdmits.value = store.table.map((show: TimetableShow) => ({ ...show, admits: null }));
+    showsWithAdmits.value = store.table.map((show: UsherShow) => ({ ...show, admits: null }));
 })
 
 const auditoriums = computed(() => {
-    return [...new Set(store.table.map((show: TimetableShow) => show.auditorium).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
+    return [...new Set(store.table.map((show: UsherShow) => show.auditorium).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
 });
 
 const showTitles = computed(() => {
-    return [...new Set(store.table.map((show: TimetableShow) => show.title).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
+    return [...new Set(store.table.map((show: UsherShow) => show.title).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
 });
 
 const rangeStart = computed(() => {
     if (showsWithAdmits.value.length === 0) return new Date();
-    const rangeStart = new Date(Math.min(...showsWithAdmits.value.map((show: TimetableShow) => show.scheduledTime.getTime())));
+    const rangeStart = new Date(Math.min(...showsWithAdmits.value.map((show: UsherShow) => show.scheduledTime.getTime())));
     rangeStart.setMinutes(rangeStart.getMinutes() - 20);
     return rangeStart;
 });
 
 const rangeEnd = computed(() => {
     if (showsWithAdmits.value.length === 0) return new Date();
-    const rangeEnd = new Date(Math.max(...showsWithAdmits.value.map((show: TimetableShow) => show.endTime.getTime())));
+    const rangeEnd = new Date(Math.max(...showsWithAdmits.value.map((show: UsherShow) => show.endTime.getTime())));
     rangeEnd.setMinutes(rangeEnd.getMinutes() + 20);
     return rangeEnd;
 });
@@ -103,7 +103,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                             }">
                             </div>
                         </template>
-                        <template v-for="show in showsWithAdmits.filter(show => show.extras.includes('4DX'))"
+                        <template v-for="show in showsWithAdmits.filter(show => show.tags.includes('4DX'))"
                             :key="show.playlist + show.scheduledTime">
                             <div class="plf-workload" :style="{
                                 left: (normaliseDate(new Date(show.scheduledTime.getTime() - 900000)) * 100) + '%',
@@ -158,7 +158,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                             }">
                             </div>
                         </template>
-                        <template v-for="show in showsWithAdmits.filter(show => show.extras.includes('4DX'))"
+                        <template v-for="show in showsWithAdmits.filter(show => show.tags.includes('4DX'))"
                             :key="show.playlist + show.scheduledTime">
                             <div class="plf-workload" :style="{
                                 left: (normaliseDate(new Date(show.scheduledTime.getTime() - 900000)) * 100) + '%',

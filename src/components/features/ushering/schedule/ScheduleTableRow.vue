@@ -2,12 +2,12 @@
 import { ref } from 'vue';
 import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
-import { TimetableShow } from '@/scripts/types.ts';
+import { UsherShow } from '@/scripts/types.ts';
 import Icon4dx from '@/assets/symbols/Icon4dx.vue';
 import { defaultColumns, colTypes } from './ColsBuilder.vue';
 
 defineProps<{
-    show: TimetableShow,
+    show: UsherShow,
     sortBy: "scheduledTime" | "creditsTime",
 }>();
 
@@ -111,7 +111,7 @@ function displayContextMenu(event: MouseEvent) {
                     </span>
 
                     <span contenteditable>
-                        {{ show.extras.join(' ') }}
+                        {{ show.tags.join(' ') }}
                     </span>
 
                 </template>

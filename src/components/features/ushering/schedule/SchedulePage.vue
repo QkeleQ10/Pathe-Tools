@@ -3,13 +3,13 @@ import { useTemplateRef } from 'vue';
 import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { useVueToPrint } from 'vue-to-print';
-import { TimetableShow } from '@/scripts/types.ts';
+import { UsherShow } from '@/scripts/types.ts';
 import { nl } from 'date-fns/locale';
 import ScheduleTableRow from './ScheduleTableRow.vue';
 import { defaultColumns, colTypes } from './ColsBuilder.vue';
 
 const props = defineProps<{
-    shows: TimetableShow[];
+    shows: UsherShow[];
     metadata: {} | {
         name: string;
         type: string;

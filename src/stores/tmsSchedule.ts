@@ -55,7 +55,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
             const parsedTable = json.timetable.map(obj => ({
                 ...obj,
-                /* TODO */ title: extractExtras(obj.playlist).title, extras: extractExtras(obj.playlist).extras, /* TODO */
+                /* TODO */ title: extractTags(obj.playlist).title, tags: extractTags(obj.playlist).tags, /* TODO */
                 scheduledTime: obj.scheduledTime && new Date(obj.scheduledTime),
                 showTime: obj.showTime && new Date(obj.showTime),
                 mainShowTime: obj.mainShowTime && new Date(obj.mainShowTime),
@@ -93,8 +93,8 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                 .filter(obj => !obj.PLAYLIST.includes('TMS-BLACK'))
                 .map(obj => {
                     const show: Show = {
-                        title: extractExtras(obj.PLAYLIST).title,
-                        extras: extractExtras(obj.PLAYLIST).extras,
+                        title: extractTags(obj.PLAYLIST).title,
+                        tags: extractTags(obj.PLAYLIST).tags,
                         playlist: obj.PLAYLIST,
                         feature: obj.FEATURE,
                         featureRating: obj.FEATURE_RATING,
@@ -200,7 +200,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         }
     }
 
-    function extractExtras(string: string): { extras: string[], title: string } {
+    function extractTags(string: string): { tags: string[], title: string } {
         let transformedString = string
             .replace(/^\.+|\.+$/, '')
             .replace("Nederlandse versie", "NL")
@@ -208,12 +208,12 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             .replace(" IMX", " IMAX")
             .replace(" PAUZE", '')
 
-        let extraString = transformedString
-            .match(/(\s((4DX)|(ATMOS)|(IMAX)|(SCREENX)|(3D)|(ROOFTOP)|(Music)|(Pride)|(PrideNight)|(Ladies)|(Award)|(Premiere)|(Bollywood)|(BESLOTEN)|(Besloten)|(NL)|(HFR)|(\([A-Z]+\))))+/)?.[0].slice(1) || '';
-
+        const possibleTags = ['4DX', 'ATMOS', 'IMAX', 'SCREENX', '3D', 'ROOFTOP', 'Music', 'Pride', 'PrideNight', 'Ladies', 'Award', 'Premiere', 'Bollywood', 'BESLOTEN', 'Besloten', 'Re-release', 'NL', 'HFR'];
+        const tagsString = transformedString
+            .match(new RegExp(`(\\s((${possibleTags.join(')|(')})|\\([A-Z]+\\)))+`, 'g'))?.[0].slice(1) || '';
         return {
-            extras: extraString.length > 0 ? extraString.split(' ') : [],
-            title: transformedString.replace(extraString, '').trim()
+            tags: tagsString.length > 0 ? tagsString.split(' ') : [],
+            title: transformedString.replace(tagsString, '').trim()
         };
     }
 

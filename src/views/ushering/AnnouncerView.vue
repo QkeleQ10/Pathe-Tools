@@ -402,13 +402,6 @@ const { isOverDropZone } = useDropZone(main, {
         margin-bottom: 6px;
     }
 
-    .chips {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        gap: 4px;
-    }
-
     .announcement {
         grid-column: 1 / -1;
         grid-row: -1;

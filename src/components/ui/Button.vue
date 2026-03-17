@@ -88,6 +88,7 @@ button.tertiary {
     line-height: normal;
     padding: 0;
     width: auto;
+    min-width: 0;
     justify-content: flex-start;
 
     &:hover {

@@ -48,6 +48,12 @@ onUnmounted(() => {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    
+    transition: opacity 150ms ease;
+
+    @starting-style {
+        opacity: 0;
+    }
 }
 
 .modal-content {
@@ -55,14 +61,20 @@ onUnmounted(() => {
     color: #fff;
     padding: 16px 20px;
     border-radius: 10px;
-    max-width: 650px;
+    max-width: var(--modal-max-width, 650px);
     width: 100%;
-    max-height: 95vh;
+    max-height: var(--modal-max-height, 95vh);
 
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
     position: relative;
     outline: none;
     overflow-y: auto;
+
+    transition: transform 150ms ease;
+
+    @starting-style {
+        transform: scale(.95) translateY(20px);
+    }
 }
 
 .close-button {

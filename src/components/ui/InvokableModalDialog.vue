@@ -1,6 +1,8 @@
 <script setup lang="ts">
 defineProps<{
     buttonClass?: string;
+    dialogClass?: string;
+    dialogStyle?: string | Record<string, string>;
 }>();
 
 const active = defineModel<boolean>('active', {
@@ -20,7 +22,7 @@ const active = defineModel<boolean>('active', {
     <Teleport to="body">
         <Transition>
             <slot name="dialog">
-                <ModalDialog v-if="active" @dismiss="active = false">
+                <ModalDialog v-if="active" @dismiss="active = false" :class="dialogClass" :style="dialogStyle">
                     <slot name="dialog-content">
                         <p>Dialog</p>
                     </slot>

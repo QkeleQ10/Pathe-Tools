@@ -19,7 +19,7 @@ const scrollToCategory = (categoryId: string) => {
         const containerRect = scrollContainer.getBoundingClientRect();
         const elementRect = element.getBoundingClientRect();
         const relativeTop = elementRect.top - containerRect.top + scrollContainer.scrollTop;
-        
+
         scrollContainer.scrollTo({
             top: relativeTop - 20,
             behavior: 'smooth'
@@ -71,6 +71,12 @@ provide('scrollToCategory', scrollToCategory);
     justify-content: center;
     align-items: center;
     z-index: 1000;
+
+    transition: opacity 150ms ease;
+
+    @starting-style {
+        opacity: 0;
+    }
 }
 
 .settings-modal-content {
@@ -85,6 +91,12 @@ provide('scrollToCategory', scrollToCategory);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
     position: relative;
     outline: none;
+
+    transition: transform 150ms ease;
+
+    @starting-style {
+        transform: scale(.95) translateY(20px);
+    }
 }
 
 .settings-layout {

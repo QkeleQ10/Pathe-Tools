@@ -10,6 +10,7 @@ div {
     gap: 4px;
     align-items: center;
     background-color: #ffc10514;
+    background-color: hsl(from var(--yellow2) h s l / 0.1);
     color: var(--yellow2);
     font: 500 14px Heebo, arial, sans-serif;
     line-height: 20px;

@@ -2,7 +2,7 @@
 import { ref, computed, useTemplateRef, nextTick } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { Show, TimetableShow } from '@/scripts/types.ts'
+import { Show, UsherShow } from '@/scripts/types.ts'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import { useVueToPrint } from 'vue-to-print'
@@ -24,7 +24,7 @@ const fontSize = useStorage('schedule-font-size', 12.5) // font size in pixels
 
 const main = ref<HTMLElement>(null)
 
-const pages = computed<TimetableShow[][]>(() => {
+const pages = computed<UsherShow[][]>(() => {
     const plfRows = store.table?.filter(row => row.auditorium?.includes('4DX')) || []
     let arr = store.table?.map((show: Show, i: number) => {
         const hasCreditsStinger = stingers.value.includes(show.title?.trim())
@@ -41,7 +41,7 @@ const pages = computed<TimetableShow[][]>(() => {
                 ? (store.table[i + 1].creditsTime || store.table[i + 1].endTime).getTime() - (hasCreditsStinger ? show.endTime : (show.creditsTime || show.endTime)).getTime()
                 : undefined,
             nextStartTime: nextShow?.scheduledTime
-        } as TimetableShow
+        } as UsherShow
     }) || []
 
     arr.filter(testRow => testRow.auditorium?.includes('4DX')).forEach(plfRow => {

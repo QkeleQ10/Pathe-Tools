@@ -8,7 +8,7 @@ export const defaultColumns = [
     { type: 'ageRating', width: 3 },
 ];
 
-export const colTypes: { content: (show: TimetableShow) => string; label: string; colHeading: string; value: string; icon: string, defaultWidth: number, minWidth: number }[] = [
+export const colTypes: { content: (show: UsherShow) => string; label: string; colHeading: string; value: string; icon: string, defaultWidth: number, minWidth: number }[] = [
     {
         content: (show) =>
             show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '')
@@ -74,7 +74,7 @@ export const colTypes: { content: (show: TimetableShow) => string; label: string
 import { ref, computed, watch, onUnmounted, useTemplateRef } from 'vue';
 import { useElementSize } from '@vueuse/core';
 import { format } from 'date-fns';
-import { TimetableShow } from '@/scripts/types';
+import { UsherShow } from '@/scripts/types';
 
 const model = defineModel<{
     type: string;

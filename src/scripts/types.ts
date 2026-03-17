@@ -12,7 +12,7 @@ export type Show = {
     playlist: string;
     feature: string;
     featureRating: string;
-    extras: string[];
+    tags: string[];
     auditorium: string;
     auditoriumNumber: number;
     scheduledTime: Date;
@@ -24,7 +24,7 @@ export type Show = {
     duration: string;
 };
 
-export type TimetableShow = Show & {
+export type UsherShow = Show & {
     overlapWithPlf?: boolean;
     hasCreditsStinger?: boolean;
     nextStartTime?: Date;
@@ -32,6 +32,20 @@ export type TimetableShow = Show & {
     isNearPlf?: boolean;
     intermissionAfter?: boolean;
 };
+
+export type TimetableShow = {
+    i: number,
+    title: string,
+    auditorium: string,
+    scheduledTime: Date,
+    intermissionTime: Date | null,
+    intermissionEndTime: Date | null,
+    tags: {
+        plf: string[],
+        language: string[],
+        age: string[],
+    }
+}
 
 export type Announcement = {
     time: Date;

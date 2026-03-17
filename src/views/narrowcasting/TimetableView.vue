@@ -1,21 +1,23 @@
 <script setup lang="ts">
 import { ref, computed, inject, useTemplateRef, onBeforeUnmount, onMounted, Ref, h, provide } from 'vue';
 import { useStorage, useDropZone } from '@vueuse/core';
-import { DisplayLine } from '@/scripts/types';
+import { DisplayLine, TimetableShow } from '@/scripts/types';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule.ts';
 import * as qmln from '@/scripts/qmln.ts';
 import { format } from 'date-fns';
-import { showDialog } from '@/scripts/dialogManager.ts';
 
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
 import Settings from '@/components/features/narrowcasting/timetable/Settings.vue';
 import StatusBox from '@/components/ui/StatusBox.vue';
+import ShowsEditor from '@/components/features/narrowcasting/timetable/ShowsEditor.vue';
+
+const FORMAT_REGEX = /~[CB]\d;|~[FNRI];/g;
 
 const now = inject<Ref<Date>>('now');
 
 const store = useTmsScheduleStore();
 
-const syncFilmTitles = ref(true);
+const intermissionDuration = useStorage('intermission-duration', 15)
 
 const addresses = useStorage('addresses', ["10.10.87.81", "10.10.87.82"]);
 
@@ -42,9 +44,9 @@ const animationSpeed = useStorage('animation-speed', 0x07);
 const theatreName = useStorage('theatre-name', 'Pathé');
 const motd = useStorage('motd', '');
 
-const additionalAgeRating = useStorage('additional-age-rating', true);
-const additionalPlf = useStorage('additional-plf', true);
-const additionalLanguage = useStorage('additional-language', true);
+const displayAgeTags = useStorage('additional-age-rating', true);
+const displayPlfTags = useStorage('additional-plf', true);
+const displayLanguageTags = useStorage('additional-language', true);
 
 const autoBlack = useStorage('auto-black', true);
 
@@ -52,12 +54,12 @@ const autoConfigShows = useStorage('auto-config-shows', 'walkin');
 const autoConfigNoShows = useStorage('auto-config-no-shows', 'walkout');
 const autoConfigNoData = useStorage('auto-config-no-data', 'noinfo');
 
-const walkIns = ref<{ scheduledTime: Date, title: string, auditorium: string, i: number }[]>([]);
+const shows = ref<TimetableShow[]>([]);
 
 const lines: { [key: string]: (...arg: any[]) => DisplayLine } = {
     empty: () => ({ fcolor: 3, bcolor: 0, textString: "", enabled: false, align: 'left', speed: 0x07 }),
     black: () => ({ fcolor: 3, bcolor: 0, textString: "", enabled: true, align: 'left', speed: 0x07 }),
-    motd: (fallback = lines.black()) => (motd.value.length ? { fcolor: 1, bcolor: 0, textString: motd.value, enabled: true, align: motd.value.replace(/~[CB]\d;|~[FNRI];/g, '').length > 60 ? 'marquee' : 'center', speed: 0x07 } : fallback)
+    motd: (fallback = lines.black()) => (motd.value.length ? { fcolor: 1, bcolor: 0, textString: motd.value, enabled: true, align: motd.value.replace(FORMAT_REGEX, '').length > 60 ? 'marquee' : 'center', speed: 0x07 } : fallback)
 }
 
 const presetConfigurations: { [key: string]: { name: string, lines: () => DisplayLine[] } } = {
@@ -135,7 +137,7 @@ const presetConfigurations: { [key: string]: { name: string, lines: () => Displa
 provide('presetConfigurations', presetConfigurations);
 
 const showsSoon = computed(() => {
-    return [...walkIns.value]
+    return [...shows.value]
         .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
         .filter(show =>
             show.scheduledTime.getTime() - now.value.getTime() > -(hideTime.value * 60000) &&
@@ -143,9 +145,16 @@ const showsSoon = computed(() => {
         ); // shows starting within -17 minutes and 3 hours from now
 });
 
+const showsInIntermission = computed(() => {
+    return shows.value.filter(show =>
+        show.intermissionTime && show.intermissionTime.getTime() - 60000 < now.value.getTime() &&
+        show.intermissionEndTime && show.intermissionEndTime.getTime() + 60000 > now.value.getTime()
+    );
+});
+
 const currentConfiguration = computed(() => {
-    if (showsSoon.value.length) {
-        // if there's a show starting within -17 minutes and 3 hours from now
+    if (showsSoon.value.length || showsInIntermission.value.length) {
+        // if there's a show starting within -17 minutes and 3 hours from now OR if there's an intermission right now
         if (autoConfigShows.value === 'manual') return manualConfiguration.value;
         return presetConfigurations[autoConfigShows.value].lines();
     } else if (now.value.getHours() >= 21 || now.value.getHours() < 1) {
@@ -160,28 +169,6 @@ const currentConfiguration = computed(() => {
 });
 
 const manualConfiguration = useStorage<DisplayLine[]>('manual-configuration', presetConfigurations['walkin'].lines());
-
-store.$subscribe(loadWalkIns)
-
-function loadWalkIns() {
-    if (!store.table.length) return;
-
-    walkIns.value = [...store.table]
-        .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
-        .map((show, i) => {
-            let showTitle = show.title;
-            if (additionalPlf.value) showTitle += show.extras.filter(e => ['3D', '4DX', 'IMAX', 'SCREENX', 'ATMOS', 'DOLBY', 'ROOFTOP'].includes(e)).map(e => ` ${e}`).join('');
-            if (additionalLanguage.value) showTitle += show.extras.filter(e => ['(NL)', '(OV)'].includes(e)).map(e => ` ${e}`).join('');
-            if (additionalAgeRating.value && (show.featureRating === '16' || show.featureRating === '18')) showTitle += ` (16+)`;
-
-            return {
-                scheduledTime: show.scheduledTime,
-                title: showTitle.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join(''),
-                auditorium: show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '').split(' ')[0],
-                i
-            }
-        });
-}
 
 function getFormattedText(line: DisplayLine): { textString: string, fcolor: number, bcolor: number, flash: boolean }[] {
     if (!line?.textString) return [];
@@ -209,7 +196,7 @@ function getFormattedText(line: DisplayLine): { textString: string, fcolor: numb
             currentBcolor = line.bcolor;
         }
 
-        result.push({ textString: token.replace(/~[CB]\d;|~[FNRI];/g, ''), fcolor: currentFcolor, bcolor: currentBcolor, flash: currentFlash });
+        result.push({ textString: token.replace(FORMAT_REGEX, ''), fcolor: currentFcolor, bcolor: currentBcolor, flash: currentFlash });
     }
 
     return result;
@@ -222,33 +209,141 @@ function repeatDisplayLine(length: number, line: DisplayLine = lines.empty()): D
 function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): DisplayLine[] {
     let result: DisplayLine[] = [];
 
-    let longestAuditoriumLength = showsSoon.value.reduce((max, show) => Math.max(max, show.auditorium.toString().replace(/~[CB]\d;|~[FNRI];/g, '').length), 1);
+    const numEmptyLines = displayLines.filter(line => !line.enabled).length;
+    const auditoriumColumnWidth = showsSoon.value.reduce((max, show) => Math.max(max, show.auditorium.toString().replace(FORMAT_REGEX, '').length), 2);
 
-    let showIndex = 0;
+    const numLinesToFillWithShows = Math.min(
+        // showsSoon.value.length,
+        numEmptyLines - showsInIntermission.value.length, numEmptyLines);
+    const numLinesToFillWithIntermission = Math.min(showsInIntermission.value.length, numEmptyLines);
+
+    let linesFilledWithShows = 0;
+    let linesFilledWithIntermission = 0;
+
     for (let lineNumber = 0; lineNumber < displayLines.length; lineNumber++) {
-        if (!displayLines[lineNumber].enabled) {
-            let show = showsSoon.value[showIndex++];
+        if (displayLines[lineNumber].enabled) {
+
+            result.push(displayLines[lineNumber]);
+
+        } else if (linesFilledWithShows < numLinesToFillWithShows) {
+
+            const show = showsSoon.value[linesFilledWithShows];
             if (!show) {
                 result.push({
                     textString: "", enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
                 });
+                linesFilledWithShows++;
                 continue;
             }
 
             const isStarted = show.scheduledTime.getTime() - Date.now() < -(isStartedTime.value * 60000);
             const aboutToStart = show.scheduledTime.getTime() - Date.now() < -(aboutToStartTime.value * 60000) && !isStarted;
 
-            let str = `${format(show.scheduledTime, 'HH:mm')} ${truncateAndPad(show.title, 53 - longestAuditoriumLength)} ${truncateAndPad(show.auditorium, longestAuditoriumLength, 'right')}`;
-            if (isStarted) str = `${format(show.scheduledTime, 'HH:mm')} ${truncateAndPad(show.title, 53 - 11 - longestAuditoriumLength)} ~C1;is gestart~C3; ${truncateAndPad(show.auditorium, longestAuditoriumLength, 'right')}`;
-            if (aboutToStart) str = `${format(show.scheduledTime, 'HH:mm')} ${truncateAndPad(show.title, 53 - 13 - longestAuditoriumLength)} ~F;~C1;gaat starten~N;~C3; ${truncateAndPad(show.auditorium, longestAuditoriumLength, 'right')}`;
+            const title = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
+            const auditorium = show.auditorium.padStart(auditoriumColumnWidth);
+            const tags =
+                + displayPlfTags ? show.tags.plf.map(e => ` ${e}`).join('') : ''
+                    + displayLanguageTags ? show.tags.language.map(e => ` ${e}`).join('') : ''
+                        + displayAgeTags ? show.tags.age.map(e => ` ${e}`).join('') : '';
+
+            let strStart = padEnd(`${format(show.scheduledTime, 'HH:mm')} ${title}${tags}`, 60);
+            let strEnd = ` ${auditorium}`;
+
+            if (isStarted) strEnd = ` ~C1;is gestart~C3; ${auditorium}`;
+            if (aboutToStart) strEnd = ` ~F;~C1;gaat starten~N;~C3; ${auditorium}`;
+
+            let str = overwriteEnd(strStart, strEnd);
 
             result.push({
                 textString: str, enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
             });
-        } else result.push(displayLines[lineNumber]);
+
+            linesFilledWithShows++;
+
+        } else if (linesFilledWithIntermission < numLinesToFillWithIntermission) {
+
+            const show = showsInIntermission.value[linesFilledWithIntermission];
+            if (!show) {
+                result.push({
+                    textString: "", enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
+                });
+                linesFilledWithIntermission++;
+                continue;
+            }
+
+            const title = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
+            const auditorium = show.auditorium.padStart(auditoriumColumnWidth);
+            const tags =
+                + displayPlfTags ? show.tags.plf.map(e => ` ${e}`).join('') : ''
+                    + displayLanguageTags ? show.tags.language.map(e => ` ${e}`).join('') : ''
+                        + displayAgeTags ? show.tags.age.map(e => ` ${e}`).join('') : '';
+            const minsRemaining = Math.floor((show.intermissionEndTime!.getTime() - Date.now()) / 60000);
+
+            let strStart = padEnd(`~C1;PAUZE~C3; ${title}${tags}`, 60);
+            let strEnd = ` ~C1;± ${minsRemaining} min~C3; ${auditorium}`;
+
+            if (minsRemaining < 1) strEnd = ` ~F;~C1;<1 min~N;~C3; ${auditorium}`;
+            if (minsRemaining < 0) strEnd = ` ~C1;is hervat~C3; ${auditorium}`;
+
+            let str = overwriteEnd(strStart, strEnd);
+
+            result.push({
+                textString: str, enabled: true, fcolor: 0x01, bcolor: 0x00, align: 'left', speed: 0x07
+            });
+
+            linesFilledWithIntermission++;
+
+        } else {
+
+            result.push({
+                textString: "", enabled: true, fcolor: 0x03, bcolor: 0x00, align: 'left', speed: 0x07
+            });
+
+        }
     }
 
     return result;
+
+    function padEnd(
+        str: string,
+        targetLength: number,
+        padChar: string = " "
+    ): string {
+        const visibleLength = str.replace(FORMAT_REGEX, "").length;
+
+        if (visibleLength >= targetLength) return str;
+
+        return str + padChar.repeat(targetLength - visibleLength);
+    }
+
+    function overwriteEnd(original: string, replacement: string): string {
+        const visibleReplacementLength = replacement.replace(FORMAT_REGEX, "").length;
+
+        // Build mapping: visible index -> raw index
+        const visibleToRaw: number[] = [];
+
+        for (let i = 0; i < original.length; i++) {
+            const match = original.slice(i).match(/^~[CB]\d;|^~[FNRI];/);
+            if (match) {
+                i += match[0].length - 1;
+                continue;
+            }
+            visibleToRaw.push(i);
+        }
+
+        const visibleLength = visibleToRaw.length;
+
+        // If replacement is longer than visible string → replace everything
+        if (visibleReplacementLength >= visibleLength) {
+            return replacement;
+        }
+
+        // Find raw cut index
+        const cutVisibleIndex = visibleLength - visibleReplacementLength;
+        const cutRawIndex = visibleToRaw[cutVisibleIndex];
+
+        return original.slice(0, cutRawIndex) + replacement;
+    }
 }
 
 function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(currentConfiguration.value), shiftBeta: boolean = false): qmln.Packet {
@@ -449,19 +544,41 @@ function truncateAndPad(string: string, maxLength: number, align: 'left' | 'cent
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-onMounted(async () => {
-    walkIns.value = [...store.table]
+onMounted(refresh);
+store.$subscribe(refresh);
+
+async function refresh() {
+
+    shows.value = [...store.table]
         .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
-        .map((show, i) => ({
-            scheduledTime: show.scheduledTime,
-            title: show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join(''),
-            auditorium: show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '').split(' ')[0],
-            i
-        }));
+        .map((show, i) => {
+            const cleanedTitle = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
+            const transformedAuditorium =
+                show.auditorium === 'Rooftop' ? 'RT' :
+                    show.auditorium === 'IMAX' ? '1' :
+                        show.auditorium.replace(/^\w+\s/, '').split(' ')[0];
+
+            return {
+                i,
+                title: cleanedTitle,
+                tags: {
+                    age: (show.featureRating === '16' || show.featureRating === '18') ? ['(16+)'] : null,
+                    plf: show.tags.filter(e => ['3D', '4DX', 'IMAX', 'SCREENX', 'ATMOS', 'DOLBY', 'ROOFTOP'].includes(e)),
+                    language: show.tags.filter(e => ['(NL)', '(OV)'].includes(e)),
+                },
+                auditorium: transformedAuditorium,
+                scheduledTime: show.scheduledTime,
+                intermissionTime: show.intermissionTime,
+                intermissionEndTime: show.intermissionTime ? new Date(show.intermissionTime.getTime() + intermissionDuration.value * 60000) : null,
+            }
+        });
 
     await Promise.allSettled(addresses.value.map((ip, index) => tryConnect(ip, index)));
 
     sendData();
+
+    if (timeoutId) clearTimeout(timeoutId);
+    if (intervalId) clearInterval(intervalId);
 
     timeoutId = setTimeout(() => {
         intervalId = setInterval(() => sendData(), 5000);
@@ -470,7 +587,7 @@ onMounted(async () => {
             null, null, new qmln.FunctionSetClock(new Date())
         ).toString()); // initial clock sync
     }, 5000 - Date.now() % 5000);
-});
+}
 
 onBeforeUnmount(() => {
     if (intervalId) clearInterval(intervalId);
@@ -560,23 +677,8 @@ function formatStatus(i: number) {
             sending.value[i] ? "Verzenden..." :
                 sendStatus.value[i] === 'error' ? `Fout ${sendTime.value[i] ? `om ${format(sendTime.value[i]!, 'HH:mm:ss')}` : ''}` :
                     sendStatus.value[i] === 'ok' ? `OK ${sendTime.value[i] ? `om ${format(sendTime.value[i]!, 'HH:mm:ss')}` : ''}` :
-                        sendStatus.value[i];
-    // "Nog niets verzonden";
-}
-
-function showFormattingInfo() {
-    showDialog([
-        h('h3', "Opmaak"),
-        h('p', [
-            "In invoervelden zoals deze kunnen de volgende codes worden gebruikt:", h('br'), h('br'),
-            h('code', "~Cn;"), " tekstkleur (waarbij n = 0, 1, 2 of 3)", h('br'),
-            h('code', "~Bn;"), " achtergrondkleur (waarbij n = 0, 1, 2 of 3)", h('br'),
-            h('code', "~R;"), " kleuren omwisselen", h('br'),
-            h('code', "~I;"), " kleuren resetten", h('br'),
-            h('code', "~F;"), " knipperen", h('br'),
-            h('code', "~N;"), " niet meer knipperen", h('br'),
-        ])
-    ])
+                        "Nog niets verzonden";
+    // sendStatus.value[i];
 }
 
 const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
@@ -623,7 +725,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                         <span id="matrix-display-title">Pathé Timetable</span>
                         <pre class="matrix-clock">{{ format(now, 'HH:mm') }}</pre>
                         <div v-for="(line, i) in fillEmptyLinesWithShows(currentConfiguration, now)" class="matrix-row"
-                            :style="{ '--marquee-duration': ((0.02 * Math.max(60, line.textString.replace(/~[CB]\d;|~[FNRI];/g, '').length) + 0.08) * (-1 * line.speed + 13)) + 's' }"
+                            :style="{ '--marquee-duration': ((0.02 * Math.max(60, line.textString.replace(FORMAT_REGEX, '').length) + 0.08) * (-1 * line.speed + 13)) + 's' }"
                             :class="`align${line.align || 'left'}`">
                             <div>
                                 <span v-for="str in getFormattedText(line)" :key="i"
@@ -641,62 +743,16 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 
                     <TimetableUploadSection />
 
-                    <InvokableModalDialog>
+                    <InvokableModalDialog dialog-class="timetable-shows-dialog">
                         <template #button-content>
                             <Icon>list</Icon> Voorstellingen bewerken
                         </template>
                         <template #dialog-content>
-                            <h3>Voorstellingen</h3>
-
-                            <p v-if="walkIns.some(walkIn => walkIn.title.length > 38)">
-                                <b>Let op:</b> roodgekleurde filmtitels zijn te lang en worden mogelijk afgekapt.
-                            </p>
-                            <InputSwitch v-if="walkIns.length" identifier="syncFilmTitles"
-                                style="max-width: 650px; margin-bottom: 16px;" v-model="syncFilmTitles">
-                                Alle identieke filmtitels tegelijk bewerken
-                            </InputSwitch>
-                            <ul class="scrollable-list">
-                                <TransitionGroup name="list">
-                                    <li v-for="(walkIn) in [...walkIns].sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())"
-                                        class="flex walkin" :key="walkIn.i" :id="`walkin-${walkIn.i}`"
-                                        :class="{ 'past': walkIn.scheduledTime.getTime() - Date.now() < -(hideTime * 60000) && walkIn.scheduledTime.getTime() - Date.now() < (180 * 60000) }">
-                                        <InputDate class="walkin-time" :id="`walkin-${walkIn.i}-time`"
-                                            v-model="walkIn.scheduledTime">
-                                        </InputDate>
-                                        <Input type="text" class="walkin-title" :spellcheck="false" autocomplete="off"
-                                            :id="`walkin-${walkIn.i}-title`" :model-value="walkIn.title"
-                                            @update:model-value="(value) => {
-                                                if (syncFilmTitles) {
-                                                    walkIns.filter(walkIn2 => walkIn2.title === walkIn.title).forEach(walkIn2 => walkIn2.title = value);
-                                                } else {
-                                                    walkIn.title = value;
-                                                }
-                                            }" :class="{ 'too-long': walkIn.title.length > 38 }">
-                                        </Input>
-                                        <Input type="text" class="walkin-auditorium" :spellcheck="false"
-                                            autocomplete="off" :id="`walkin-${walkIn.i}-auditorium`"
-                                            v-model="walkIn.auditorium">
-                                        </Input>
-                                        <Icon class="delete"
-                                            @click="walkIns.splice(walkIns.findIndex(w => w.scheduledTime === walkIn.scheduledTime && w.title === walkIn.title && w.auditorium === walkIn.auditorium), 1)">
-                                            close</Icon>
-                                    </li>
-                                </TransitionGroup>
-                                <p v-if="!walkIns.length">Geen voorstellingen gepland.</p>
-                            </ul>
-                            <div class="flex buttons" style="gap:24px; margin-top: 16px;">
-                                <Button class="tertiary"
-                                    @click="walkIns.push({ scheduledTime: new Date(), title: '', auditorium: '', i: walkIns.length })">
-                                    <span>Voorstelling toevoegen</span>
-                                </Button>
-                                <Button class="tertiary" @click="showFormattingInfo">
-                                    Opmaak
-                                </Button>
-                            </div>
+                            <ShowsEditor :shows="shows" />
                         </template>
                     </InvokableModalDialog>
 
-                    <Settings @load-walk-ins="loadWalkIns">
+                    <Settings @load-walk-ins="refresh">
                         <template #connection>
                             <div class="flex buttons" style="gap: 24px;">
                                 <Button class="tertiary" @click="sendData(null, true)" :disabled="sending.some(s => s)">
@@ -901,44 +957,6 @@ pre {
 
     100% {
         opacity: 0;
-    }
-}
-
-.walkin {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    &.past>input {
-        opacity: 0.5;
-    }
-
-    .walkin-time {
-        flex: 0 0 150px;
-        width: 150px;
-        height: 36px;
-        font-size: 14px;
-        letter-spacing: -1.25px;
-    }
-
-    .walkin-title {
-        flex: 1 1 400px;
-        font-family: monospace;
-        font-size: 14px;
-        height: 36px;
-        padding-right: 0;
-    }
-
-    .too-long {
-        color: #f15a5a;
-    }
-
-    .walkin-auditorium {
-        flex: 0 0 52px;
-        font-family: monospace;
-        font-size: 14px;
-        height: 36px;
-        padding-right: 0;
     }
 }
 </style>
