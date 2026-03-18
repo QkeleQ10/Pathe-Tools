@@ -236,8 +236,8 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
                 continue;
             }
 
-            const isStarted = show.scheduledTime.getTime() - Date.now() < -(isStartedTime.value * 60000);
-            const aboutToStart = show.scheduledTime.getTime() - Date.now() < -(aboutToStartTime.value * 60000) && !isStarted;
+            const hasStarted = show.scheduledTime.getTime() - Date.now() < -(isStartedTime.value * 60000);
+            const isAboutToStart = show.scheduledTime.getTime() - Date.now() < -(aboutToStartTime.value * 60000) && !hasStarted;
 
             const title = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
             const auditorium = show.auditorium.padStart(auditoriumColumnWidth);
@@ -249,8 +249,8 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
             let strStart = padEnd(`${format(show.scheduledTime, 'HH:mm')} ${title}${tags}`, 60);
             let strEnd = ` ${auditorium}`;
 
-            if (isStarted) strEnd = ` ~C1;is gestart~C3; ${auditorium}`;
-            if (aboutToStart) strEnd = ` ~F;~C1;gaat starten~N;~C3; ${auditorium}`;
+            if (hasStarted) strEnd = ` ~C1;is gestart~C3; ${auditorium}`;
+            if (isAboutToStart) strEnd = ` ~F;~C1;gaat starten~N;~C3; ${auditorium}`;
 
             let str = overwriteEnd(strStart, strEnd);
 
@@ -280,9 +280,9 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
             const minsRemaining = Math.floor((show.intermissionEndTime!.getTime() - Date.now()) / 60000);
 
             let strStart = padEnd(`~C1;PAUZE~C3; ${title}${tags}`, 60);
-            let strEnd = ` ~C1;± ${minsRemaining} min~C3; ${auditorium}`;
+            let strEnd = ` ~C1;nog ${minsRemaining} min~C3; ${auditorium}`;
 
-            if (minsRemaining < 1) strEnd = ` ~F;~C1;<1 min~N;~C3; ${auditorium}`;
+            if (minsRemaining < 1) strEnd = ` ~F;~C1;nog <1 min~N;~C3; ${auditorium}`;
             if (minsRemaining < 0) strEnd = ` ~C1;is hervat~C3; ${auditorium}`;
 
             let str = overwriteEnd(strStart, strEnd);
