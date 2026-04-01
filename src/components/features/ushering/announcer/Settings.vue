@@ -14,7 +14,7 @@ const emit = defineEmits(['regenerate', 'previewAnnouncement', 'scheduleAnnounce
 
 const intermissionDuration = useLocalStorage('default-intermission-duration', 12) // duration of intermissions in minutes
 
-const preferredVoices = useLocalStorage<(keyof typeof voices)[]>('preferred-voices', [defaultVoiceKey], { mergeDefaults: true });
+const preferredVoices = useLocalStorage<string[]>('preferred-voices', [defaultVoiceKey], { mergeDefaults: true });
 const voiceBehaviour = useLocalStorage<'roundrobin'>('voice-behaviour', 'roundrobin'); // only one behaviour for now, but maybe more in the future
 
 const chimeSound = useLocalStorage('chime-sound', 0); // which chime sound to use before announcements
@@ -78,7 +78,7 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
                     </template>
                 </InputGroup>
                 <div>
-                    <span class="label">Stem</span>
+                    <span class="label">Stemmen</span>
                     <VoicesSelector v-model="preferredVoices" @update:modelValue="emit('regenerate')" />
                 </div>
                 <!-- <InputGroup type="select" id="voiceBehaviour" v-model="voiceBehaviour">
@@ -94,11 +94,11 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
                     [...voices.chimes.sounds,
                     ...defaultVoice.sounds.filter(id => !id.startsWith('auditorium'))],
                     defaultVoice.sounds.filter(id => id.startsWith('auditorium')),
-                    ...preferredVoices.map(e => voices[e.toLowerCase()]?.additionalSounds)
+                    ...preferredVoices.map(e => voices[e]?.additionalSounds)
                 ]" v-show="ids?.length > 0">
                     <Button class="secondary manual-sound-button" v-for="id of ids"
                         @click="emit('previewAnnouncement', [{ spriteName: id, offset: 0 }], undefined, false)"
-                        :class="{ translucent: !id.startsWith('chime') && !preferredVoices.some(e => voices[e].sounds.includes(id)) }">
+                        :class="{ translucent: !id.startsWith('chime') && !preferredVoices.some(e => voices[e]?.sounds.includes(id)) }">
                         <Icon v-if="id.startsWith('chime')" style="--size: 16px; margin-right: 0;">music_note
                         </Icon>
                         <span v-else>

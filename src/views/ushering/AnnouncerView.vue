@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, onBeforeMount } from 'vue';
+import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, computed } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
 import { Announcement, AnnouncementRule, Show } from '@/scripts/types.ts';
-import { voices, getSoundInfo, Voice, defaultVoice, defaultVoiceKey } from '@/scripts/voices';
+import { voices, Voice, defaultVoice, defaultVoiceKey, preloadVoiceAudio } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
@@ -22,7 +22,7 @@ const main = useTemplateRef('main');
 const presetRules = inject<Ref<AnnouncementRule[]>>('presetRules', ref(presetRulesDefault));
 const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true });
 
-const preferredVoices = useStorage<(keyof typeof voices)[]>('preferred-voices', [defaultVoiceKey], localStorage, { mergeDefaults: true });
+const preferredVoices = useStorage<string[]>('preferred-voices', [defaultVoiceKey], localStorage, { mergeDefaults: true });
 
 const chimeSound = useStorage('chime-sound', 0, localStorage); // which chime sound to use before announcements
 
@@ -34,17 +34,6 @@ store.$subscribe(() => scheduleAnnouncements(), { deep: true })
 
 let interval: NodeJS.Timeout | null = null;
 
-onBeforeMount(() => {
-    for (const key of preferredVoices.value) {
-        if (!voices[key]) {
-            preferredVoices.value = preferredVoices.value.filter(k => k !== key);
-        }
-    }
-    if (preferredVoices.value.length === 0) {
-        preferredVoices.value = [defaultVoiceKey];
-    }
-})
-
 onMounted(() => {
     scheduleAnnouncements();
     interval = setInterval(() => generateAndEnqueue(), 10000);
@@ -54,6 +43,43 @@ onBeforeUnmount(() => {
     if (interval) clearInterval(interval);
     cleanupAnnouncements();
 })
+
+const enabledVoices = computed(() =>
+    preferredVoices.value
+        .map(id => voices[id])
+        .filter((voice): voice is Voice => !!voice)
+);
+
+const preloadedVoices = computed(() => [voices.chimes, ...enabledVoices.value]);
+
+watch(
+    () => [Object.keys(voices).join('|'), preferredVoices.value.join('|')],
+    sanitizePreferredVoices,
+    { immediate: true }
+);
+
+watch(
+    () => [Object.keys(voices).join('|'), ...preloadedVoices.value.map(voice => voice.file)],
+    () => {
+        for (const voice of preloadedVoices.value) {
+            preloadVoiceAudio(voice).catch(error => console.warn('Kon voice niet preloaden', error));
+        }
+    },
+    { immediate: true }
+);
+
+function sanitizePreferredVoices() {
+    const normalized = [...new Set(preferredVoices.value.filter(key => !!voices[key] && key !== 'chimes'))];
+    if (!normalized.includes(defaultVoiceKey)) {
+        normalized.unshift(defaultVoiceKey);
+    }
+    const hasChanged =
+        normalized.length !== preferredVoices.value.length ||
+        normalized.some((value, index) => value !== preferredVoices.value[index]);
+    if (hasChanged) {
+        preferredVoices.value = normalized;
+    }
+}
 
 /**
  * Clean up all scheduled announcements and audio elements
@@ -145,7 +171,7 @@ async function generateAndEnqueue() {
 
 async function generateAudio(announcement: Announcement) {
     if (announcement.audio) return;
-    const segmentsWithVoices = prepareSegments(announcement.segments, preferredVoices.value.map(s => voices[s]));
+    const segmentsWithVoices = prepareSegments(announcement.segments, enabledVoices.value);
     announcement.audio = await assembleAudio(segmentsWithVoices);
 }
 
@@ -242,7 +268,7 @@ function assembleAudio(segments: { voice: Voice; spriteName: string; offset: num
 
 async function previewAnnouncement(
     segments: { spriteName: string; offset: number }[],
-    selectedVoices: Voice[] = preferredVoices.value.map(s => voices[s]),
+    selectedVoices: Voice[] = enabledVoices.value,
     includeChime: boolean = true
 ) {
     const preparedSegments = prepareSegments(segments, selectedVoices, includeChime);
@@ -283,7 +309,7 @@ const { isOverDropZone } = useDropZone(main, {
                         Upload eventueel een recenter bestand of plan handmatig omroepen in.
                     </p>
                 </template>
-                <ul id="upcoming-announcements" class="scrollable-list" style="max-height: none;">
+                <ul id="upcoming-announcements" class="list scroll" style="max-height: none;">
                     <TransitionGroup name="list">
                         <ScheduledAnnouncement
                             v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"

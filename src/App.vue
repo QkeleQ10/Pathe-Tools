@@ -43,7 +43,7 @@ const aboutOpen = ref(false);
 
             <div class="flex" style="align-items: center; gap: 0;">
                 <a @click="aboutOpen = true" title="Over deze website">
-                    <Icon>info</Icon>
+                    <Icon>help</Icon>
                 </a>
                 <div id="clock">{{ format(now, 'HH:mm:ss') }}</div>
             </div>

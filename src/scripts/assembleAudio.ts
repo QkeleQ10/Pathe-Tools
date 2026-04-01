@@ -1,4 +1,4 @@
-import { Voice } from '@/scripts/voices';
+import { Voice, getVoiceFileBytes } from '@/scripts/voices';
 
 // Helper to encode an AudioBuffer as a simple WAV blob
 function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
@@ -57,8 +57,8 @@ export async function assembleAudioClient(
     const decodedMap = new Map<Voice, AudioBuffer>();
     for (const { voice } of segments) {
         if (!decodedMap.has(voice)) {
-            const resp = await fetch(voice.file);
-            const data = await resp.arrayBuffer();
+            const bytes = await getVoiceFileBytes(voice);
+            const data = bytes.slice().buffer;
             const decoded = await audioCtx.decodeAudioData(data);
             decodedMap.set(voice, decoded);
         }

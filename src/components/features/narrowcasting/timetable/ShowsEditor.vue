@@ -113,7 +113,7 @@ function addEditedIntermission() {
             <b>Let op:</b> enkele filmtitels zijn erg lang en worden mogelijk afgekapt.
         </p>
 
-        <ul class="scrollable-list" ref="list" style="max-height: calc(95vh - 200px);">
+        <ul class="list scroll" ref="list" style="max-height: calc(95vh - 200px);">
             <TransitionGroup name="list">
 
                 <li v-for="(show) in [...shows].sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())"

@@ -62,6 +62,15 @@ button.large {
     padding-block: 16px;
 }
 
+button.icon {
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    min-width: 0;
+    justify-content: center;
+    background-color: transparent;
+}
+
 button.primary {
     color: #090a0b;
     background-color: var(--yellow2);

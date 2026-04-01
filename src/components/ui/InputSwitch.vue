@@ -98,8 +98,8 @@ input[type="checkbox"]::after {
     position: absolute;
     top: 1.5px;
     left: 1.5px;
-    height: 18px;
-    width: 18px;
+    height: 17px;
+    width: 17px;
     border-radius: 12px;
 
     background-color: #fff;

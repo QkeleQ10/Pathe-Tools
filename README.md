@@ -12,3 +12,11 @@
 ## Usage
 
 A live demo can be found at https://qkeleq10.github.io/Pathe-Tools. For testing purposes, upload a file from RosettaBridge such as [this one](https://1drv.ms/u/c/703398955c3ef70c/EQz3PlyVmDMggHAAygEAAAABKnVDcmVGCHbutEzuJ_Nk7Q?e=nINHVR).
+
+## Voice imports
+
+The announcer now ships with one built-in voice (`Quinten`) plus the chime sound.
+
+Additional voices can be imported in the announcer settings by providing a metadata JSON URL.
+
+The JSON must contain `file` and `sprite` fields compatible with the `Voice` format; relative audio file paths are resolved relative to the JSON URL.

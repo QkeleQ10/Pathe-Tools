@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { getSoundInfo, voices } from '@/scripts/voices';
 
 const model = defineModel<{ spriteName: string; offset: number }[]>();
@@ -10,7 +11,7 @@ const props = defineProps({
     },
 });
 
-const allSounds = [...new Set(Object.values(voices).flatMap(voice => voice.sounds))];
+const allSounds = computed(() => [...new Set(Object.values(voices).flatMap(voice => voice.sounds))]);
 
 function addSegment() {
     model.value.push({
@@ -36,7 +37,7 @@ function sentenceCase(string: string) {
     <Transition>
         <ModalDialog v-if="showAnnouncementBuilder" @dismiss="showAnnouncementBuilder = false">
             <h3>Omroeponderdelen</h3>
-            <ul v-if="model.length" class="scrollable-list">
+            <ul v-if="model.length" class="list scroll">
                 <li class="segment" v-for="(segment, i) in model" :key="i" style="position: relative;">
                     <Input type="text" :id="'spriteName' + i" v-model="segment.spriteName" :spellcheck="false"
                         autocomplete="off" autocapitalize="off" :list="'spriteName' + i + 'datalist'" />
