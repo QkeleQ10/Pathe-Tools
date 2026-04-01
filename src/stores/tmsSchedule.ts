@@ -16,7 +16,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     const flags = ref<string[]>([]);
 
 
-    const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
+    const intermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
 
     async function filesUploaded(files: FileList | File[]) {
         try {

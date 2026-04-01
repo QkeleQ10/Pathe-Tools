@@ -17,7 +17,7 @@ const now = inject<Ref<Date>>('now');
 
 const store = useTmsScheduleStore();
 
-const intermissionDuration = useStorage('intermission-duration', 15)
+const intermissionDuration = useStorage('default-intermission-duration', 12)
 
 const addresses = useStorage('addresses', ["10.10.87.81", "10.10.87.82"]);
 

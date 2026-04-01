@@ -12,10 +12,10 @@ const dialogActive = ref(false);
 const emit = defineEmits(['regenerate', 'previewAnnouncement', 'scheduleAnnouncements']);
 
 
-const intermissionDuration = useLocalStorage('intermission-duration', 15) // duration of intermissions in minutes
+const intermissionDuration = useLocalStorage('default-intermission-duration', 12) // duration of intermissions in minutes
 
 const preferredVoices = useLocalStorage<(keyof typeof voices)[]>('preferred-voices', [defaultVoiceKey], { mergeDefaults: true });
-const voiceBehaviour = useLocalStorage('voice-behaviour', 'roundrobin');
+const voiceBehaviour = useLocalStorage<'roundrobin'>('voice-behaviour', 'roundrobin'); // only one behaviour for now, but maybe more in the future
 
 const chimeSound = useLocalStorage('chime-sound', 0); // which chime sound to use before announcements
 
@@ -43,6 +43,12 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
         <template #button-content>
             <Icon>settings</Icon>
             Instellingen
+            <small v-if="customRules.filter(r => r.enabled).length === 1" style="margin-left: 4px;">
+                ({{customRules.filter(r => r.enabled).length}} eigen regel actief)
+            </small>
+            <small v-else-if="customRules.filter(r => r.enabled).length > 1" style="margin-left: 4px;">
+                ({{customRules.filter(r => r.enabled).length}} eigen regels actief)
+            </small>
         </template>
 
         <template #navigation>
@@ -58,7 +64,7 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
             <SettingsSection category-id="general" title="Algemeen">
                 <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration" min="0"
                     max="30">
-                    <template #label>Duur filmpauzes</template>
+                    <template #label>Standaardduur filmpauzes</template>
                     <span class="unit">minuten</span>
                 </InputGroup>
             </SettingsSection>

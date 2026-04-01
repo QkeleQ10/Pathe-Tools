@@ -12,6 +12,7 @@ const lastSentPacket = inject<string>('lastSentPacket', null);
 const lastReceivedPacket = inject<any>('lastReceivedPacket', null);
 const presetConfigurations = inject<{ [key: string]: { name: string, lines: () => DisplayLine[] } }>('presetConfigurations', {});
 
+const intermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
 
 const addresses = useStorage('addresses', ["10.10.87.81", "10.10.87.82"]);
 
@@ -106,6 +107,12 @@ function showFormattingInfo() {
                 <Button class="tertiary" @click="showFormattingInfo">
                     Opmaak
                 </Button>
+
+                <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration" min="0"
+                    max="30">
+                    <template #label>Standaardduur filmpauzes</template>
+                    <span class="unit">minuten</span>
+                </InputGroup>
             </SettingsSection>
 
             <SettingsSection category-id="show-details" title="Voorstellingen">

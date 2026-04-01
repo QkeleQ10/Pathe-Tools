@@ -18,7 +18,8 @@ const userHasInteracted = ref(false);
 document.addEventListener('click', () => userHasInteracted.value = true, { once: true });
 provide('userHasInteracted', userHasInteracted);
 
-const dismissedNotification = useStorage('dismissedNotification', false);
+const dismissedNotification = useStorage('dismissedNotification', true);
+const dismissedNotification2 = useStorage('dismissedNotificationI', false);
 
 const aboutOpen = ref(false);
 </script>
@@ -56,10 +57,10 @@ const aboutOpen = ref(false);
             <h3>Over</h3>
             <p>Quinten Althues © 2024-{{ new Date().getFullYear() }}</p>
             <p>
-                <b>Problemen of feedback?</b> Spreek me vooral aan in Pathé Utrecht Leidsche Rijn of bereik me via
-                WhatsApp of e-mail (selecteer de knop hieronder)!
+                <b>Problemen of feedback?</b> Bereik me via e-mail (knop hieronder), stuur me een appje of zoek me eens
+                op
+                bij Pathé Utrecht Leidsche Rijn!
             </p>
-            <br>
             <div class="flex" style="gap: 24px;">
                 <Button class="tertiary" title="E-mail" href="mailto:quinten@althues.nl">
                     E-mail
@@ -67,11 +68,10 @@ const aboutOpen = ref(false);
                 <Button class="tertiary" title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
                     GitHub
                 </Button>
+                <Button class="tertiary" @click="dismissedNotification = false">
+                    Waarom is de website niet meer zoals eerst?
+                </Button>
             </div>
-            <br>
-            <Button class="tertiary" @click="dismissedNotification = false">
-                Waarom is de website niet meer zoals eerst?
-            </Button>
         </ModalDialog>
     </Transition>
 
@@ -92,6 +92,15 @@ const aboutOpen = ref(false);
                 <br>
                 Groetjes,<br>
                 Quinten
+            </p>
+        </ModalDialog>
+    </Transition>
+    <Transition>
+        <ModalDialog v-if="!dismissedNotification2" @dismiss="dismissedNotification2 = true">
+            <h3>Belangrijk</h3>
+            <p>
+                De standaardduur van filmpauzes is gereset naar 12 minuten.<br>
+                Pas zo nodig de instelling opnieuw aan.
             </p>
         </ModalDialog>
     </Transition>

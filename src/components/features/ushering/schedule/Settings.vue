@@ -18,7 +18,7 @@ const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the d
 
 const fontSize = useStorage('schedule-font-size', 12.5) // font size in pixels
 
-const intermissionDuration = useStorage('intermission-duration', 15) // duration of intermissions in minutes
+const intermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
 
 </script>
 
@@ -59,7 +59,7 @@ const intermissionDuration = useStorage('intermission-duration', 15) // duration
                 </div>
                 <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration" min="0"
                     max="30">
-                    <template #label>Duur filmpauzes</template>
+                    <template #label>Standaardduur filmpauzes</template>
                     <span class="unit">minuten</span>
                 </InputGroup>
             </SettingsSection>
