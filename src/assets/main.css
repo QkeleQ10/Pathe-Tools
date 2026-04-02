@@ -2,28 +2,28 @@
     font-family: Heebo;
     font-style: normal;
     font-weight: 400;
-    src: url('@assets/typefaces/Heebo-Regular.woff2') format("woff2")
+    src: url('@assets/typefaces/Heebo-Regular.woff2') format("woff2");
 }
 
 @font-face {
     font-family: Heebo;
     font-style: normal;
     font-weight: 500;
-    src: url('@assets/typefaces/Heebo-Medium.woff2') format("woff2")
+    src: url('@assets/typefaces/Heebo-Medium.woff2') format("woff2");
 }
 
 @font-face {
     font-family: Heebo;
     font-style: normal;
     font-weight: 700;
-    src: url('@assets/typefaces/Heebo-Bold.woff2') format("woff2")
+    src: url('@assets/typefaces/Heebo-Bold.woff2') format("woff2");
 }
 
 @font-face {
     font-family: Heebo;
     font-style: normal;
     font-weight: 800;
-    src: url('@assets/typefaces/Heebo-ExtraBold.woff2') format("woff2")
+    src: url('@assets/typefaces/Heebo-ExtraBold.woff2') format("woff2");
 }
 
 @font-face {
