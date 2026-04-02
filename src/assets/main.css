@@ -264,6 +264,10 @@ em.label {
         max-height: 500px;
     }
 
+    &.short {
+        max-height: 220px;
+    }
+
     &:empty {
         display: none;
     }

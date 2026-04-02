@@ -2,7 +2,7 @@
 import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, computed } from 'vue';
 import { useDropZone, useStorage, useLocalStorage } from '@vueuse/core';
 import { Announcement, AnnouncementRule, Show } from '@/scripts/types.ts';
-import { voices, Voice, defaultVoice, defaultVoiceKey, preloadVoiceAudio } from '@/scripts/voices';
+import { voices, Voice, defaultVoice, defaultVoiceKey, preloadVoiceAudio, findAuditoriumSound } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
@@ -25,18 +25,6 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStor
 const preferredVoices = useStorage<string[]>('preferred-voices', [defaultVoiceKey], localStorage, { mergeDefaults: true });
 
 const chimeSound = useStorage('chime-sound', 0, localStorage); // which chime sound to use before announcements
-
-const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('announcer-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to sound sprite names, e.g. "PULR 1" => "auditorium1"
-const mapAuditorium = (auditorium) => {
-    if (auditoriumMappings[auditorium]) {
-        return auditoriumMappings[auditorium];
-    }
-    const num = parseInt(auditorium?.replace(/^\w+\s/, '')?.split(' ')[0]);
-    if (!isNaN(num) && num > 0 && num <= 20) {
-        return `auditorium${String(num).padStart(2, '0')}`;
-    }
-    return null;
-}
 
 const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([]);
 const customAnnouncementDate = ref<Date>(new Date());
@@ -133,7 +121,7 @@ async function scheduleAnnouncements(debug: boolean = false) {
                     show: show,
                     segments: rule.segments.map(segment => ({
                         ...segment,
-                        spriteName: segment.spriteName.replace('auditorium#', mapAuditorium(show.auditorium) || segment.spriteName),
+                        spriteName: segment.spriteName.replace('auditorium#', findAuditoriumSound(show.auditorium)),
                     })),
                     audio: null,
                 };

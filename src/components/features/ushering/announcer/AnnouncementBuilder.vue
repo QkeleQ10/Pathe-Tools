@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SpriteSelector from './SpriteSelector.vue';
+
 const model = defineModel<{ spriteName: string; offset: number }[]>();
 const showAnnouncementBuilder = defineModel<boolean>('show', { default: false });
 const props = defineProps({
