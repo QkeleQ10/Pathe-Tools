@@ -52,7 +52,7 @@ const selectableVoices = computed(() => getSelectableVoiceEntries());
 <template>
 	<div class="voices-selector">
 
-		<ul class="list voices-list">
+		<ul class="list scroll voices-list">
 			<li v-for="entry in selectableVoices" :key="entry.id" class="voice-item">
 				<InputSwitch :modelValue="model.includes(entry.id)"
 					@update:modelValue="event => voiceToggled(event, entry.id)" :identifier="entry.id">

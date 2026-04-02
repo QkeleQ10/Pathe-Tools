@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { useStorage } from '@vueuse/core';
+import { useStorage, useLocalStorage } from '@vueuse/core';
 import chimes from '@assets/sounds/chimes.ogg';
 import voiceQuinten from '@assets/sounds/voices/quinten.ogg';
 
@@ -23,6 +23,8 @@ interface StoredImportedVoice extends VoiceData {
 
 const importedVoicesStorageKey = 'imported-voices';
 const importedVoicesStore = useStorage<StoredImportedVoice[]>(importedVoicesStorageKey, [], localStorage, { mergeDefaults: true });
+
+const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('announcer-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to sound sprite names, e.g. "PULR 1" => "auditorium1"
 
 export class Voice {
     name?: string;
@@ -268,4 +270,18 @@ export function getSoundInfo(string: string) {
     }
 
     return { id, name, valid, probability };
+}
+
+export function findAuditoriumSound(auditorium: string): string {
+    if (auditoriumMappings.value[auditorium]) 
+        return auditoriumMappings.value[auditorium];
+
+    if (auditorium === 'IMAX')
+        return 'auditorium01';
+
+    const num = parseInt(auditorium?.replace(/^\w+\s/, '')?.split(' ')[0]);
+    if (!isNaN(num) && num > 0 && num <= 20)
+        return `auditorium${String(num).padStart(2, '0')}`;
+
+    return '';
 }

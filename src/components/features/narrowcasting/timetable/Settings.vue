@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, h, inject } from 'vue';
-import { useStorage } from '@vueuse/core';
+import { ref, h, inject, computed } from 'vue';
+import { useLocalStorage, useStorage } from '@vueuse/core';
 import { DisplayLine } from '@/scripts/types';
 import { showDialog } from '@/scripts/dialogManager';
+import { useTmsScheduleStore } from '@/stores/tmsSchedule';
+
+const store = useTmsScheduleStore();
 
 const dialogActive = ref(false);
 
@@ -19,6 +22,11 @@ const addresses = useStorage('addresses', ["10.10.87.81", "10.10.87.82"]);
 const aboutToStartTime = useStorage('about-to-start-time', 0);
 const isStartedTime = useStorage('is-started-time', 9);
 const hideTime = useStorage('hide-time', 17);
+
+const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('timetable-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to sound sprite names, e.g. "PULR 1" => "auditorium1"
+const auditoriums = computed(() => {
+    return [...new Set(store.table.map(show => show.auditorium).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
+});
 
 const animation = useStorage('animation', 0x00);
 const animationSpeed = useStorage('animation-speed', 0x07);
@@ -79,6 +87,7 @@ function showFormattingInfo() {
         <template #navigation>
             <SettingsCategoryButton category-id="general" label="Algemeen" icon="settings" />
             <SettingsCategoryButton category-id="show-details" label="Voorstellingen" icon="list" />
+            <SettingsCategoryButton category-id="auditoriums" label="Zalen" icon="room_preferences" />
             <SettingsCategoryButton category-id="display" label="Weergave" icon="display_settings" />
             <SettingsCategoryButton category-id="connection" label="Verbinding" icon="host" />
             <SettingsCategoryButton category-id="advanced" label="Geavanceerd" icon="build" />
@@ -152,6 +161,46 @@ function showFormattingInfo() {
                     na de aanvangstijd. Vanaf {{ hideTime }} minuten na de aanvangstijd worden
                     voorstellingen verborgen.</small>
 
+            </SettingsSection>
+
+            <SettingsSection category-id="auditoriums" title="Zalen">
+                <div>
+                    <span class="label">Weergave zalen</span>
+                    <ul class="list scroll short auditorium-mapping-list">
+                        <li v-for="(spriteName, auditorium) in auditoriumMappings" :key="auditorium" class="grid">
+                            <span>{{ auditorium }}</span><br>
+                            <small>
+                                '{{ auditoriumMappings[auditorium] || auditorium.replace(/^\w+\s/, '').split(' ')[0] }}'
+                            </small>
+                            <Input :id="'auditorium' + auditorium"
+                                v-model="auditoriumMappings[auditorium]"
+                                :placeholder="auditorium.replace(/^\w+\s/, '').split(' ')[0]"
+                                @blur="emit('loadWalkIns')"
+                                style="position: absolute; top: 50%; right: 64px; width: calc(50%); translate: 0 -50%;" />
+                            <div class="actions">
+                                <Icon class="delete"
+                                    @click="delete auditoriumMappings[auditorium]; emit('loadWalkIns')">
+                                    close
+                                </Icon>
+                            </div>
+                        </li>
+                        <li v-for="auditorium in auditoriums.filter(a => !(a in auditoriumMappings))" :key="auditorium">
+                            <span>{{ auditorium }}</span><br>
+                            <small>
+                                '{{ auditorium.replace(/^\w+\s/, '').split(' ')[0] }}'
+                            </small>
+                            <div class="actions">
+                                <Icon class="edit"
+                                    @click="auditoriumMappings[auditorium] = auditorium.replace(/^\w+\s/, '').split(' ')[0];">
+                                    edit
+                                </Icon>
+                            </div>
+                        </li>
+                    </ul>
+                    <p v-if="!auditoriums.length && !Object.keys(auditoriumMappings).length">
+                        Upload eerst een bestand.
+                    </p>
+                </div>
             </SettingsSection>
 
             <SettingsSection category-id="display" title="Weergave">
@@ -341,6 +390,24 @@ function showFormattingInfo() {
 </template>
 
 <style scoped>
+.auditorium-mapping-list {
+    li {
+        position: relative;
+
+        small {
+            opacity: .75;
+        }
+
+        .actions {
+            position: absolute;
+            right: 12px;
+            bottom: 8px;
+            display: flex;
+            gap: 4px;
+        }
+    }
+}
+
 :deep(#motd) {
     font-family: monospace;
     font-size: 14px;

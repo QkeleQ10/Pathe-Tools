@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, useTemplateRef, onBeforeUnmount, onMounted, Ref, h, provide } from 'vue';
-import { useStorage, useDropZone } from '@vueuse/core';
+import { useStorage, useDropZone, useLocalStorage } from '@vueuse/core';
 import { DisplayLine, TimetableShow } from '@/scripts/types';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule.ts';
 import * as qmln from '@/scripts/qmln.ts';
@@ -37,6 +37,8 @@ provide('lastReceivedPacket', lastReceivedPacket);
 const aboutToStartTime = useStorage('about-to-start-time', 0);
 const isStartedTime = useStorage('is-started-time', 9);
 const hideTime = useStorage('hide-time', 17);
+
+const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('timetable-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to sound sprite names, e.g. "PULR 1" => "auditorium1" 
 
 const animation = useStorage('animation', 0x00);
 const animationSpeed = useStorage('animation-speed', 0x07);
@@ -554,9 +556,7 @@ async function refresh() {
         .map((show, i) => {
             const cleanedTitle = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
             const transformedAuditorium =
-                show.auditorium === 'Rooftop' ? 'RT' :
-                    show.auditorium === 'IMAX' ? '1' :
-                        show.auditorium.replace(/^\w+\s/, '').split(' ')[0];
+                auditoriumMappings.value[show.auditorium] || show.auditorium.replace(/^\w+\s/, '').split(' ')[0];
 
             return {
                 i,

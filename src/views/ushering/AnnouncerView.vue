@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, computed } from 'vue';
-import { useDropZone, useStorage } from '@vueuse/core';
+import { useDropZone, useStorage, useLocalStorage } from '@vueuse/core';
 import { Announcement, AnnouncementRule, Show } from '@/scripts/types.ts';
-import { voices, Voice, defaultVoice, defaultVoiceKey, preloadVoiceAudio } from '@/scripts/voices';
+import { voices, Voice, defaultVoice, defaultVoiceKey, preloadVoiceAudio, findAuditoriumSound } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
@@ -12,7 +12,7 @@ import Settings, { presetRulesDefault } from '@/components/features/ushering/ann
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
-const store = useTmsScheduleStore()
+const store = useTmsScheduleStore();
 const now = inject<Ref<Date>>('now');
 
 const userHasInteracted = inject<Ref<boolean>>('userHasInteracted');
@@ -121,7 +121,7 @@ async function scheduleAnnouncements(debug: boolean = false) {
                     show: show,
                     segments: rule.segments.map(segment => ({
                         ...segment,
-                        spriteName: segment.spriteName.replace('#', `${String(show.auditoriumNumber).padStart(2, '0')}`),
+                        spriteName: segment.spriteName.replace('auditorium#', findAuditoriumSound(show.auditorium)),
                     })),
                     audio: null,
                 };
