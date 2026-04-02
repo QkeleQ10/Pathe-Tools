@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { provide, ref, watch } from 'vue';
+import { provide, ref, computed, watch } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
 import { AnnouncementRule } from '@/scripts/types';
 import { voices, getSoundInfo, defaultVoice, defaultVoiceKey } from '@/scripts/voices';
 
 import RuleList from './RuleList.vue';
 import VoicesSelector from './VoicesSelector.vue';
+import { useTmsScheduleStore } from '@/stores/tmsSchedule';
+import SpriteSelector from './SpriteSelector.vue';
+
+const store = useTmsScheduleStore();
 
 const dialogActive = ref(false);
 
@@ -18,6 +22,19 @@ const preferredVoices = useLocalStorage<string[]>('preferred-voices', [defaultVo
 const voiceBehaviour = useLocalStorage<'roundrobin'>('voice-behaviour', 'roundrobin'); // only one behaviour for now, but maybe more in the future
 
 const chimeSound = useLocalStorage('chime-sound', 0); // which chime sound to use before announcements
+
+const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('announcer-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to sound sprite names, e.g. "PULR 1" => "auditorium1"
+const auditoriums = computed(() => [...new Set(store.table.map(show => show.auditorium))].sort());
+const mapAuditorium = (auditorium) => {
+    if (auditoriumMappings[auditorium]) {
+        return auditoriumMappings[auditorium];
+    }
+    const num = parseInt(auditorium?.replace(/^\w+\s/, '')?.split(' ')[0]);
+    if (!isNaN(num) && num > 0 && num <= 20) {
+        return `auditorium${String(num).padStart(2, '0')}`;
+    }
+    return null;
+}
 
 const presetRulesOverrides = useLocalStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {}, { mergeDefaults: true });
 const presetRules = ref<AnnouncementRule[]>(
@@ -55,6 +72,7 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
             <SettingsCategoryButton category-id="general" label="Algemeen" icon="settings" />
             <SettingsCategoryButton category-id="voice" label="Geluid" icon="voice_selection" />
             <SettingsCategoryButton category-id="sprites" label="Geluidsfragmenten" icon="audio_file" />
+            <SettingsCategoryButton category-id="auditoriums" label="Zalen" icon="room_preferences" />
             <SettingsCategoryButton category-id="preset" label="Standaardregels" icon="flowchart" />
             <SettingsCategoryButton category-id="custom" label="Eigen regels" icon="flowchart" />
         </template>
@@ -108,6 +126,40 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
                 </div>
             </SettingsSection>
 
+            <SettingsSection category-id="auditoriums" title="Zalen">
+                <div>
+                    <span class="label">Geluidsfragmenten</span>
+                    <ul class="list auditorium-mapping-list">
+                        <li v-for="(spriteName, auditorium) in auditoriumMappings" :key="auditorium">
+                            <span>{{ auditorium }}</span><br>
+                            <SpriteSelector :id="'auditorium' + auditorium"
+                                :datalist-id="'auditorium' + auditorium + 'datalist'"
+                                v-model="auditoriumMappings[auditorium]" :placeholder="mapAuditorium(auditorium)"
+                                @update:modelValue="emit('scheduleAnnouncements')" style="width: calc(100% - 26px);" />
+                            <div class="actions">
+                                <Icon class="delete"
+                                    @click="delete auditoriumMappings[auditorium]; emit('scheduleAnnouncements')">
+                                    delete
+                                </Icon>
+                            </div>
+                        </li>
+                        <li v-for="auditorium in auditoriums.filter(a => !(a in auditoriumMappings))" :key="auditorium">
+                            <span>{{ auditorium }}</span><br>
+                            <small>'{{ getSoundInfo(mapAuditorium(auditorium)).name }}'</small>
+                            <div class="actions">
+                                <Icon class="edit"
+                                    @click="auditoriumMappings[auditorium] = mapAuditorium(auditorium) || ''; emit('scheduleAnnouncements')">
+                                    edit
+                                </Icon>
+                            </div>
+                        </li>
+                    </ul>
+                    <p v-if="!auditoriums.length && !Object.keys(auditoriumMappings).length">
+                        Upload eerst een bestand.
+                    </p>
+                </div>
+            </SettingsSection>
+
             <SettingsSection category-id="preset" title="Standaardregels">
                 <RuleList v-model="presetRules" :toggleOnly="true" @change="emit('scheduleAnnouncements')" />
             </SettingsSection>
@@ -121,6 +173,24 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
 </template>
 
 <style scoped>
+.auditorium-mapping-list {
+    li {
+        position: relative;
+
+        small {
+            opacity: .75;
+        }
+
+        .actions {
+            position: absolute;
+            right: 12px;
+            bottom: 8px;
+            display: flex;
+            gap: 4px;
+        }
+    }
+}
+
 .manual-sounds-list {
     display: flex;
     flex-wrap: wrap;
