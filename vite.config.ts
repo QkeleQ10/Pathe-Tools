@@ -30,7 +30,8 @@ export default defineConfig({
     },
     build: {
         outDir: 'dist',
-        cssMinify: 'esbuild'
+        cssMinify: 'esbuild',
+        target: 'es2015'
     },
     optimizeDeps: {
         exclude: ['vue-demi']
