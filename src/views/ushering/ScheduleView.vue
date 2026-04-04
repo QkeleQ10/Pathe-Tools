@@ -22,7 +22,7 @@ const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 1
 
 const fontSize = useStorage('schedule-font-size', 12.5) // font size in pixels
 
-const main = ref<HTMLElement>(null)
+const main = useTemplateRef('main')
 
 const pages = computed<UsherShow[][]>(() => {
     const plfRows = store.table?.filter(row => row.auditorium?.includes('4DX')) || []
@@ -59,7 +59,7 @@ const pages = computed<UsherShow[][]>(() => {
 
     const transformed = arr || [];
     // Split the transformed shows into two pages for display
-    const MAX_PAGE_SIZE = -(14 / 3) * fontSize.value + 105
+    const MAX_PAGE_SIZE = -(14 / 3) * fontSize.value + 106
     const overlap = 2
 
     const numPages = Math.ceil(transformed.length / MAX_PAGE_SIZE)
