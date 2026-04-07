@@ -19,7 +19,22 @@ const userHasInteracted = inject<Ref<boolean>>('userHasInteracted');
 
 const main = useTemplateRef('main');
 
-const presetRules = inject<Ref<AnnouncementRule[]>>('presetRules', ref(presetRulesDefault));
+const presetRulesOverrides = useLocalStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {}, { mergeDefaults: true });
+const presetRules = computed<AnnouncementRule[]>({
+    get: () => presetRulesDefault.map(rule => ({
+        ...rule,
+        enabled: presetRulesOverrides.value[rule.id] ?? rule.enabled,
+    })),
+    set: (rules) => {
+        console.log('Updating preset rules:', rules);
+        presetRulesOverrides.value = Object.fromEntries(
+            rules
+                .filter(rule => rule.enabled !== presetRulesDefault.find(r => r.id === rule.id)?.enabled)
+                .map(rule => [rule.id, rule.enabled])
+        );
+    },
+});
+
 const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true });
 
 const preferredVoices = useStorage<string[]>('preferred-voices', [defaultVoiceKey], localStorage, { mergeDefaults: true });
@@ -109,7 +124,10 @@ async function scheduleAnnouncements(debug: boolean = false) {
 
     let array: Announcement[] = [];
 
+    console.log(presetRules.value, customRules.value);
+
     for (const rule of [...presetRules.value, ...customRules.value]) {
+        console.log(rule.name, rule.enabled, rule);
         if (!rule.enabled) continue;
 
         let arr: Announcement[] = [];

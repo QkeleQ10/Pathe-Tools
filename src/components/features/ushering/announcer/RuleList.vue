@@ -12,6 +12,13 @@ const emit = defineEmits(['change']);
 
 // Emit a 'change' event whenever the rules array or its items change
 watch(rules, (newVal) => emit('change', newVal), { deep: true });
+
+// Function to toggle a rule's enabled state and trigger reactivity
+function toggleRule(rule: AnnouncementRule) {
+    rule.enabled = !rule.enabled;
+    // Trigger the computed setter by reassigning the array
+    rules.value = [...rules.value];
+}
 const props = defineProps({
     toggleOnly: {
         type: Boolean,
@@ -65,8 +72,7 @@ function addRule() {
 <template>
     <ul class="list rule-list" :class="{ 'toggle-only': toggleOnly }">
         <li class="rule" v-for="(rule, i) in rules" :key="rule.id" :class="{ active: rule.enabled }">
-
-            <InputSwitch :identifier="rule.id + 'enabled'" v-model="rule.enabled">
+            <InputSwitch :identifier="rule.id + 'enabled'" :modelValue="rule.enabled" @update:modelValue="toggleRule(rule)">
                 {{rule.name || ('\'' + rule.segments.map(segment => getSoundInfo(segment.spriteName).name).join(' ') +
                     '\'')
                 }}

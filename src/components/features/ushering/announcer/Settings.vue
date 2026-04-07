@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provide, ref, computed, watch } from 'vue';
+import { provide, ref, computed } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
 import { AnnouncementRule } from '@/scripts/types';
 import { voices, getSoundInfo, defaultVoice, defaultVoiceKey, findAuditoriumSound } from '@/scripts/voices';
@@ -29,20 +29,20 @@ const auditoriums = computed(() => {
 });
 
 const presetRulesOverrides = useLocalStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {}, { mergeDefaults: true });
-const presetRules = ref<AnnouncementRule[]>(
-    presetRulesDefault.map(rule => ({
+const presetRules = computed<AnnouncementRule[]>({
+    get: () => presetRulesDefault.map(rule => ({
         ...rule,
         enabled: presetRulesOverrides.value[rule.id] ?? rule.enabled,
-    }))
-);
-watch(presetRules, () => {
-    presetRulesOverrides.value = Object.fromEntries(
-        presetRules.value
-            .filter(rule => rule.enabled !== presetRulesDefault.find(r => r.id === rule.id)?.enabled)
-            .map(rule => [rule.id, rule.enabled])
-    );
-}, { deep: true });
-provide('presetRules', presetRules);
+    })),
+    set: (rules) => {
+        console.log('Updating preset rules:', rules);
+        presetRulesOverrides.value = Object.fromEntries(
+            rules
+                .filter(rule => rule.enabled !== presetRulesDefault.find(r => r.id === rule.id)?.enabled)
+                .map(rule => [rule.id, rule.enabled])
+        );
+    },
+});
 
 const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { mergeDefaults: true });
 </script>
@@ -69,6 +69,8 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
         </template>
 
         <template #content>
+
+            {{ presetRulesOverrides }}
 
             <SettingsSection category-id="general" title="Algemeen">
                 <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration" min="0"
