@@ -17,7 +17,9 @@ watch(rules, (newVal) => emit('change', newVal), { deep: true });
 function toggleRule(rule: AnnouncementRule) {
     rule.enabled = !rule.enabled;
     // Trigger the computed setter by reassigning the array
-    rules.value = [...rules.value];
+    if (rules.value) {
+        rules.value = [...rules.value];
+    }
 }
 const props = defineProps({
     toggleOnly: {
@@ -28,7 +30,7 @@ const props = defineProps({
 
 const properties = {
     scheduledTime: 'inloop',
-    showTime: 'start',
+    showTime: 'start voorprogramma',
     mainShowTime: 'start hoofdfilm',
     intermissionTime: 'pauze',
     creditsTime: 'aftiteling',
@@ -37,7 +39,7 @@ const properties = {
 
 const propertiesLong = {
     scheduledTime: 'de aanvangstijd van',
-    showTime: 'de start van',
+    showTime: 'de start van het voorprogramma van',
     mainShowTime: 'de start van de hoofdfilm van',
     intermissionTime: 'de pauze van',
     creditsTime: 'de aftiteling van',
@@ -64,15 +66,18 @@ function addRule() {
             playlistTitleExcludes: ''
         },
     };
-    rules.value.push(rule);
-    showEditDialog.value = true;
+    if (rules.value) {
+        rules.value.push(rule);
+        showEditDialog.value = true;
+    }
 }
 </script>
 
 <template>
     <ul class="list rule-list" :class="{ 'toggle-only': toggleOnly }">
         <li class="rule" v-for="(rule, i) in rules" :key="rule.id" :class="{ active: rule.enabled }">
-            <InputSwitch :identifier="rule.id + 'enabled'" :modelValue="rule.enabled" @update:modelValue="toggleRule(rule)">
+            <InputSwitch :identifier="rule.id + 'enabled'" :modelValue="rule.enabled"
+                @update:modelValue="toggleRule(rule)">
                 {{rule.name || ('\'' + rule.segments.map(segment => getSoundInfo(segment.spriteName).name).join(' ') +
                     '\'')
                 }}
@@ -104,7 +109,7 @@ function addRule() {
                 </template>
             </small>
 
-            <div class="actions" v-if="!toggleOnly">
+            <div class="actions" v-if="!toggleOnly && rules">
                 <Icon class="edit" @click="showEditDialog = true">
                     edit</Icon>
                 <Icon class="delete" @click="rules.splice(i, 1)">
@@ -168,7 +173,7 @@ function addRule() {
                         </div>
                     </div>
 
-                    <div class="buttons">
+                    <div class="buttons" v-if="rules">
                         <Button class="tertiary" @click="rules.splice(i, 1); showEditDialog = false;">
                             Regel verwijderen
                         </Button>
