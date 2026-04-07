@@ -26,7 +26,6 @@ const presetRules = computed<AnnouncementRule[]>({
         enabled: presetRulesOverrides.value[rule.id] ?? rule.enabled,
     })),
     set: (rules) => {
-        console.log('Updating preset rules:', rules);
         presetRulesOverrides.value = Object.fromEntries(
             rules
                 .filter(rule => rule.enabled !== presetRulesDefault.find(r => r.id === rule.id)?.enabled)
@@ -124,10 +123,7 @@ async function scheduleAnnouncements(debug: boolean = false) {
 
     let array: Announcement[] = [];
 
-    console.log(presetRules.value, customRules.value);
-
     for (const rule of [...presetRules.value, ...customRules.value]) {
-        console.log(rule.name, rule.enabled, rule);
         if (!rule.enabled) continue;
 
         let arr: Announcement[] = [];

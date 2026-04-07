@@ -35,7 +35,6 @@ const presetRules = computed<AnnouncementRule[]>({
         enabled: presetRulesOverrides.value[rule.id] ?? rule.enabled,
     })),
     set: (rules) => {
-        console.log('Updating preset rules:', rules);
         presetRulesOverrides.value = Object.fromEntries(
             rules
                 .filter(rule => rule.enabled !== presetRulesDefault.find(r => r.id === rule.id)?.enabled)
@@ -69,8 +68,6 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
         </template>
 
         <template #content>
-
-            {{ presetRulesOverrides }}
 
             <SettingsSection category-id="general" title="Algemeen">
                 <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration" min="0"
