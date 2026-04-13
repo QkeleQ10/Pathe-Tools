@@ -202,7 +202,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     function extractTags(string: string): { tags: string[], title: string } {
         let transformedString = string
-            .replace(/^\.+|\.+$/, '')
+            .replace(/^[\.,]+|[\.,]+$/, '')
             .replace("Nederlandse versie", "NL")
             .replace("Originele versie", "OV")
             .replace(" IMX", " IMAX")
