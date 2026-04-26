@@ -23,7 +23,7 @@ const aboutToStartTime = useStorage('about-to-start-time', 0);
 const isStartedTime = useStorage('is-started-time', 9);
 const hideTime = useStorage('hide-time', 17);
 
-const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('timetable-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to sound sprite names, e.g. "PULR 1" => "auditorium1"
+const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('timetable-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to displayed names, e.g. "PULR 3 (4DX)" => "3"; "Rooftop" => "RT"
 const auditoriums = computed(() => {
     return [...new Set(store.table.map(show => show.auditorium).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
 });
@@ -34,9 +34,9 @@ const animationSpeed = useStorage('animation-speed', 0x07);
 const theatreName = useStorage('theatre-name', 'Pathé');
 const motd = useStorage('motd', '');
 
-const additionalAgeRating = useStorage('additional-age-rating', true);
-const additionalPlf = useStorage('additional-plf', true);
-const additionalLanguage = useStorage('additional-language', true);
+const displayAgeTags = useStorage('additional-age-rating', true);
+const displayPlfTags = useStorage('additional-plf', true);
+const displayLanguageTags = useStorage('additional-language', true);
 
 const autoBlack = useStorage('auto-black', true);
 
@@ -127,13 +127,13 @@ function showFormattingInfo() {
             <SettingsSection category-id="show-details" title="Voorstellingen">
                 <div class="label">Aanvullende informatie</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                    <InputCheckbox class="enclose-box" identifier="additionalAgeRating" v-model="additionalAgeRating"
+                    <InputCheckbox class="enclose-box" identifier="displayAgeTags" v-model="displayAgeTags"
                         @update:model-value="emit('loadWalkIns')">16+
                     </InputCheckbox>
-                    <InputCheckbox class="enclose-box" identifier="additionalPlf" v-model="additionalPlf"
+                    <InputCheckbox class="enclose-box" identifier="displayPlfTags" v-model="displayPlfTags"
                         @update:model-value="emit('loadWalkIns')">PLF's
                     </InputCheckbox>
-                    <InputCheckbox class="enclose-box" identifier="additionalLanguage" v-model="additionalLanguage"
+                    <InputCheckbox class="enclose-box" identifier="displayLanguageTags" v-model="displayLanguageTags"
                         @update:model-value="emit('loadWalkIns')">Taal
                     </InputCheckbox>
                 </div>
@@ -172,8 +172,7 @@ function showFormattingInfo() {
                             <small>
                                 '{{ auditoriumMappings[auditorium] || auditorium.replace(/^\w+\s/, '').split(' ')[0] }}'
                             </small>
-                            <Input :id="'auditorium' + auditorium"
-                                v-model="auditoriumMappings[auditorium]"
+                            <Input :id="'auditorium' + auditorium" v-model="auditoriumMappings[auditorium]"
                                 :placeholder="auditorium.replace(/^\w+\s/, '').split(' ')[0]"
                                 @blur="emit('loadWalkIns')"
                                 style="position: absolute; top: 50%; right: 64px; width: calc(50%); translate: 0 -50%;" />

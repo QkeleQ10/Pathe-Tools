@@ -244,9 +244,9 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
             const title = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
             const auditorium = show.auditorium.padStart(auditoriumColumnWidth);
             const tags =
-                + displayPlfTags ? show.tags.plf.map(e => ` ${e}`).join('') : ''
-                    + displayLanguageTags ? show.tags.language.map(e => ` ${e}`).join('') : ''
-                        + displayAgeTags ? show.tags.age.map(e => ` ${e}`).join('') : '';
+                + displayPlfTags.value ? show.tags.plf.map(e => ` ${e}`).join('') : ''
+                    + displayLanguageTags.value ? show.tags.language.map(e => ` ${e}`).join('') : ''
+                        + displayAgeTags.value ? show.tags.age.map(e => ` ${e}`).join('') : '';
 
             let strStart = padEnd(`${format(show.scheduledTime, 'HH:mm')} ${title}${tags}`, 60);
             let strEnd = ` ${auditorium}`;

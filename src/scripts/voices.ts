@@ -276,12 +276,9 @@ export function findAuditoriumSound(auditorium: string): string {
     if (auditoriumMappings.value[auditorium])
         return auditoriumMappings.value[auditorium];
 
-    if (auditorium === 'IMAX')
-        return 'auditorium01';
-
     const num = parseInt(auditorium?.replace(/^\w+\s/, '')?.split(' ')[0]);
     if (!isNaN(num) && num > 0 && num <= 20)
         return `auditorium${String(num).padStart(2, '0')}`;
 
-    return '';
+    return auditorium.toLowerCase();
 }
