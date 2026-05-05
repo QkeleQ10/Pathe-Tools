@@ -280,5 +280,8 @@ export function findAuditoriumSound(auditorium: string): string {
     if (!isNaN(num) && num > 0 && num <= 20)
         return `auditorium${String(num).padStart(2, '0')}`;
 
+    if (auditorium === 'IMAX') return 'auditorium01';
+    if (auditorium === 'Amersfoort SCRNX') return 'auditorium08';
+
     return auditorium.toLowerCase();
 }
