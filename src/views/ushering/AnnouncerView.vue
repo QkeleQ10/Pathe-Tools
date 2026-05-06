@@ -247,8 +247,8 @@ function prepareSegments(
         offset: -1600
     });
 
-    // Loop through the preferred voices in random order to find one that has all the required sprites
-    for (const voice of preferredVoices) {
+    // Loop through the voices (preferred first) in random order to find one that has all the required sprites
+    for (const voice of [...preferredVoices, ...allVoices]) {
         // Check if the voice has all the required sprites
         if (segments.every(segment => segment.spriteName.startsWith('chime') || voice.sprite[segment.spriteName])) {
             preparedSegments.push(...segments.map(segment => ({
@@ -260,7 +260,7 @@ function prepareSegments(
         }
     }
 
-    // If no voice has all the required sprites, use a mix of voices (prefferred voices first)
+    // If no voice has all the required sprites, use a mix of voices (preferred voices first)
     preparedSegments.push(...segments.map(segment => {
         const voice = [...preferredVoices, ...allVoices].find(v => v.sprite[segment.spriteName]);
         return {

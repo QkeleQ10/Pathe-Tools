@@ -82,6 +82,7 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
                     <template #label>Geluid vóór omroep</template>
                     <template #input>
                         <option :value="0">Geluid 1</option>
+                        <option :value="1">Geluid 2</option>
                         <option :value="-1">Geen geluid</option>
                     </template>
                 </InputGroup>
