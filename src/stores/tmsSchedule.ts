@@ -64,7 +64,9 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                 endTime: obj.endTime && new Date(obj.endTime)
             }));
 
-            table.value = parsedTable;
+            const shiftedTable = shouldShiftToToday() ? shiftScheduleToToday(parsedTable) : parsedTable;
+
+            table.value = shiftedTable;
             metadata.value = json.metadata;
 
             resolve();
@@ -215,6 +217,43 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             tags: tagsString.length > 0 ? tagsString.split(' ') : [],
             title: transformedString.replace(tagsString, '').trim()
         };
+    }
+
+    function shouldShiftToToday(): boolean {
+        return Boolean(globalThis.shiftToToday);
+    }
+
+    function shiftScheduleToToday(schedule: Show[]): Show[] {
+        const firstScheduledTime = schedule.find(show => show.scheduledTime)?.scheduledTime;
+
+        if (!firstScheduledTime) return schedule;
+
+        const today = new Date();
+        const dayOffset = Math.floor((startOfDay(today).getTime() - startOfDay(firstScheduledTime).getTime()) / 86400000);
+
+        if (dayOffset === 0) return schedule;
+
+        return schedule.map(show => shiftShowDates(show, dayOffset));
+    }
+
+    function shiftShowDates(show: Show, dayOffset: number): Show {
+        const shiftDate = (date: Date) => new Date(date.getTime() + (dayOffset * 86400000));
+
+        return {
+            ...show,
+            scheduledTime: show.scheduledTime && shiftDate(show.scheduledTime),
+            showTime: show.showTime && shiftDate(show.showTime),
+            mainShowTime: show.mainShowTime && shiftDate(show.mainShowTime),
+            intermissionTime: show.intermissionTime && shiftDate(show.intermissionTime),
+            creditsTime: show.creditsTime && shiftDate(show.creditsTime),
+            endTime: show.endTime && shiftDate(show.endTime)
+        };
+    }
+
+    function startOfDay(date: Date): Date {
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        return start;
     }
 
     return { table, metadata, filesUploaded, status };

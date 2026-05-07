@@ -215,11 +215,15 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                                         <div>{{ show.auditorium.replace(/^\w+\s/, '') }}</div>
                                         <div>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}
                                         </div>
-                                        <div style="opacity: 1;">{{ !showStarted(show, now) ? show.admits : '' }}
+                                        <div style="opacity: 1;">
+                                            <Input v-if="!showStarted(show, now)" class="contents-only"
+                                                v-model.number="show.admits" type="number" autocomplete="off" min="0" />
                                         </div>
                                         <div>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}
                                         </div>
-                                        <div style="opacity: 1;">{{ showStarted(show, now) ? show.admits : '' }}
+                                        <div style="opacity: 1;">
+                                            <Input v-if="showStarted(show, now)" class="contents-only"
+                                                v-model.number="show.admits" type="number" autocomplete="off" min="0" />
                                         </div>
                                     </div>
                                 </template>
@@ -235,11 +239,15 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                                         <div>{{ show.auditorium.replace(/^\w+\s/, '') }}</div>
                                         <div>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}
                                         </div>
-                                        <div style="opacity: 1;">{{ !showStarted(show, now) ? show.admits : '' }}
+                                        <div style="opacity: 1;">
+                                            <Input v-if="!showStarted(show, now)" class="contents-only"
+                                                v-model.number="show.admits" type="number" autocomplete="off" min="0" />
                                         </div>
                                         <div>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}
                                         </div>
-                                        <div style="opacity: 1;">{{ showStarted(show, now) ? show.admits : '' }}
+                                        <div style="opacity: 1;">
+                                            <Input v-if="showStarted(show, now)" class="contents-only"
+                                                v-model.number="show.admits" type="number" autocomplete="off" min="0" />
                                         </div>
                                     </div>
                                 </template>
@@ -418,6 +426,18 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 
         &>div {
             opacity: .75;
+        }
+
+        input.contents-only {
+            max-width: 30px;
+            background-color: #fff1;
+            text-align: end;
+            padding: 0px 4px;
+
+            &::-webkit-outer-spin-button,
+            &::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+            }
         }
     }
 }

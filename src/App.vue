@@ -34,6 +34,7 @@ const aboutOpen = ref(false);
                 <template v-if="windowWidth >= 768">
                     <RouterLink to="/ushering/schedule">Tijdenlijstje</RouterLink>
                     <RouterLink to="/ushering/announcer">Omroepen</RouterLink>
+                    <RouterLink to="/ushering/planner">Planner</RouterLink>
                     <RouterLink to="/narrowcasting/timetable">Timetable</RouterLink>
                     <RouterLink to="/poc/intermission">Filmpauze</RouterLink>
                 </template>
