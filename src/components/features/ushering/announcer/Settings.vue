@@ -2,7 +2,7 @@
 import { provide, ref, computed } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
 import { AnnouncementRule } from '@/scripts/types';
-import { voices, getSoundInfo, defaultVoice, defaultVoiceKey, findAuditoriumSound } from '@/scripts/voices';
+import { voices, getSoundName, defaultVoice, defaultVoiceKey, findAuditoriumSound } from '@/scripts/voices';
 
 import RuleList from './RuleList.vue';
 import VoicesSelector from './VoicesSelector.vue';
@@ -15,13 +15,14 @@ const dialogActive = ref(false);
 
 const emit = defineEmits(['regenerate', 'previewAnnouncement', 'scheduleAnnouncements']);
 
-
 const intermissionDuration = useLocalStorage('default-intermission-duration', 12) // duration of intermissions in minutes
 
 const preferredVoices = useLocalStorage<string[]>('preferred-voices', [defaultVoiceKey], { mergeDefaults: true });
 const voiceBehaviour = useLocalStorage<'roundrobin'>('voice-behaviour', 'roundrobin'); // only one behaviour for now, but maybe more in the future
 
 const chimeSound = useLocalStorage('chime-sound', 0); // which chime sound to use before announcements
+
+const dead = computed(() => '');
 
 const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('announcer-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to sound sprite names, e.g. "PULR 1" => "auditorium1"
 const auditoriums = computed(() => {
@@ -101,37 +102,23 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
             </SettingsSection>
 
             <SettingsSection category-id="sprites" title="Voorbeeld geluidsfragmenten">
-                <div class="manual-sounds-list" v-for="ids in [
-                    [...defaultVoice.sounds.filter(id => !id.startsWith('auditorium'))],
-                    defaultVoice.sounds.filter(id => id.startsWith('auditorium')),
-                    ...preferredVoices.map(e => voices[e]?.additionalSounds)
-                ]" v-show="ids?.length > 0">
-                    <Button class="secondary manual-sound-button" v-for="id of ids"
-                        @click="emit('previewAnnouncement', [{ spriteName: id, offset: 0 }], undefined, false)"
-                        :class="{ translucent: !id.startsWith('chime') && !preferredVoices.some(e => voices[e]?.sounds.includes(id)) }">
-                        <Icon v-if="id.startsWith('chime')" style="--size: 16px; margin-right: 0;">music_note
-                        </Icon>
-                        <span v-else>
-                            {{ getSoundInfo(id).name }}
-                        </span>
-                    </Button>
-                </div>
+                <SpriteSelector v-model="dead" style="max-height: none;" always-play />
             </SettingsSection>
 
             <SettingsSection category-id="auditoriums" title="Zalen">
                 <div>
                     <span class="label">Geluidsfragmenten</span>
                     <ul class="list scroll short auditorium-mapping-list">
-                        <li v-for="(spriteName, auditorium) in auditoriumMappings" :key="auditorium" class="grid">
+                        <li v-for="(spriteName, auditorium) in auditoriumMappings" :key="auditorium" class="grid" style="height: 100px;">
                             <span>{{ auditorium }}</span><br>
                             <small v-if="findAuditoriumSound(auditorium).length">'{{
-                                getSoundInfo(findAuditoriumSound(auditorium)).name }}'</small>
+                                getSoundName(findAuditoriumSound(auditorium)) }}'</small>
                             <small v-else>Geen geluidsfragment ingesteld</small>
                             <SpriteSelector :id="'auditorium' + auditorium"
                                 :datalist-id="'auditorium' + auditorium + 'datalist'"
                                 v-model="auditoriumMappings[auditorium]" :placeholder="findAuditoriumSound(auditorium)"
-                                @blur="emit('scheduleAnnouncements')"
-                                style="position: absolute; top: 50%; right: 64px; width: calc(50%); translate: 0 -50%;" />
+                                @update:modelValue="emit('scheduleAnnouncements')"
+                                style="position: absolute; top: 0; right: 32px; width: calc(70%);" />
                             <div class="actions">
                                 <Icon class="delete"
                                     @click="delete auditoriumMappings[auditorium]; emit('scheduleAnnouncements')">
@@ -142,7 +129,7 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
                         <li v-for="auditorium in auditoriums.filter(a => !(a in auditoriumMappings))" :key="auditorium">
                             <span>{{ auditorium }}</span><br>
                             <small v-if="findAuditoriumSound(auditorium).length">'{{
-                                getSoundInfo(findAuditoriumSound(auditorium)).name }}'</small>
+                                getSoundName(findAuditoriumSound(auditorium)) }}'</small>
                             <small v-else>Geen geluidsfragment ingesteld</small>
                             <div class="actions">
                                 <Icon class="edit"

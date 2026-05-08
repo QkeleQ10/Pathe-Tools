@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { AnnouncementRule } from '@/scripts/types.ts';
-import { getSoundInfo } from '@/scripts/voices';
+import { getSoundName } from '@/scripts/voices';
 import AnnouncementBuilder from './AnnouncementBuilder.vue';
 
 const showAnnouncementBuilder = ref(false);
@@ -51,7 +51,7 @@ function addRule() {
         id: Date.now().toString(),
         enabled: true,
         segments: [
-            { spriteName: 'attention', offset: -800 },
+            { spriteName: 'attention', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
         trigger: {
@@ -78,7 +78,7 @@ function addRule() {
         <li class="rule" v-for="(rule, i) in rules" :key="rule.id" :class="{ active: rule.enabled }">
             <InputSwitch :identifier="rule.id + 'enabled'" :modelValue="rule.enabled"
                 @update:modelValue="toggleRule(rule)">
-                {{rule.name || ('\'' + rule.segments.map(segment => getSoundInfo(segment.spriteName).name).join(' ') +
+                {{rule.name || ('\'' + rule.segments.map(segment => getSoundName(segment.spriteName)).join(' ') +
                     '\'')
                 }}
             </InputSwitch>
@@ -139,7 +139,7 @@ function addRule() {
 
                     <em class="label">Omroepinhoud</em>
                     <div class="dialog-section-container">
-                        '{{rule.segments.map(segment => getSoundInfo(segment.spriteName).name).join(' ')}}'
+                        '{{rule.segments.map(segment => getSoundName(segment.spriteName)).join(' ')}}'
                         <br>
                         <Button class="tertiary" @click="showAnnouncementBuilder = true">
                             Bewerken
@@ -147,7 +147,7 @@ function addRule() {
                     </div>
                     <AnnouncementBuilder no-button v-model="rule.segments" v-model:show="showAnnouncementBuilder">
                         <Icon>build</Icon>
-                        <span>{{rule.segments.map(segment => getSoundInfo(segment.spriteName).name).join(' - ')}}</span>
+                        <span>{{rule.segments.map(segment => getSoundName(segment.spriteName)).join(' - ')}}</span>
                     </AnnouncementBuilder>
 
                     <em class="label">Voorwaarden</em>

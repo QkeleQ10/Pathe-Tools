@@ -19,8 +19,7 @@ function addSegment() {
 </script>
 
 <template>
-    <Button v-if="!noButton" class="secondary full left" @click="showAnnouncementBuilder = true"
-        v-bind="$attrs">
+    <Button v-if="!noButton" class="secondary full left" @click="showAnnouncementBuilder = true" v-bind="$attrs">
         <slot>
             <Icon>build</Icon>
             <span>Omroep bewerken</span>
@@ -33,10 +32,13 @@ function addSegment() {
             <ul v-if="model.length" class="list scroll">
                 <li class="segment" v-for="(segment, i) in model" :key="i" style="position: relative;">
                     <SpriteSelector :id="'spriteName' + i" :datalist-id="'spriteName' + i + 'datalist'"
-                        v-model="segment.spriteName" />
-                    <Input type="number" :id="'offset' + i" v-model="segment.offset" />
-                    <span class="unit"
-                        style="position: absolute; right: 50px; top: 20px; opacity: .5; font-size: 12px;">ms</span>
+                        v-model="segment.spriteName" include-variable-auditorium />
+
+                    <InputGroup type="number" id="offset" v-model.number="segment.offset" min="0" max="30">
+                        <template #label>Wachttijd na</template>
+                        <span class="unit">ms</span>
+                    </InputGroup>
+
                     <Icon class="delete" @click="model.splice(i, 1)">
                         close</Icon>
                 </li>

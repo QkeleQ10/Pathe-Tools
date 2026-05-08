@@ -2,7 +2,7 @@
 import { ref, inject, Ref, onMounted, watch, watchEffect } from 'vue';
 import { format } from 'date-fns';
 import { Announcement } from '@/scripts/types.ts';
-import { getSoundInfo } from '@/scripts/voices';
+import { getSoundName } from '@/scripts/voices';
 
 const now = inject<Ref<Date>>('now');
 
@@ -66,7 +66,7 @@ watchEffect(() => {
                 </Icon>
                 <div class="segments">
                     '{{announcement.segments
-                        .map(segment => getSoundInfo(segment.spriteName).name)
+                        .map(segment => getSoundName(segment.spriteName))
                         .join(' ')}}'
                 </div>
             </div>

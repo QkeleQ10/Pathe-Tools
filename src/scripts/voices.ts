@@ -55,7 +55,7 @@ export const voices = reactive<Record<string, Voice>>({
     chimes: new Voice({
         file: chimes,
         sprite: {
-            "chime0": [0, 3317.4149659863947], "chime1": [3417.4149659863947, 2385.6462585034014], "chime2": [5903.061224489796, 3356.2358276644], "chime3": [9359.297052154196, 1688.956916099773]
+            "chime0": [0, 3317.4149659863947], "chime1": [3417.4149659863947, 2385.6462585034014], "chime2": [5903.061224489796, 3356.2358276644], "chime3": [9359.297052154196, 2104.172335600907]
         }
     }),
     quinten: new Voice({
@@ -203,6 +203,56 @@ export async function preloadVoiceAudio(voice: Voice) {
     await getVoiceFileBytes(voice);
 }
 
+const decodedVoiceCache = new Map<string, Promise<AudioBuffer>>();
+let previewAudioContext: AudioContext | null = null;
+let activePreviewSource: AudioBufferSourceNode | null = null;
+
+async function getDecodedVoiceBuffer(voice: Voice): Promise<AudioBuffer> {
+    const key = String(voice.file);
+    if (!decodedVoiceCache.has(key)) {
+        const request = getVoiceFileBytes(voice)
+            .then(async bytes => {
+                if (!previewAudioContext) previewAudioContext = new AudioContext();
+                if (previewAudioContext.state === 'suspended') await previewAudioContext.resume();
+                const data = bytes.slice().buffer;
+                return previewAudioContext.decodeAudioData(data);
+            })
+            .catch(error => {
+                decodedVoiceCache.delete(key);
+                throw error;
+            });
+        decodedVoiceCache.set(key, request);
+    }
+    return decodedVoiceCache.get(key)!;
+}
+
+export async function previewSpriteSound(spriteName: string, preferredVoices: Voice[] = []) {
+    const allVoices = Object.values(voices);
+    const voice = [...preferredVoices, ...allVoices].find(candidate => !!candidate.sprite[spriteName]);
+    if (!voice) {
+        throw new Error(`Kon geluidsfragment niet vinden: "${spriteName}"`);
+    }
+    const [spriteOffsetMs, spriteDurationMs] = voice.sprite[spriteName] || [0, 0];
+
+    if (!previewAudioContext) previewAudioContext = new AudioContext();
+    if (previewAudioContext.state === 'suspended') await previewAudioContext.resume();
+
+    const buffer = await getDecodedVoiceBuffer(voice);
+    activePreviewSource?.stop();
+    activePreviewSource?.disconnect();
+
+    const source = previewAudioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(previewAudioContext.destination);
+    source.start(0, spriteOffsetMs / 1000, spriteDurationMs / 1000);
+    source.onended = () => {
+        source.disconnect();
+        if (activePreviewSource === source) activePreviewSource = null;
+    };
+
+    activePreviewSource = source;
+}
+
 export async function addImportedVoiceFromUrl(url: string): Promise<string> {
     const sourceUrl = normalizeRemoteUrl(url.trim());
     if (!sourceUrl) throw new Error('Voer een URL in.');
@@ -231,8 +281,9 @@ export function getSelectableVoiceEntries() {
         .map(([id, voice]) => ({ id, voice, metadata: importedVoicesMetadata[id] }));
 }
 
-export function getSoundInfo(string: string) {
+export function getSoundName(string: string): string {
     const soundNames = {
+        'auditorium#': '<naam zaal>',
         almost: "bijna",
         attention: "let op",
         credits: "aftiteling",
@@ -257,25 +308,15 @@ export function getSoundInfo(string: string) {
     };
 
     string = string.toLowerCase().trim();
-    let id = string.replace(/\?+/g, '');
 
-    let name = soundNames[id] || id,
-        valid = Object.values(voices).some(voice => voice.sounds.includes(id)),
-        probability = 1 / Math.pow(2, (string.match(/\?+/g) || [''])[0].length);
+    if (soundNames[string])
+        return soundNames[string];
 
-    if (string.includes('|')) {
-        name = string.split('|').map(str => getSoundInfo(str).name).join('|');
-        valid = name.split('|').every(name => name !== id);
-        probability = 1;
-    }
+    let auditoriumMatch = string.match(/^(auditorium)([0-9]+|(#))$/);
+    if (auditoriumMatch)
+        return `zaal ${auditoriumMatch[2] == '#' ? '#' : Number(auditoriumMatch[2])}`;
 
-    let auditoriumMatch = id.match(/^(auditorium)([0-9]+|(#))$/);
-    if (auditoriumMatch) {
-        name = `zaal ${auditoriumMatch[2] == '#' ? '#' : Number(auditoriumMatch[2])}`;
-        valid = true;
-    }
-
-    return { id, name, valid, probability };
+    return string;
 }
 
 export function findAuditoriumSound(auditorium: string): string {
