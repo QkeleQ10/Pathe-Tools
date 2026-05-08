@@ -260,7 +260,7 @@ export const presetRulesDefault: AnnouncementRule[] = [
         ],
         enabled: false,
         trigger: {
-            property: 'scheduledTime',
+            property: 'showTime',
             preponeMinutes: 0,
         },
         filter: {
