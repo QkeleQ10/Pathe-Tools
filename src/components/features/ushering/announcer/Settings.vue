@@ -82,7 +82,9 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
                     <template #label>Geluid vóór omroep</template>
                     <template #input>
                         <option :value="0">Geluid 1</option>
-                        <option :value="1">Geluid 2</option>
+                        <option :value="1">Geluid 1 (verkort)</option>
+                        <option :value="2">Geluid 2</option>
+                        <option :value="3">Geluid 2 (verkort)</option>
                         <option :value="-1">Geen geluid</option>
                     </template>
                 </InputGroup>
@@ -100,8 +102,7 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
 
             <SettingsSection category-id="sprites" title="Voorbeeld geluidsfragmenten">
                 <div class="manual-sounds-list" v-for="ids in [
-                    [...voices.chimes.sounds,
-                    ...defaultVoice.sounds.filter(id => !id.startsWith('auditorium'))],
+                    [...defaultVoice.sounds.filter(id => !id.startsWith('auditorium'))],
                     defaultVoice.sounds.filter(id => id.startsWith('auditorium')),
                     ...preferredVoices.map(e => voices[e]?.additionalSounds)
                 ]" v-show="ids?.length > 0">
@@ -247,7 +248,7 @@ export const presetRulesDefault: AnnouncementRule[] = [
         id: 'plfStart',
         name: '4DX-inloop',
         segments: [
-            { spriteName: 'start', offset: 0 },
+            { spriteName: 'doorsopen', offset: 0 },
             { spriteName: 'auditorium#', offset: 0 }
         ],
         enabled: true,

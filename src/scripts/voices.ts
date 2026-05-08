@@ -55,14 +55,7 @@ export const voices = reactive<Record<string, Voice>>({
     chimes: new Voice({
         file: chimes,
         sprite: {
-            "chime0": [
-                3456.235827664399,
-                3317.4149659863947
-            ],
-            "chime1": [
-                0,
-                3356.235827664399
-            ],
+            "chime0": [0, 3317.4149659863947], "chime1": [3417.4149659863947, 2385.6462585034014], "chime2": [5903.061224489796, 3356.2358276644], "chime3": [9359.297052154196, 1688.956916099773]
         }
     }),
     quinten: new Voice({
@@ -242,8 +235,6 @@ export function getSoundInfo(string: string) {
     const soundNames = {
         almost: "bijna",
         attention: "let op",
-        chime0: "♪",
-        chime1: "♪",
         credits: "aftiteling",
         doorsopen: "inloop",
         end: "einde",
