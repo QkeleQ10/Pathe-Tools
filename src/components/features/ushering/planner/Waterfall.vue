@@ -47,9 +47,10 @@ const hoverPos = defineModel<number>('hoverPos');
         height: 50px;
         padding: 4px;
         border-radius: 5px;
+
+        background-color: #11131677;
         outline: 1px solid #ffffff14;
         overflow: hidden;
-
     }
 
     .now,

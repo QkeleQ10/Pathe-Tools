@@ -14,9 +14,6 @@ const routes: RouteRecordRaw[] = [
         path: '/',
         name: 'home',
         component: HomeView,
-        meta: {
-            largeHero: true,
-        }
     },
     {
         path: '/timetable',

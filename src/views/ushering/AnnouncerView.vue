@@ -397,6 +397,8 @@ const { isOverDropZone } = useDropZone(main, {
     padding: 0;
     margin: 0;
     position: relative;
+
+    background-color: #11131677;
 }
 
 .film {
@@ -429,7 +431,7 @@ const { isOverDropZone } = useDropZone(main, {
         align-items: center;
         text-align: center;
         overflow: hidden;
-        font: 18px/34px "Special Gothic Condensed One", Arial, Helvetica, sans-serif;
+        font: 18px/34px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
     }
 
     .title {

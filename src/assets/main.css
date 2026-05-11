@@ -27,19 +27,16 @@
 }
 
 @font-face {
-    font-family: 'Special Gothic Condensed One';
-    src: url('@assets/typefaces/SpecialGothicCondensedOne-Regular.ttf') format('truetype');
+    font-family: 'Trade Gothic Bold Condensed 20';
+    src: url('@assets/typefaces/TradeGothicLTPro-BdCn20.woff') format('woff'),
+        url('@assets/typefaces/TradeGothicLTPro-BdCn20.woff2') format('woff2');
 }
 
 :root {
-    --yellow1: hsl(194, 100%, 57%);
-    /* #ffc426 */
-    --yellow2: hsl(192, 99%, 56%);
-    /* #feb91e */
-    --yellow3: hsl(196, 100%, 72%);
-    /* #ffdc6e */
-    --yellow4: hsl(192, 99%, 69%);
-    /* #fece61 */
+    --yellow1: #ffc426;
+    --yellow2: #feb91e;
+    --yellow3: #ffdc6e;
+    --yellow4: #fece61;
 }
 
 * {
@@ -97,6 +94,9 @@ h6:not(:empty) {
         overflow-y: auto;
 
         padding: 32px;
+
+        background-color: #111316;
+        background-color: #111316dd;
         border-left: 1px solid #fff3;
         box-shadow: 0 2px 4px 0 #0008;
     }
@@ -255,9 +255,8 @@ em.label {
     padding: 0;
     margin: 0;
 
-
-    border-radius: 5px;
     border: 1px solid #ffffff14;
+    border-radius: 5px;
 
     &.scroll {
         overflow-y: auto;

@@ -822,7 +822,7 @@ pre {
     position: absolute;
     top: 16px;
     left: 20px;
-    font: 28px "Special Gothic Condensed One", Arial, Helvetica, sans-serif;
+    font: 28px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
     text-transform: uppercase;
 }
 

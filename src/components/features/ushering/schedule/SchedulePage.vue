@@ -193,7 +193,7 @@ div.footer {
     left: 0;
     right: 0;
     color: var(--color);
-    opacity: 0.1;
+    opacity: 0.15;
     font-size: .8em;
     text-align: center;
 }

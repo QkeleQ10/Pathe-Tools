@@ -132,4 +132,23 @@ provide('scrollToCategory', scrollToCategory);
     color: #fff;
     cursor: pointer;
 }
+
+@media (width < 600px) {
+    .settings-modal-content {
+        padding: 36px 6px 24px;
+    }
+
+    .settings-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-nav {
+        display: none;
+    }
+
+    .settings-content {
+        padding-left: 8px;
+        overflow-x: auto;
+    }
+}
 </style>

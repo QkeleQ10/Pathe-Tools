@@ -268,6 +268,7 @@ div.container {
     min-height: 72px;
     border-radius: 5px;
     background-color: #ffffff14;
+    background-color: #111316dd;
     color: #fff;
     font-size: 14px;
     overflow: hidden;

@@ -18,9 +18,6 @@ const userHasInteracted = ref(false);
 document.addEventListener('click', () => userHasInteracted.value = true, { once: true });
 provide('userHasInteracted', userHasInteracted);
 
-const dismissedNotification = useStorage('dismissedNotification', true);
-const dismissedNotification2 = useStorage('dismissedNotificationI', false);
-
 const aboutOpen = ref(false);
 </script>
 
@@ -28,9 +25,14 @@ const aboutOpen = ref(false);
     <header ref="header" v-if="$route.meta.showHeader ?? true">
         <div class="wrapper">
             <nav v-if="$route.meta.showNavigation ?? true">
-                <RouterLink to="/">
+                <!-- <RouterLink to="/">
                     <Icon>home</Icon>
+                </RouterLink> -->
+
+                <RouterLink to="/" id="logo-wrapper">
+                    <img alt="Pathé logo" class="logo" src="@assets/logo-international-white.svg" height="42" />
                 </RouterLink>
+
                 <template v-if="windowWidth >= 768">
                     <RouterLink to="/ushering/schedule">Tijdenlijstje</RouterLink>
                     <RouterLink to="/ushering/announcer">Omroepen</RouterLink>
@@ -51,12 +53,17 @@ const aboutOpen = ref(false);
         </div>
     </header>
 
+    <HeroImage />
+
     <RouterView />
 
     <Transition>
         <ModalDialog v-if="aboutOpen" @dismiss="aboutOpen = false">
             <h3>Over</h3>
             <p>Quinten Althues © 2024-{{ new Date().getFullYear() }}</p>
+            <p>
+                Deze website is niet officieel verbonden aan Pathé.
+            </p>
             <p>
                 <b>Problemen of feedback?</b> Bereik me via e-mail (knop hieronder), stuur me een appje of zoek me eens
                 op
@@ -69,40 +76,7 @@ const aboutOpen = ref(false);
                 <Button class="tertiary" title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
                     GitHub
                 </Button>
-                <Button class="tertiary" @click="dismissedNotification = false">
-                    Waarom is de website niet meer zoals eerst?
-                </Button>
             </div>
-        </ModalDialog>
-    </Transition>
-
-    <Transition>
-        <ModalDialog v-if="!dismissedNotification" @dismiss="dismissedNotification = true">
-            <p>
-                Beste collega,<br>
-                <br>
-                De website ziet er iets anders (deprimerender) uit dan je gewend bent.
-                Dit is zo om te benadrukken dat deze site extern is en geen onderdeel van de Pathé-werkomgevingen.<br>
-                <br>
-                Ook ontbreekt de cloudfunctionaliteit. Dit om te verzekeren dat interne gegevens (zoals tijdenlijsten)
-                nooit met derden kunnen worden gedeeld.<br>
-                <br>
-                Sommige voorkeuren zijn gereset en synchronisatie werkt niet meer.<br>
-                <br>
-                Het genereren van tijdenlijstjes en omroepen werkt nog steeds. Sorry voor het ongemak.<br>
-                <br>
-                Groetjes,<br>
-                Quinten
-            </p>
-        </ModalDialog>
-    </Transition>
-    <Transition>
-        <ModalDialog v-if="!dismissedNotification2" @dismiss="dismissedNotification2 = true">
-            <h3>Belangrijk</h3>
-            <p>
-                De standaardduur van filmpauzes is gereset naar 12 minuten.<br>
-                Pas zo nodig de instelling opnieuw aan.
-            </p>
         </ModalDialog>
     </Transition>
 </template>
@@ -125,6 +99,8 @@ header {
     align-items: center;
     justify-content: center;
 
+    background-color: #111316;
+    background-color: #111316dd;
     border-bottom: 1px solid #fff3;
     box-shadow: 0 2px 4px 0 #0008;
 
@@ -142,8 +118,32 @@ header {
     }
 }
 
+#logo-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+
+    opacity: .7;
+
+    &::after {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        content: "TOOLS";
+        color: #fff;
+        font: 11px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
+    }
+
+    &.router-link-active {
+        opacity: 1;
+    }
+}
+
 nav {
     display: flex;
+    align-items: center;
 }
 
 header a {

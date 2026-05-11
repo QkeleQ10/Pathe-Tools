@@ -50,7 +50,7 @@ main {
 }
 
 .title {
-    font: 48px "Special Gothic Condensed One", Arial, Helvetica, sans-serif;
+    font: 48px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
     text-transform: uppercase;
 }
 </style>

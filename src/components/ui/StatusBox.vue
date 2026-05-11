@@ -54,7 +54,7 @@ defineEmits<{
     font: 16px Heebo, arial, sans-serif;
     border: 1px solid light-dark(#9da1ac, #30343d);
     border-radius: 6px;
-    background-color: transparent;
+    background-color: #11131677;
     background-image: radial-gradient(circle at left bottom, hsl(from var(--color) h s l / 0.2) 0%, transparent 100px);
 
     transition: --color 250ms;
@@ -78,7 +78,6 @@ defineEmits<{
 
 button.status-box {
     cursor: pointer;
-    background-color: transparent;
 
     &:hover {
         background-color: light-dark(#00000033, #ffffff1a);
