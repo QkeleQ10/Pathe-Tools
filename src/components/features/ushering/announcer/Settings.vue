@@ -20,7 +20,7 @@ const intermissionDuration = useLocalStorage('default-intermission-duration', 12
 const preferredVoices = useLocalStorage<string[]>('preferred-voices', [defaultVoiceKey], { mergeDefaults: true });
 const voiceBehaviour = useLocalStorage<'roundrobin'>('voice-behaviour', 'roundrobin'); // only one behaviour for now, but maybe more in the future
 
-const chimeSound = useLocalStorage('chime-sound', 0); // which chime sound to use before announcements
+const chimeSound = useLocalStorage('chime-sound-str', 'chime01'); // which chime sound to use before announcements
 
 const dead = computed(() => '');
 
@@ -79,16 +79,11 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
             </SettingsSection>
 
             <SettingsSection category-id="voice" title="Geluid">
-                <InputGroup type="select" id="chimeSound" v-model="chimeSound" @update:modelValue="emit('regenerate')">
-                    <template #label>Geluid vóór omroep</template>
-                    <template #input>
-                        <option :value="0">Geluid 1</option>
-                        <option :value="1">Geluid 1 (verkort)</option>
-                        <option :value="2">Geluid 2</option>
-                        <option :value="3">Geluid 2 (verkort)</option>
-                        <option :value="-1">Geen geluid</option>
-                    </template>
-                </InputGroup>
+                <div>
+                    <span class="label">Geluid vóór omroep</span>
+                    <SpriteSelector chimes :additional-sounds="['chime00']" v-model="chimeSound"
+                        @update="emit('regenerate')" />
+                </div>
                 <div>
                     <span class="label">Stemmen</span>
                     <VoicesSelector v-model="preferredVoices" @update:modelValue="emit('regenerate')" />
@@ -102,14 +97,15 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
             </SettingsSection>
 
             <SettingsSection category-id="sprites" title="Voorbeeld geluidsfragmenten">
-                <SpriteSelector v-model="dead" style="max-height: none;" always-play />
+                <SpriteSelector v-model="dead" style="max-height: none;" no-select />
             </SettingsSection>
 
             <SettingsSection category-id="auditoriums" title="Zalen">
                 <div>
                     <span class="label">Geluidsfragmenten</span>
                     <ul class="list scroll short auditorium-mapping-list">
-                        <li v-for="(spriteName, auditorium) in auditoriumMappings" :key="auditorium" class="grid" style="height: 100px;">
+                        <li v-for="(spriteName, auditorium) in auditoriumMappings" :key="auditorium" class="grid"
+                            style="height: 100px;">
                             <span>{{ auditorium }}</span><br>
                             <small v-if="findAuditoriumSound(auditorium).length">'{{
                                 getSoundName(findAuditoriumSound(auditorium)) }}'</small>

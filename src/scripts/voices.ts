@@ -55,7 +55,7 @@ export const voices = reactive<Record<string, Voice>>({
     chimes: new Voice({
         file: chimes,
         sprite: {
-            "chime0": [0, 3317.4149659863947], "chime1": [3417.4149659863947, 2385.6462585034014], "chime2": [5903.061224489796, 3356.2358276644], "chime3": [9359.297052154196, 2104.172335600907]
+            "chime01": [0, 3317.4149659863947], "chime02": [3417.4149659863947, 2385.6462585034014], "chime03": [5903.061224489796, 3356.2358276644], "chime04": [9359.297052154196, 2104.172335600907]
         }
     }),
     quinten: new Voice({
@@ -284,6 +284,7 @@ export function getSelectableVoiceEntries() {
 export function getSoundName(string: string): string {
     const soundNames = {
         'auditorium#': '<naam zaal>',
+        'chime00': "stil",
         almost: "bijna",
         attention: "let op",
         credits: "aftiteling",
@@ -315,6 +316,10 @@ export function getSoundName(string: string): string {
     let auditoriumMatch = string.match(/^(auditorium)([0-9]+|(#))$/);
     if (auditoriumMatch)
         return `zaal ${auditoriumMatch[2] == '#' ? '#' : Number(auditoriumMatch[2])}`;
+
+    let chimeMatch = string.match(/^(chime)([0-9]+|(#))$/);
+    if (chimeMatch)
+        return `geluid ${chimeMatch[2] == '#' ? '#' : Number(chimeMatch[2])}`;
 
     return string;
 }

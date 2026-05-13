@@ -136,7 +136,7 @@ header {
         font: 11px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
     }
 
-    &.router-link-active {
+    &:hover, &.router-link-active {
         opacity: 1;
     }
 }

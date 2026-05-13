@@ -46,6 +46,7 @@
 html {
     scroll-padding-top: calc(70px + 40px);
     color-scheme: dark;
+    background: transparent !important;
 
     &:has(.fake-fullscreen) {
         overflow: hidden;

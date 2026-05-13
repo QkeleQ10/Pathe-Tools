@@ -5,7 +5,9 @@ import { getSoundName, previewSpriteSound, voices } from '@/scripts/voices';
 const props = defineProps<{
     id?: string;
     includeVariableAuditorium?: boolean;
-    alwaysPlay?: boolean;
+    noSelect?: boolean;
+    chimes?: boolean;
+    additionalSounds?: string[];
 }>();
 
 const model = defineModel<string>({ required: true });
@@ -13,12 +15,14 @@ const model = defineModel<string>({ required: true });
 const sounds = computed(() => {
     const list = Object.values(voices).flatMap(voice => voice.sounds.slice());
 
-    if (props.includeVariableAuditorium) list.push('auditorium#');
+    if (props.additionalSounds) {
+        list.push(...props.additionalSounds);
+    }
 
     const unique = Array.from(new Set(list)).filter((e): e is string => typeof e === 'string');
 
     return unique
-        .filter(e => !e.startsWith('chime'))
+        .filter(e => e.startsWith('chime') === !!props.chimes)
         .sort((a, b) => getSoundName(a).localeCompare(getSoundName(b), 'nl', { numeric: true, sensitivity: 'base' }));
 });
 
@@ -28,20 +32,27 @@ function sentenceCase(string: string) {
 
 function selected(key: string) {
     model.value = key;
-    if (props.alwaysPlay) previewSpriteSound(key)
 }
 </script>
 
 <template>
     <div class="sounds-pile" :id="id" v-bind="$attrs">
         <div class="sound-entry" v-for="key in sounds" :key="key" :class="{ selected: model === key }">
-            <button type="button" class="select-sound" @click="selected(key)" :title="key">
-                {{ sentenceCase(getSoundName(key)) }}
-            </button>
-            <button v-if="key !== 'auditorium#'" type="button" class="preview-button" @click="previewSpriteSound(key)"
-                title="Voorbeeld afspelen">
-                <Icon fill>play_arrow</Icon>
-            </button>
+            <template v-if="props.noSelect">
+                <button type="button" class="select-sound" @click="previewSpriteSound(key)" :title="key">
+                    {{ sentenceCase(getSoundName(key)) }}
+                    <Icon fill>play_arrow</Icon>
+                </button>
+            </template>
+            <template v-else>
+                <button type="button" class="select-sound" @click="selected(key)" :title="key">
+                    {{ sentenceCase(getSoundName(key)) }}
+                </button>
+                <button v-if="!props.additionalSounds?.includes(key)" type="button" class="preview-button"
+                    @click="previewSpriteSound(key)" title="Voorbeeld afspelen">
+                    <Icon fill>play_arrow</Icon>
+                </button>
+            </template>
         </div>
     </div>
 </template>

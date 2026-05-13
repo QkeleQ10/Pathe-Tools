@@ -38,7 +38,7 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStor
 
 const preferredVoices = useStorage<string[]>('preferred-voices', [defaultVoiceKey], localStorage, { mergeDefaults: true });
 
-const chimeSound = useStorage('chime-sound', 0, localStorage); // which chime sound to use before announcements
+const chimeSound = useStorage('chime-sound-str', 'chime01', localStorage); // which chime sound to use before announcements
 
 const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([]);
 const customAnnouncementDate = ref<Date>(new Date());
@@ -241,9 +241,9 @@ function prepareSegments(
 
     let preparedSegments: { voice: Voice; spriteName: string; offset: number }[] = [];
 
-    if (includeChime && chimeSound.value !== -1) preparedSegments.push({
+    if (includeChime && chimeSound.value !== 'chime00') preparedSegments.push({
         voice: voices.chimes,
-        spriteName: `chime${chimeSound.value}`,
+        spriteName: chimeSound.value,
         offset: -1600
     });
 

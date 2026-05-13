@@ -32,7 +32,7 @@ function addSegment() {
             <ul v-if="model.length" class="list scroll">
                 <li class="segment" v-for="(segment, i) in model" :key="i" style="position: relative;">
                     <SpriteSelector :id="'spriteName' + i" :datalist-id="'spriteName' + i + 'datalist'"
-                        v-model="segment.spriteName" include-variable-auditorium />
+                        v-model="segment.spriteName" :additional-sounds="['auditorium#']" />
 
                     <InputGroup type="number" id="offset" v-model.number="segment.offset" min="0" max="30">
                         <template #label>Wachttijd na</template>

@@ -4,6 +4,7 @@ import { FastAverageColor } from 'fast-average-color';
 
 const imageUrl = ref('');
 const color = ref('');
+const imageLoaded = ref(false);
 
 const files = import.meta.glob('@assets/heroes/*.webp', { eager: true });
 const fileKeys = Object.keys(files);
@@ -11,6 +12,20 @@ const randomKey = fileKeys[Math.floor(Math.random() * fileKeys.length)];
 imageUrl.value = new URL((files[randomKey] as { default: string }).default, import.meta.url).href;
 
 const fac = new FastAverageColor();
+
+const preloadImage = new Image();
+preloadImage.src = imageUrl.value;
+
+if (preloadImage.complete) {
+    imageLoaded.value = true;
+} else {
+    preloadImage.addEventListener('load', () => {
+        imageLoaded.value = true;
+    }, { once: true });
+    preloadImage.addEventListener('error', () => {
+        imageLoaded.value = true;
+    }, { once: true });
+}
 
 fac.getColorAsync(imageUrl.value, {
     ignoredColor: [
@@ -25,7 +40,7 @@ fac.getColorAsync(imageUrl.value, {
 </script>
 
 <template>
-    <div id="hero">
+    <div id="hero" :class="{ loaded: imageLoaded }">
         <div class="color-bleed" :style="{ backgroundColor: color }"></div>
         <div class="image" :style="`background-image: url(${imageUrl})`"></div>
     </div>
@@ -41,6 +56,13 @@ fac.getColorAsync(imageUrl.value, {
     right: 0;
     z-index: -1;
 
+    opacity: 0;
+    transition: opacity 450ms ease;
+
+    &.loaded {
+        opacity: 1;
+    }
+
     .image {
         width: 100%;
         height: 70%;
@@ -49,6 +71,7 @@ fac.getColorAsync(imageUrl.value, {
         background-size: cover;
         background-position: center;
         mask-image: linear-gradient(to bottom, #000, #00000041 60%, transparent);
+
     }
 
     .color-bleed {
