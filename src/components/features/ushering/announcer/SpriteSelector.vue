@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { getSoundName, previewSpriteSound, voices } from '@/scripts/voices';
+import { useLocalStorage } from '@vueuse/core';
+import { getSoundName, previewSpriteSound, voices, Voice } from '@/scripts/voices';
 
 const props = defineProps<{
     id?: string;
@@ -11,6 +12,7 @@ const props = defineProps<{
 }>();
 
 const model = defineModel<string>({ required: true });
+const preferredVoiceIds = useLocalStorage<string[]>('preferred-voices', [], { mergeDefaults: true });
 
 const sounds = computed(() => {
     const list = Object.values(voices).flatMap(voice => voice.sounds.slice());
@@ -33,13 +35,23 @@ function sentenceCase(string: string) {
 function selected(key: string) {
     model.value = key;
 }
+
+const preferredVoices = computed(() =>
+    preferredVoiceIds.value
+        .map(id => voices[id])
+        .filter((voice): voice is Voice => !!voice)
+);
+
+function preview(key: string) {
+    return previewSpriteSound(key, preferredVoices.value);
+}
 </script>
 
 <template>
     <div class="sounds-pile" :id="id" v-bind="$attrs">
         <div class="sound-entry" v-for="key in sounds" :key="key" :class="{ selected: model === key }">
             <template v-if="props.noSelect">
-                <button type="button" class="select-sound" @click="previewSpriteSound(key)" :title="key">
+                <button type="button" class="select-sound" @click="preview(key)" :title="key">
                     {{ sentenceCase(getSoundName(key)) }}
                     <Icon fill>play_arrow</Icon>
                 </button>
@@ -49,7 +61,7 @@ function selected(key: string) {
                     {{ sentenceCase(getSoundName(key)) }}
                 </button>
                 <button v-if="!props.additionalSounds?.includes(key)" type="button" class="preview-button"
-                    @click="previewSpriteSound(key)" title="Voorbeeld afspelen">
+                    @click="preview(key)" title="Voorbeeld afspelen">
                     <Icon fill>play_arrow</Icon>
                 </button>
             </template>
