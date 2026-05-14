@@ -11,7 +11,6 @@ function voiceToggled(value: boolean, voiceId: string): void {
 	if (value) {
 		if (!model.value.includes(voiceId)) model.value.push(voiceId);
 	} else {
-		if (voiceId === defaultVoiceKey) return;
 		const index = model.value.indexOf(voiceId);
 		if (index > -1) {
 			model.value.splice(index, 1);
@@ -23,9 +22,6 @@ function removeVoice(voiceId: string) {
 	if (voiceId === defaultVoiceKey) return;
 	removeImportedVoice(voiceId);
 	model.value = model.value.filter(id => id !== voiceId);
-	if (!model.value.includes(defaultVoiceKey)) {
-		model.value.unshift(defaultVoiceKey);
-	}
 }
 
 async function addVoice() {

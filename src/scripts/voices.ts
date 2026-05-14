@@ -227,11 +227,13 @@ async function getDecodedVoiceBuffer(voice: Voice): Promise<AudioBuffer> {
 }
 
 export async function previewSpriteSound(spriteName: string, preferredVoices: Voice[] = []) {
-    const allVoices = Object.values(voices);
-    const voice = [...preferredVoices, ...allVoices].find(candidate => !!candidate.sprite[spriteName]);
-    if (!voice) {
+    const allVoicesWithSprite = Object.values(voices).filter(candidate => !!candidate.sprite[spriteName]);
+    if (!allVoicesWithSprite.length) {
         throw new Error(`Kon geluidsfragment niet vinden: "${spriteName}"`);
     }
+    const preferredVoicesWithSprite = preferredVoices.filter(candidate => !!candidate.sprite[spriteName]);
+    const candidates = preferredVoicesWithSprite.length ? preferredVoicesWithSprite : [allVoicesWithSprite[0]];
+    const voice = candidates[Math.floor(Math.random() * candidates.length)];
     const [spriteOffsetMs, spriteDurationMs] = voice.sprite[spriteName] || [0, 0];
 
     if (!previewAudioContext) previewAudioContext = new AudioContext();
