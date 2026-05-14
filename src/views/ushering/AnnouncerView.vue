@@ -84,9 +84,6 @@ watch(
 
 function sanitizePreferredVoices() {
     const normalized = [...new Set(preferredVoices.value.filter(key => !!voices[key] && key !== 'chimes'))];
-    if (!normalized.includes(defaultVoiceKey)) {
-        normalized.unshift(defaultVoiceKey);
-    }
     const hasChanged =
         normalized.length !== preferredVoices.value.length ||
         normalized.some((value, index) => value !== preferredVoices.value[index]);
