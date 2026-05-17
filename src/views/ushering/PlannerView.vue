@@ -1,49 +1,69 @@
 <script setup lang="ts">
 import { ref, computed, inject, useTemplateRef, Ref } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
-import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { Show, UsherShow } from '@/scripts/types.ts'
-import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import Waterfall from '@/components/features/ushering/planner/Waterfall.vue';
-import Input from '@/components/ui/Input.vue';
 
-const store = useTmsScheduleStore();
+import { Show, UsherShow } from '@/scripts/types.ts'
+import { useTmsScheduleStore } from '@/stores/tmsSchedule'
+import { usePosScheduleStore } from '@/stores/posSchedule';
+
+import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
+import PosScheduleUploadSection from '@/components/features/sections/PosScheduleUploadSection.vue';
+import Waterfall from '@/components/features/ushering/planner/Waterfall.vue';
+import ShowsTable from '@/components/features/ushering/planner/ShowsTable.vue';
+
+type ShowWithSeats = Show & { seatsSold: number; seatsTotal: number; occupancy: number };
+
+const tmsScheduleStore = useTmsScheduleStore();
+const posScheduleStore = usePosScheduleStore();
 
 const now = inject<Ref<Date>>('now');
 
 const isHovering = ref<boolean>(false);
 const hoverPos = ref<number>(0);
 
-const colourful = useStorage('ushering-planner-view-colourful', false);
+const colourHueTitle = useStorage('planner-colour-hue-title', false);
+const colourSaturationOccupancy = useStorage('planner-colour-saturation-occupancy', false);
 
-const showsWithAdmits = ref<(Show & { admits?: number })[]>([]);
+const showsWithSeats = computed((): ShowWithSeats[] => {
+    return tmsScheduleStore.table.map((show: UsherShow) => {
+        const posShow = posScheduleStore.shows.find((s: any) =>
+            s.feature._attributes?.title.replace(/[\W_]+/g, '') === show.playlist.replace(/[\W_]+/g, '')
+            && s._attributes?.time === format(show.scheduledTime, 'yyyyMMdd HHmm')
+        );
 
-store.$subscribe(() => {
-    if (!store.table.length) return;
-    console.log(store.table)
-    showsWithAdmits.value = store.table.map((show: UsherShow) => ({ ...show, admits: null }));
-})
+        const seatsSold = posShow ? Number(posShow._attributes.seatsSold) : 0;
+        const seatsTotal = posShow ? Number(posShow._attributes.seatsTotal) : 0;
+        const occupancy = seatsTotal > 0 ? seatsSold / seatsTotal : 0;
+
+        return {
+            ...show,
+            seatsSold,
+            seatsTotal,
+            occupancy
+        };
+    });
+});
 
 const auditoriums = computed(() => {
-    return [...new Set(store.table.map((show: UsherShow) => show.auditorium).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
+    return [...new Set(showsWithSeats.value.map((show: ShowWithSeats) => show.auditorium).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
 });
 
 const showTitles = computed(() => {
-    return [...new Set(store.table.map((show: UsherShow) => show.title).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
+    return [...new Set(showsWithSeats.value.map((show: ShowWithSeats) => show.title).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
 });
 
 const rangeStart = computed(() => {
-    if (showsWithAdmits.value.length === 0) return new Date();
-    const rangeStart = new Date(Math.min(...showsWithAdmits.value.map((show: UsherShow) => show.scheduledTime.getTime())));
+    if (showsWithSeats.value.length === 0) return new Date();
+    const rangeStart = new Date(Math.min(...showsWithSeats.value.map((show: ShowWithSeats) => show.scheduledTime.getTime())));
     rangeStart.setMinutes(rangeStart.getMinutes() - 20);
     return rangeStart;
 });
 
 const rangeEnd = computed(() => {
-    if (showsWithAdmits.value.length === 0) return new Date();
-    const rangeEnd = new Date(Math.max(...showsWithAdmits.value.map((show: UsherShow) => show.endTime.getTime())));
+    if (showsWithSeats.value.length === 0) return new Date();
+    const rangeEnd = new Date(Math.max(...showsWithSeats.value.map((show: ShowWithSeats) => show.endTime.getTime())));
     rangeEnd.setMinutes(rangeEnd.getMinutes() + 20);
     return rangeEnd;
 });
@@ -56,15 +76,47 @@ function normaliseDate(date: Date, minDate: Date = rangeStart.value, maxDate: Da
     return normalise(date.getTime(), minDate.getTime(), maxDate.getTime());
 }
 
-function showStarted(show: Show | (Show & { admits?: number }), now?: Date): boolean {
-    return show.scheduledTime.getTime() + 900_000 <= now.getTime();
-}
-
 const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
-    onDrop: store.filesUploaded,
-    // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
+    onDrop: (f) => {
+        if (f[0].name.endsWith('.xml'))
+            posScheduleStore.uploadXml(f);
+        else
+            tmsScheduleStore.filesUploaded(f);
+    },
     multiple: false
 })
+
+const titleHueMap = computed(() => {
+    const map = new Map<string, number>();
+    showTitles.value.forEach((title, index) => {
+        map.set(title, (360 / showTitles.value.length) * index);
+    });
+    return map;
+});
+
+function getTitleHue(title: string): number {
+    return titleHueMap.value.get(title) ?? 230;
+}
+
+function getOccupancyChroma(occupancy: number): number {
+    return occupancy * 132;
+}
+
+const showsByExitTime = computed(() =>
+    [...showsWithSeats.value].sort((a, b) => a.creditsTime.getTime() - b.creditsTime.getTime())
+);
+
+const showsByEntryTime = computed(() =>
+    [...showsWithSeats.value].sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
+);
+
+const showsWithIntermission = computed(() =>
+    showsWithSeats.value.filter(show => show.intermissionTime)
+);
+
+const showsWith4dx = computed(() =>
+    showsWithSeats.value.filter(show => show.tags.includes('4DX'))
+);
 </script>
 
 <template>
@@ -78,38 +130,39 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                             rangeStart.getTime())), 'HH:mm', { locale: nl }) }}
                     </span>
                 </h1>
-                <p id="upload-hint" v-if="!store.table.length">Upload eerst een bestand.</p>
+                <p id="upload-hint" v-if="!showsWithSeats.length">Upload eerst een bestand.</p>
 
                 <div class="planner-section">
                     <h3>Werkdruk</h3>
                     <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
                         v-model:hover-pos="hoverPos" title="Ushering">
-                        <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
+                        <template v-for="show in showsWithSeats" :key="show.playlist + show.scheduledTime">
                             <div class="exit-workload" :style="{
                                 left: (normaliseDate(show.creditsTime) * 100) + '%',
                                 width: (normaliseDate(new Date(show.endTime.getTime() + 1200000)) - normaliseDate(show.creditsTime)) * 100 + '%',
-                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                '--admits': show.admits ?? 100,
+                                '--hue': colourHueTitle ? getTitleHue(show.title) : 80,
+                                '--chroma': colourSaturationOccupancy ? getOccupancyChroma(show.occupancy) : 50,
+                                '--admits': show.occupancy,
                             }">
                             </div>
                         </template>
-                        <template v-for="show in showsWithAdmits.filter(show => show.intermissionTime)"
-                            :key="show.playlist + show.scheduledTime">
+                        <template v-for="show in showsWithIntermission" :key="show.playlist + show.scheduledTime">
                             <div class="intermission-workload" :style="{
                                 left: (normaliseDate(show.intermissionTime) * 100) + '%',
                                 width: (normaliseDate(new Date(show.intermissionTime.getTime() + 300000)) - normaliseDate(show.intermissionTime)) * 100 + '%',
-                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                '--admits': show.admits ?? 100,
+                                '--hue': colourHueTitle ? getTitleHue(show.title) : 80,
+                                '--chroma': colourSaturationOccupancy ? getOccupancyChroma(show.occupancy) : 50,
+                                '--admits': show.occupancy,
                             }">
                             </div>
                         </template>
-                        <template v-for="show in showsWithAdmits.filter(show => show.tags.includes('4DX'))"
-                            :key="show.playlist + show.scheduledTime">
+                        <template v-for="show in showsWith4dx" :key="show.playlist + show.scheduledTime">
                             <div class="plf-workload" :style="{
                                 left: (normaliseDate(new Date(show.scheduledTime.getTime() - 900000)) * 100) + '%',
                                 width: (normaliseDate(show.mainShowTime || new Date(show.scheduledTime.getTime() + 900000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 900000))) * 100 + '%',
-                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                '--admits': show.admits ?? 100,
+                                '--hue': colourHueTitle ? getTitleHue(show.title) : 80,
+                                '--chroma': colourSaturationOccupancy ? getOccupancyChroma(show.occupancy) : 50,
+                                '--admits': show.occupancy,
                             }">
                             </div>
                         </template>
@@ -117,12 +170,13 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 
                     <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
                         v-model:hover-pos="hoverPos" title="Portier en F&B">
-                        <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
+                        <template v-for="show in showsWithSeats" :key="show.playlist + show.scheduledTime">
                             <div class="enter-workload" :style="{
                                 left: (normaliseDate(new Date(show.scheduledTime.getTime() - 1200000)) * 100) + '%',
                                 width: (normaliseDate(new Date(show.scheduledTime.getTime() + 1200000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 1200000))) * 100 + '%',
-                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                '--admits': show.admits ?? 100,
+                                '--hue': colourHueTitle ? getTitleHue(show.title) : 80,
+                                '--chroma': colourSaturationOccupancy ? getOccupancyChroma(show.occupancy) : 50,
+                                '--admits': show.occupancy,
                             }">
                             </div>
                         </template>
@@ -130,41 +184,43 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 
                     <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
                         v-model:hover-pos="hoverPos" title="Totaal">
-                        <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
+                        <template v-for="show in showsWithSeats" :key="show.playlist + show.scheduledTime">
                             <div class="exit-workload" :style="{
                                 left: (normaliseDate(show.creditsTime) * 100) + '%',
                                 width: (normaliseDate(new Date(show.endTime.getTime() + 1200000)) - normaliseDate(show.creditsTime)) * 100 + '%',
-                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                '--admits': show.admits ?? 100,
+                                '--hue': colourHueTitle ? getTitleHue(show.title) : 80,
+                                '--chroma': colourSaturationOccupancy ? getOccupancyChroma(show.occupancy) : 50,
+                                '--admits': show.occupancy,
                             }">
                             </div>
                         </template>
-                        <template v-for="show in showsWithAdmits" :key="show.playlist + show.scheduledTime">
+                        <template v-for="show in showsWithSeats" :key="show.playlist + show.scheduledTime">
                             <div class="enter-workload" :style="{
                                 left: (normaliseDate(new Date(show.scheduledTime.getTime() - 1200000)) * 100) + '%',
                                 width: (normaliseDate(new Date(show.scheduledTime.getTime() + 1200000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 1200000))) * 100 + '%',
-                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                '--admits': show.admits ?? 100,
+                                '--hue': colourHueTitle ? getTitleHue(show.title) : 80,
+                                '--chroma': colourSaturationOccupancy ? getOccupancyChroma(show.occupancy) : 50,
+                                '--admits': show.occupancy,
                             }">
                             </div>
                         </template>
-                        <template v-for="show in showsWithAdmits.filter(show => show.intermissionTime)"
-                            :key="show.playlist + show.scheduledTime">
+                        <template v-for="show in showsWithIntermission" :key="show.playlist + show.scheduledTime">
                             <div class="intermission-workload" :style="{
                                 left: (normaliseDate(show.intermissionTime) * 100) + '%',
                                 width: (normaliseDate(new Date(show.intermissionTime.getTime() + 300000)) - normaliseDate(show.intermissionTime)) * 100 + '%',
-                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                '--admits': show.admits ?? 100,
+                                '--hue': colourHueTitle ? getTitleHue(show.title) : 80,
+                                '--chroma': colourSaturationOccupancy ? getOccupancyChroma(show.occupancy) : 50,
+                                '--admits': show.occupancy,
                             }">
                             </div>
                         </template>
-                        <template v-for="show in showsWithAdmits.filter(show => show.tags.includes('4DX'))"
-                            :key="show.playlist + show.scheduledTime">
+                        <template v-for="show in showsWith4dx" :key="show.playlist + show.scheduledTime">
                             <div class="plf-workload" :style="{
                                 left: (normaliseDate(new Date(show.scheduledTime.getTime() - 900000)) * 100) + '%',
                                 width: (normaliseDate(show.mainShowTime || new Date(show.scheduledTime.getTime() + 900000)) - normaliseDate(new Date(show.scheduledTime.getTime() - 900000))) * 100 + '%',
-                                '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length),
-                                '--admits': show.admits ?? 100,
+                                '--hue': colourHueTitle ? getTitleHue(show.title) : 80,
+                                '--chroma': colourSaturationOccupancy ? getOccupancyChroma(show.occupancy) : 50,
+                                '--admits': show.occupancy,
                             }">
                             </div>
                         </template>
@@ -176,12 +232,13 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                     <template v-for="auditorium in auditoriums" :key="auditorium">
                         <Waterfall :now="normaliseDate(now)" v-model:is-hovering="isHovering"
                             v-model:hover-pos="hoverPos" :title="auditorium">
-                            <template v-for="show in showsWithAdmits.filter(s => s.auditorium === auditorium)"
+                            <template v-for="show in showsWithSeats.filter(s => s.auditorium === auditorium)"
                                 :key="show.playlist + show.scheduledTime">
                                 <div class="show" :style="{
                                     left: (normaliseDate(show.scheduledTime) * 100) + '%',
                                     width: (normaliseDate(show.endTime) - normaliseDate(show.scheduledTime)) * 100 + '%',
-                                    '--hue': !colourful ? 230 : showTitles.indexOf(show.title) * (360 / showTitles.length)
+                                    '--hue': colourHueTitle ? getTitleHue(show.title) : 80,
+                                    '--chroma': colourSaturationOccupancy ? getOccupancyChroma(show.occupancy) : 50,
                                 }">
                                     <span>{{ show.playlist }}</span>
                                     <br>
@@ -190,8 +247,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                                             format(show.endTime, 'HH:mm', { locale: nl }) }}
                                     </span>
                                     <span class="admits">
-                                        <Input class="contents-only" v-model.number="show.admits" type="number"
-                                            autocomplete="off" min="0" />
+                                        {{ show.seatsSold }}/{{ show.seatsTotal }}
                                     </span>
                                 </div>
                             </template>
@@ -204,61 +260,26 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                 <div class="flex" style="flex-direction: column;">
                     <TimetableUploadSection />
 
+                    <PosScheduleUploadSection v-show="tmsScheduleStore.table.length" />
+
                     <Tabs>
 
                         <Tab value="Uitlopen">
-                            <div class="shows-list">
-                                <template
-                                    v-for="show in [...showsWithAdmits].sort((a, b) => a.creditsTime.getTime() - b.creditsTime.getTime())"
-                                    :key="show.playlist + show.scheduledTime">
-                                    <div class="show">
-                                        <div>{{ show.auditorium.replace(/^\w+\s/, '') }}</div>
-                                        <div>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}
-                                        </div>
-                                        <div style="opacity: 1;">
-                                            <Input v-if="!showStarted(show, now)" class="contents-only"
-                                                v-model.number="show.admits" type="number" autocomplete="off" min="0" />
-                                        </div>
-                                        <div>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}
-                                        </div>
-                                        <div style="opacity: 1;">
-                                            <Input v-if="showStarted(show, now)" class="contents-only"
-                                                v-model.number="show.admits" type="number" autocomplete="off" min="0" />
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
+                            <ShowsTable :shows="showsByExitTime" :now="now" />
                         </Tab>
 
                         <Tab value="Inlopen">
-                            <div class="shows-list">
-                                <template
-                                    v-for="show in [...showsWithAdmits].sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())"
-                                    :key="show.playlist + show.scheduledTime">
-                                    <div class="show">
-                                        <div>{{ show.auditorium.replace(/^\w+\s/, '') }}</div>
-                                        <div>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}
-                                        </div>
-                                        <div style="opacity: 1;">
-                                            <Input v-if="!showStarted(show, now)" class="contents-only"
-                                                v-model.number="show.admits" type="number" autocomplete="off" min="0" />
-                                        </div>
-                                        <div>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}
-                                        </div>
-                                        <div style="opacity: 1;">
-                                            <Input v-if="showStarted(show, now)" class="contents-only"
-                                                v-model.number="show.admits" type="number" autocomplete="off" min="0" />
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
+                            <ShowsTable :shows="showsByEntryTime" :now="now" />
                         </Tab>
 
                         <Tab value="Opties">
                             <fieldset>
                                 <legend>Weergave</legend>
-                                <InputSwitch v-model="colourful" identifier="colourful">
-                                    <span>Kleurrijke planning</span>
+                                <InputSwitch v-model="colourHueTitle" identifier="colourHueTitle">
+                                    <span>Kleurtint afhankelijk van titel</span>
+                                </InputSwitch>
+                                <InputSwitch v-model="colourSaturationOccupancy" identifier="colourSaturationOccupancy">
+                                    <span>Kleurchroma afhankelijk van bezetting</span>
                                 </InputSwitch>
                             </fieldset>
                         </Tab>
@@ -276,11 +297,6 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 </template>
 
 <style scoped>
-@function --admits-opacity(--admits) {
-    /* @return calc(var(--admits) / (30 + (var(--admits)))); */
-    @return max(0.15, calc(1 - exp(-1 * (var(--admits) / 6)0)));
-}
-
 .planner-section {
     h3 {
         margin-bottom: 8px;
@@ -288,14 +304,10 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 }
 
 .waterfall {
-    /* &.black :deep(.waterfall-strip) {
-        background-color: #000000;
-    } */
-
     .show {
         position: absolute;
         background-color: hsl(var(--hue) 50% 30%);
-        background-color: lch(40% 15% var(--hue));
+        background-color: lch(50 var(--chroma) var(--hue));
         color: white;
         padding: 2px 5px;
         border-radius: 3px;
@@ -334,7 +346,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
     .enter-workload {
         position: absolute;
         background-color: hsl(var(--hue) 50% 30%);
-        background-color: lch(40% 15% var(--hue));
+        background-color: lch(50 var(--chroma) var(--hue));
         mask-image: linear-gradient(to right,
                 transparent 0%,
                 black 40%,
@@ -346,14 +358,13 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 
         /* transform: scaleX(calc(0.0075 * var(--admits) + 0.167)); */
 
-        opacity: --admits-opacity(var(--admits));
-        opacity: max(0.15, calc(1 - exp(-1 * (var(--admits) / 60))));
+        opacity: min(calc(var(--admits) + 0.15), 1);
     }
 
     .plf-workload {
         position: absolute;
         background-color: hsl(var(--hue) 50% 30%);
-        background-color: lch(40% 15% var(--hue));
+        background-color: lch(50 var(--chroma) var(--hue));
         /* mask-image: linear-gradient(to right,
                 transparent 0%,
                 black 40%,
@@ -368,14 +379,13 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
         ;
         transform-origin: bottom;
 
-        opacity: --admits-opacity(var(--admits));
-        opacity: max(0.15, calc(1 - exp(-1 * (var(--admits) / 60))));
+        opacity: min(calc(var(--admits) + 0.15), 1);
     }
 
     .exit-workload {
         position: absolute;
         background-color: hsl(var(--hue) 50% 30%);
-        background-color: lch(40% 15% var(--hue));
+        background-color: lch(50 var(--chroma) var(--hue));
         mask-image: linear-gradient(to right,
                 black 0%,
                 black 50%,
@@ -387,14 +397,13 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
         /* transform: scaleX(calc(0.0075 * var(--admits) + 0.167)); */
         transform-origin: left;
 
-        opacity: --admits-opacity(var(--admits));
-        opacity: max(0.15, calc(1 - exp(-1 * (var(--admits) / 60))));
+        opacity: min(calc(var(--admits) + 0.15), 1);
     }
 
     .intermission-workload {
         position: absolute;
         background-color: hsl(var(--hue) 50% 30%);
-        background-color: lch(40% 15% var(--hue));
+        background-color: lch(50 var(--chroma) var(--hue));
         mask-image: linear-gradient(to right,
                 black 0%,
                 black 50%,
@@ -408,37 +417,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
         ;
         transform-origin: top;
 
-        opacity: --admits-opacity(var(--admits));
-        opacity: max(0.15, calc(1 - exp(-1 * (var(--admits) / 60))));
-    }
-}
-
-.shows-list {
-    max-width: 300px;
-    font-size: 11px;
-    display: grid;
-    grid-template-columns: repeat(5, auto);
-
-    .show {
-        grid-column: 1 / -1;
-        display: grid;
-        grid-template-columns: subgrid;
-
-        &>div {
-            opacity: .75;
-        }
-
-        input.contents-only {
-            max-width: 30px;
-            background-color: #fff1;
-            text-align: end;
-            padding: 0px 4px;
-
-            &::-webkit-outer-spin-button,
-            &::-webkit-inner-spin-button {
-                -webkit-appearance: none;
-            }
-        }
+        opacity: min(calc(var(--admits) + 0.15), 1);
     }
 }
 </style>

@@ -6,10 +6,10 @@ export const useTmsXmlStore = defineStore('tmsXml', () => {
     const obj = ref<{}>({});
     const metadata = ref<{ name: string, type: string, lastModified: number, size: number } | {}>({});
 
-    async function uploadXml(fileList: FileList) {
+    async function uploadXml(fileList: File[] | FileList) {
         const file = fileList[0];
         if (!file || !isXmlFile(file)) return;
-        
+
         obj.value = {};
         metadata.value = {};
 

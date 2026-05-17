@@ -1,70 +1,32 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { useTmsScheduleStore } from '@/stores/tmsSchedule';
+import { usePosScheduleStore } from '@/stores/posSchedule';
 
-const store = useTmsScheduleStore();
-
-const showOptions = ref<boolean>(false);
-const hideFileTypeNotice = ref<boolean>(false);
-
-watch(store, () => hideFileTypeNotice.value = false, { deep: true });
+const store = usePosScheduleStore();
 </script>
 
 <template>
     <div id="upload">
         <div class="section-content">
-            <FileUploadBlock @files-uploaded="store.filesUploaded" accept="text/csv,.csv,text/tsv,.tsv"
-                :highlight="!store.table.length">
+            <FileUploadBlock @files-uploaded="store.uploadXml" accept="text/xml,.xml"
+                :highlight="false">
                 <p v-if="'name' in store.metadata" style="margin: 0; flex-grow: 1;"
                     :title="[`Bestandsnaam: ${store.metadata.name}`, `Gewijzigd op: ${format(store.metadata.lastModified, 'PPpp', { locale: nl })}`, `Geüpload op: ${format(store.metadata.uploadedDate, 'PPpp', { locale: nl })}`].join('\n')">
-                    <span v-if="store.metadata.flags.includes('times-only')">{{ store.metadata.name }}</span>
-                    <span v-else>
-                        Tijdenlijst van {{ format(store.table[0].scheduledTime, 'PPPP', { locale: nl }) }}
+                    <span>
+                        Aantallen van {{ format(store.metadata.timestamp, 'PPPPp', { locale: nl }) }}
                     </span>
-                    <br>
-                    <small>
-                        Bevat {{ store.table.length }} voorstellingen
-                        {{store.table.some(show => show.intermissionTime) ? 'met pauzes' : ''}}
-                    </small>
                 </p>
                 <p v-else style="margin: 0; flex-grow: 1;">
-                    Geen gegevens
+                    Geen aantallen
                     <br>
-                    <small>Upload een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) met de knop of
-                        door hem hierheen te slepen.</small>
+                    <small>Upload een aantallenbestand (knop <b>POS</b> in RosettaBridge) met de knop of door hem hierheen te slepen.</small>
                 </p>
                 <template #buttons>
                     <slot name="buttons"></slot>
                 </template>
             </FileUploadBlock>
         </div>
-
-        <Transition>
-            <ModalDialog
-                v-if="(('type' in store.metadata && store.metadata.type.includes('csv')) || ('flags' in store.metadata && store.metadata.flags.includes('times-only'))) && !hideFileTypeNotice"
-                @dismiss="hideFileTypeNotice = true">
-                <h3>Opmerking</h3>
-                <p id="file-upload-notice">
-                    Je hebt een <span v-if="store.metadata.type.includes('csv')"><b>CSV</b>-</span>bestand
-                    <span v-if="store.metadata.flags.includes('times-only')">met de optie <b>Times only</b></span>
-                    geüpload. Voor tijdenlijstjes is dat meestal prima, maar soms kunnen er problemen optreden.
-                    <br>
-                    <br>Kies in RosettaBridge liever
-                    <span v-if="store.metadata.flags.includes('times-only')">
-                        <em>Dates - ISO</em> in plaats van <i>Dates - Times only</i>.
-                    </span>
-                    <span v-if="store.metadata.type.includes('csv')">
-                        <span v-if="store.metadata.flags.includes('times-only')">
-                            <br>Klik dan op
-                        </span>
-                        <em>TSV</em> in plaats van <i>CSV</i>.
-                    </span>
-                    Dankjewel!
-                </p>
-            </ModalDialog>
-        </Transition>
     </div>
 </template>
 

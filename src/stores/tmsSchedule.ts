@@ -18,9 +18,9 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
 
     const intermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
 
-    async function filesUploaded(files: FileList | File[]) {
+    async function filesUploaded(fileList: File[] | FileList) {
         try {
-            const file = Array.isArray(files) ? files[0] : files.item(0);
+            const file = Array.isArray(fileList) ? fileList[0] : fileList.item(0);
             if (!file) throw new Error("No file provided");
 
             let json: TmsScheduleJson;
