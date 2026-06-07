@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { provide, ref } from 'vue';
+import { provide, computed, ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { format } from 'date-fns';
 import { useStorage, useWindowSize } from '@vueuse/core';
+import { useInternetTime } from './composables/useInternetTime';
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const now = ref(new Date())
-setInterval(updateNowValue, 1000)
-updateNowValue()
-function updateNowValue() {
-    now.value = new Date();
-}
-provide('now', now);
+const internetTime = useInternetTime();
+provide('internetTime', internetTime);
+
+const currentYear = computed(() => internetTime.value.getFullYear());
 
 const userHasInteracted = ref(false);
 document.addEventListener('click', () => userHasInteracted.value = true, { once: true });
@@ -48,7 +46,7 @@ const aboutOpen = ref(false);
                 <a @click="aboutOpen = true" title="Over deze website">
                     <Icon>help</Icon>
                 </a>
-                <div id="clock">{{ format(now, 'HH:mm:ss') }}</div>
+                <div id="clock">{{ format(internetTime, 'HH:mm:ss') }}</div>
             </div>
         </div>
     </header>
@@ -60,7 +58,7 @@ const aboutOpen = ref(false);
     <Transition>
         <ModalDialog v-if="aboutOpen" @dismiss="aboutOpen = false">
             <h3>Over</h3>
-            <p>Quinten Althues © 2024-{{ new Date().getFullYear() }}</p>
+            <p>Quinten Althues © 2024-{{ currentYear }}</p>
             <p>
                 Deze website is niet officieel verbonden aan Pathé.
             </p>

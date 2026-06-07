@@ -18,7 +18,7 @@ type ShowWithSeats = Show & { seatsSold: number; seatsTotal: number; occupancy: 
 const tmsScheduleStore = useTmsScheduleStore();
 const posScheduleStore = usePosScheduleStore();
 
-const now = inject<Ref<Date>>('now');
+const internetTime = inject<Ref<Date>>('internetTime');
 
 const isHovering = ref<boolean>(false);
 const hoverPos = ref<number>(0);
@@ -125,7 +125,7 @@ const showsWith4dx = computed(() =>
 
             <main>
                 <h1>Planner (bèta)
-                    <span v-if="isHovering && now" style="float:right;">
+                    <span v-if="isHovering && internetTime" style="float:right;">
                         {{ format(new Date(rangeStart.getTime() + hoverPos * (rangeEnd.getTime() -
                             rangeStart.getTime())), 'HH:mm', { locale: nl }) }}
                     </span>
@@ -134,7 +134,7 @@ const showsWith4dx = computed(() =>
 
                 <div class="planner-section">
                     <h3>Werkdruk</h3>
-                    <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
+                    <Waterfall class="black" :now="normaliseDate(internetTime)" v-model:is-hovering="isHovering"
                         v-model:hover-pos="hoverPos" title="Ushering">
                         <template v-for="show in showsWithSeats" :key="show.playlist + show.scheduledTime">
                             <div class="exit-workload" :style="{
@@ -168,7 +168,7 @@ const showsWith4dx = computed(() =>
                         </template>
                     </Waterfall>
 
-                    <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
+                    <Waterfall class="black" :now="normaliseDate(internetTime)" v-model:is-hovering="isHovering"
                         v-model:hover-pos="hoverPos" title="Portier en F&B">
                         <template v-for="show in showsWithSeats" :key="show.playlist + show.scheduledTime">
                             <div class="enter-workload" :style="{
@@ -182,7 +182,7 @@ const showsWith4dx = computed(() =>
                         </template>
                     </Waterfall>
 
-                    <Waterfall class="black" :now="normaliseDate(now)" v-model:is-hovering="isHovering"
+                    <Waterfall class="black" :now="normaliseDate(internetTime)" v-model:is-hovering="isHovering"
                         v-model:hover-pos="hoverPos" title="Totaal">
                         <template v-for="show in showsWithSeats" :key="show.playlist + show.scheduledTime">
                             <div class="exit-workload" :style="{
@@ -230,7 +230,7 @@ const showsWith4dx = computed(() =>
                 <div class="planner-section">
                     <h3>Zalen</h3>
                     <template v-for="auditorium in auditoriums" :key="auditorium">
-                        <Waterfall :now="normaliseDate(now)" v-model:is-hovering="isHovering"
+                        <Waterfall :now="normaliseDate(internetTime)" v-model:is-hovering="isHovering"
                             v-model:hover-pos="hoverPos" :title="auditorium">
                             <template v-for="show in showsWithSeats.filter(s => s.auditorium === auditorium)"
                                 :key="show.playlist + show.scheduledTime">
@@ -265,11 +265,11 @@ const showsWith4dx = computed(() =>
                     <Tabs>
 
                         <Tab value="Uitlopen">
-                            <ShowsTable :shows="showsByExitTime" :now="now" />
+                            <ShowsTable :shows="showsByExitTime" :now="internetTime" />
                         </Tab>
 
                         <Tab value="Inlopen">
-                            <ShowsTable :shows="showsByEntryTime" :now="now" />
+                            <ShowsTable :shows="showsByEntryTime" :now="internetTime" />
                         </Tab>
 
                         <Tab value="Opties">

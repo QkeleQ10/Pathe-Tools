@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
 const store = useTmsScheduleStore();
-const now = inject<Ref<Date>>('now');
+const internetTime = inject<Ref<Date>>('internetTime');
 
 const userHasInteracted = inject<Ref<boolean>>('userHasInteracted');
 
@@ -41,7 +41,7 @@ const preferredVoices = useStorage<string[]>('preferred-voices', [defaultVoiceKe
 const chimeSound = useStorage('chime-sound-str', 'chime01', localStorage); // which chime sound to use before announcements
 
 const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([]);
-const customAnnouncementDate = ref<Date>(new Date());
+const customAnnouncementDate = ref<Date>(new Date(internetTime.value.getTime() + 5 * 60000)); // default to 5 minutes from now
 
 const scheduledAnnouncements = ref<Announcement[]>([])
 store.$subscribe(() => scheduleAnnouncements(), { deep: true })
@@ -136,7 +136,7 @@ async function scheduleAnnouncements(debug: boolean = false) {
                     })),
                     audio: null,
                 };
-                if (debug || announcement.time.getTime() > Date.now()) {
+                if (debug || announcement.time.getTime() > internetTime.value.getTime()) {
                     arr.push(announcement);
                 }
             }
@@ -172,7 +172,7 @@ async function regenerate() {
  */
 async function generateAndEnqueue() {
     for (const announcement of scheduledAnnouncements.value.filter(announcement => {
-        const timeUntilAnnouncement = announcement.time.getTime() - Date.now() - 1000;
+        const timeUntilAnnouncement = announcement.time.getTime() - internetTime.value.getTime() - 1000;
         return timeUntilAnnouncement > -10000 && timeUntilAnnouncement < 30000 && !announcement.scheduled;
     })) {
         await generateAudio(announcement);
@@ -188,7 +188,7 @@ async function generateAudio(announcement: Announcement) {
 
 async function enqueueAnnouncement(announcement: Announcement) {
     if (announcement.scheduled) return;
-    const timeUntilAnnouncement = announcement.time.getTime() - Date.now() - 1000;
+    const timeUntilAnnouncement = announcement.time.getTime() - internetTime.value.getTime() - 1000;
 
     const timeout = setTimeout(() => {
         if (!announcement.audio) return;
@@ -302,7 +302,7 @@ const { isOverDropZone } = useDropZone(main, {
                 <template v-if="store.table.length < 1">
                     <p>
                         <template
-                            v-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1">Er
+                            v-if="scheduledAnnouncements.filter(announcement => internetTime.getTime() - announcement.time.getTime() < 10000).length < 1">Er
                             zijn geen omroepen gepland. <br></template>
                         Upload eerst een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) door hem naar
                         deze pagina te slepen. <br>
@@ -310,7 +310,7 @@ const { isOverDropZone } = useDropZone(main, {
                     </p>
                 </template>
                 <template
-                    v-else-if="scheduledAnnouncements.filter(announcement => now.getTime() - announcement.time.getTime() < 10000).length < 1">
+                    v-else-if="scheduledAnnouncements.filter(announcement => internetTime.getTime() - announcement.time.getTime() < 10000).length < 1">
                     <p>
                         Er zijn geen omroepen gepland. <br>
                         Het geüploade bestand bevat voorstellingen van {{

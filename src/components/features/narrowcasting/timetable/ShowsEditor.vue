@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { format } from 'date-fns';
-import { ref, h, useTemplateRef, onMounted } from 'vue';
+import { ref, h, useTemplateRef, onMounted, inject, Ref } from 'vue';
 import { showDialog } from '@/scripts/dialogManager';
 import { nl } from 'date-fns/locale';
 import { TimetableShow } from '@/scripts/types';
@@ -15,8 +15,10 @@ const showBeingEdited = ref<TimetableShow | null>(null);
 
 const list = useTemplateRef('list');
 
+const internetTime = inject<Ref<Date>>('internetTime');
+
 onMounted(() => {
-    const firstUnstartedShow = props.shows.find(show => show.scheduledTime.getTime() - Date.now() >= -(15 * 60000));
+    const firstUnstartedShow = props.shows.find(show => show.scheduledTime.getTime() - internetTime.value.getTime() >= -(15 * 60000));
     if (firstUnstartedShow && list.value) {
         const element = document.getElementById(`show-${firstUnstartedShow.i}`);
         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -51,7 +53,7 @@ function openEditDialog(show: TimetableShow) {
 }
 
 function addShow() {
-    const scheduledTime = new Date();
+    const scheduledTime = new Date(internetTime.value);
     scheduledTime.setSeconds(0, 0);
     scheduledTime.setMinutes(Math.ceil((scheduledTime.getMinutes() + 1) / 5) * 5);
 
@@ -96,7 +98,7 @@ function clearEditedIntermission() {
 function addEditedIntermission() {
     if (!showBeingEdited.value) return;
 
-    const intermissionTime = new Date();
+    const intermissionTime = new Date(internetTime.value);
     intermissionTime.setSeconds(0, 0);
     intermissionTime.setMinutes(Math.ceil((intermissionTime.getMinutes() + 1) / 5) * 5);
 
@@ -120,7 +122,7 @@ function addEditedIntermission() {
                     class="show" :key="show.i" :id="`show-${show.i}`">
                     <span :class="{
                         'too-long': show.title.length > 35,
-                        'strikethrough': show.scheduledTime.getTime() - Date.now() < -(15 * 60000)
+                        'strikethrough': show.scheduledTime.getTime() - internetTime.getTime() < -(15 * 60000)
                     }" :title="show.title">
                         <strong>{{ show.title || 'Geen titel' }}</strong>
                     </span>
@@ -129,7 +131,7 @@ function addEditedIntermission() {
                         <strong>{{ format(show.scheduledTime, 'HH:mm', { locale: nl }) }}</strong>
                         &bullet;
                         {{ show.auditorium ? `Zaal ${show.auditorium}` : 'Geen zaal' }}
-                        <template v-if="show.scheduledTime.getTime() - Date.now() < -(15 * 60000)">
+                        <template v-if="show.scheduledTime.getTime() - internetTime.getTime() < -(15 * 60000)">
                             &bullet; Gestart
                         </template>
                     </small>

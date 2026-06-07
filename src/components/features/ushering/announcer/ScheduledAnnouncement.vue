@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, inject, Ref, onMounted, watch, watchEffect } from 'vue';
+import { ref, inject, Ref, watchEffect } from 'vue';
 import { format } from 'date-fns';
 import { Announcement } from '@/scripts/types.ts';
 import { getSoundName } from '@/scripts/voices';
 
-const now = inject<Ref<Date>>('now');
+const internetTime = inject<Ref<Date>>('internetTime');
 
 const props = defineProps<{
     announcement: Announcement;
@@ -45,14 +45,14 @@ watchEffect(() => {
 </script>
 
 <template>
-    <li class="announcement" v-if="announcement.time.getTime() > now.getTime() || announcement.audio">
+    <li class="announcement" v-if="announcement.time.getTime() > internetTime.getTime() || announcement.audio">
 
         <div class="contents" style="flex: 60% 1 1;" :class="{ 'playing': isPlaying }" :style="{
             '--progress': (currentTime / announcement.audio?.duration * 100) + '%'
         }">
             <div style="font-size: 14px;">
                 {{ format(announcement.time, 'HH:mm:ss') }}
-                (over {{ formatTimeLeft(announcement.time.getTime() - now.getTime()) }})
+                (over {{ formatTimeLeft(announcement.time.getTime() - internetTime.getTime()) }})
             </div>
             <div class="bar">
                 <Icon class="fill" v-if="announcement.audio && !isPlaying" @click="announcement.audio.play()">

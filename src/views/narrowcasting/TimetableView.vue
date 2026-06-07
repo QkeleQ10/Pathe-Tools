@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject, useTemplateRef, onBeforeUnmount, onMounted, Ref, h, provide } from 'vue';
+import { ref, computed, inject, useTemplateRef, onBeforeUnmount, onMounted, Ref, provide } from 'vue';
 import { useStorage, useDropZone, useLocalStorage } from '@vueuse/core';
 import { DisplayLine, TimetableShow } from '@/scripts/types';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule.ts';
@@ -13,7 +13,7 @@ import ShowsEditor from '@/components/features/narrowcasting/timetable/ShowsEdit
 
 const FORMAT_REGEX = /~[CB]\d;|~[FNRI];/g;
 
-const now = inject<Ref<Date>>('now');
+const internetTime = inject<Ref<Date>>('internetTime');
 
 const store = useTmsScheduleStore();
 
@@ -142,15 +142,15 @@ const showsSoon = computed(() => {
     return [...shows.value]
         .sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime())
         .filter(show =>
-            show.scheduledTime.getTime() - now.value.getTime() > -(hideTime.value * 60000) &&
-            show.scheduledTime.getTime() - now.value.getTime() < 180 * 60000
+            show.scheduledTime.getTime() - internetTime.value.getTime() > -(hideTime.value * 60000) &&
+            show.scheduledTime.getTime() - internetTime.value.getTime() < 180 * 60000
         ); // shows starting within -17 minutes and 3 hours from now
 });
 
 const showsInIntermission = computed(() => {
     return shows.value.filter(show =>
-        show.intermissionTime && show.intermissionTime.getTime() - 60000 < now.value.getTime() &&
-        show.intermissionEndTime && show.intermissionEndTime.getTime() + 60000 > now.value.getTime()
+        show.intermissionTime && show.intermissionTime.getTime() - 60000 < internetTime.value.getTime() &&
+        show.intermissionEndTime && show.intermissionEndTime.getTime() + 60000 > internetTime.value.getTime()
     );
 });
 
@@ -159,7 +159,7 @@ const currentConfiguration = computed(() => {
         // if there's a show starting within -17 minutes and 3 hours from now OR if there's an intermission right now
         if (autoConfigShows.value === 'manual') return manualConfiguration.value;
         return presetConfigurations[autoConfigShows.value].lines();
-    } else if (now.value.getHours() >= 21 || now.value.getHours() < 1) {
+    } else if (internetTime.value.getHours() >= 21 || internetTime.value.getHours() < 1) {
         // else if it's between 21:00 and 00:59
         if (autoConfigNoShows.value === 'manual') return manualConfiguration.value;
         return presetConfigurations[autoConfigNoShows.value].lines();
@@ -238,8 +238,8 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
                 continue;
             }
 
-            const hasStarted = show.scheduledTime.getTime() - Date.now() < -(isStartedTime.value * 60000);
-            const isAboutToStart = show.scheduledTime.getTime() - Date.now() < -(aboutToStartTime.value * 60000) && !hasStarted;
+            const hasStarted = show.scheduledTime.getTime() - internetTime.value.getTime() < -(isStartedTime.value * 60000);
+            const isAboutToStart = show.scheduledTime.getTime() - internetTime.value.getTime() < -(aboutToStartTime.value * 60000) && !hasStarted;
 
             const title = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
             const auditorium = show.auditorium.padStart(auditoriumColumnWidth);
@@ -279,7 +279,7 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
                 + displayPlfTags ? show.tags.plf.map(e => ` ${e}`).join('') : ''
                     + displayLanguageTags ? show.tags.language.map(e => ` ${e}`).join('') : ''
                         + displayAgeTags ? show.tags.age.map(e => ` ${e}`).join('') : '';
-            const minsRemaining = Math.floor((show.intermissionEndTime!.getTime() - Date.now()) / 60000);
+            const minsRemaining = Math.floor((show.intermissionEndTime!.getTime() - internetTime.value.getTime()) / 60000);
 
             let strStart = padEnd(`~C1;PAUZE~C3; ${title}${tags}`, 60);
             let strEnd = ` ~C1;nog ${minsRemaining} min~C3; ${auditorium}`;
@@ -351,8 +351,8 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
 function generatePacket(displayLines: DisplayLine[] = fillEmptyLinesWithShows(currentConfiguration.value), shiftBeta: boolean = false): qmln.Packet {
     if (
         autoBlack.value && !showsSoon.value.length && (
-            (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
-            (new Date().getHours() === 9 && new Date().getMinutes() < 30)
+            (internetTime.value.getHours() >= 1 && internetTime.value.getHours() < 9) ||
+            (internetTime.value.getHours() === 9 && internetTime.value.getMinutes() < 30)
         )
     ) {
         return new qmln.Packet(
@@ -494,7 +494,7 @@ async function sendData(hex: string = generatePacket().toString(), force = false
         })
     );
 
-    sendTime.value = sendTime.value.map((_, i) => connectedIps.includes(addresses.value[i]) ? new Date() : sendTime.value[i]);
+    sendTime.value = sendTime.value.map((_, i) => connectedIps.includes(addresses.value[i]) ? new Date(internetTime.value) : sendTime.value[i]);
     lastSentPacket.value = hex.toString();
 
     sending.value = sending.value.map((_, i) => false);
@@ -584,9 +584,9 @@ async function refresh() {
         intervalId = setInterval(() => sendData(), 5000);
 
         sendData(new qmln.Packet(
-            null, null, new qmln.FunctionSetClock(new Date())
+            null, null, new qmln.FunctionSetClock(internetTime.value)
         ).toString()); // initial clock sync
-    }, 5000 - Date.now() % 5000);
+    }, 5000 - internetTime.value.getTime() % 5000);
 }
 
 onBeforeUnmount(() => {
@@ -718,13 +718,14 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                     </div>
                     <div id="matrix-display" :class="{
                         blackout: autoBlack && !showsSoon.length && (
-                            (new Date().getHours() >= 1 && new Date().getHours() < 9) ||
-                            (new Date().getHours() === 9 && new Date().getMinutes() < 30)
+                            (internetTime.getHours() >= 1 && internetTime.getHours() < 9) ||
+                            (internetTime.getHours() === 9 && internetTime.getMinutes() < 30)
                         )
                     }">
                         <span id="matrix-display-title">Pathé Timetable</span>
-                        <pre class="matrix-clock">{{ format(now, 'HH:mm') }}</pre>
-                        <div v-for="(line, i) in fillEmptyLinesWithShows(currentConfiguration, now)" class="matrix-row"
+                        <pre class="matrix-clock">{{ format(internetTime, 'HH:mm') }}</pre>
+                        <div v-for="(line, i) in fillEmptyLinesWithShows(currentConfiguration, internetTime)"
+                            class="matrix-row"
                             :style="{ '--marquee-duration': ((0.02 * Math.max(60, line.textString.replace(FORMAT_REGEX, '').length) + 0.08) * (-1 * line.speed + 13)) + 's' }"
                             :class="`align${line.align || 'left'}`">
                             <div>
@@ -759,7 +760,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
                                     <span>Nu verzenden</span>
                                 </Button>
                                 <Button class="tertiary" @click="sendData(new qmln.Packet(
-                                    null, null, new qmln.FunctionSetClock(new Date())
+                                    null, null, new qmln.FunctionSetClock(internetTime)
                                 ).toString())" :disabled="sending.some(s => s)">
                                     <span>Klok bijwerken</span>
                                 </Button>
