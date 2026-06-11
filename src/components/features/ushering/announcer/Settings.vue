@@ -15,7 +15,8 @@ const dialogActive = ref(false);
 
 const emit = defineEmits(['regenerate', 'previewAnnouncement', 'scheduleAnnouncements']);
 
-const intermissionDuration = useLocalStorage('default-intermission-duration', 12) // duration of intermissions in minutes
+const defaultIntermissionDuration = useLocalStorage('default-intermission-duration', 12) // duration of intermissions in minutes
+const specialIntermissionDuration = useLocalStorage('special-intermission-duration', 20) // duration of intermissions in minutes
 
 const preferredVoices = useLocalStorage<string[]>('preferred-voices', [defaultVoiceKey], { mergeDefaults: true });
 const voiceBehaviour = useLocalStorage<'roundrobin'>('voice-behaviour', 'roundrobin'); // only one behaviour for now, but maybe more in the future
@@ -71,11 +72,19 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
         <template #content>
 
             <SettingsSection category-id="general" title="Algemeen">
-                <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration" min="0"
-                    max="30">
-                    <template #label>Standaardduur filmpauzes</template>
-                    <span class="unit">minuten</span>
-                </InputGroup>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <InputGroup type="number" id="defaultIntermissionDuration" v-model.number="defaultIntermissionDuration" min="0"
+                        max="30">
+                        <template #label>Standaardduur filmpauzes</template>
+                        <span class="unit">minuten</span>
+                    </InputGroup>
+                    <InputGroup type="number" id="specialIntermissionDuration" v-model.number="specialIntermissionDuration" min="0"
+                        max="30">
+                        <template #label>Duur filmpauzes FILM+</template>
+                        <span class="unit">minuten</span>
+                    </InputGroup>
+                </div>
             </SettingsSection>
 
             <SettingsSection category-id="voice" title="Geluid">

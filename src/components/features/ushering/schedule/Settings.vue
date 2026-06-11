@@ -18,7 +18,8 @@ const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the d
 
 const fontSize = useStorage('schedule-font-size', 12.5) // font size in pixels
 
-const intermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
+const defaultIntermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
+const specialIntermissionDuration = useStorage('special-intermission-duration', 20) // duration of intermissions in minutes
 
 </script>
 
@@ -57,11 +58,19 @@ const intermissionDuration = useStorage('default-intermission-duration', 12) // 
                         </template>
                     </InputGroup>
                 </div>
-                <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration" min="0"
-                    max="30">
-                    <template #label>Standaardduur filmpauzes</template>
-                    <span class="unit">minuten</span>
-                </InputGroup>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <InputGroup type="number" id="defaultIntermissionDuration" v-model.number="defaultIntermissionDuration" min="0"
+                        max="30">
+                        <template #label>Standaardduur filmpauzes</template>
+                        <span class="unit">minuten</span>
+                    </InputGroup>
+                    <InputGroup type="number" id="specialIntermissionDuration" v-model.number="specialIntermissionDuration" min="0"
+                        max="30">
+                        <template #label>Duur filmpauzes FILM+</template>
+                        <span class="unit">minuten</span>
+                    </InputGroup>
+                </div>
             </SettingsSection>
 
             <SettingsSection category-id="columns" title="Kolommen">

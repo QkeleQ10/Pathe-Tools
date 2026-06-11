@@ -17,7 +17,7 @@ const internetTime = inject<Ref<Date>>('internetTime');
 
 const store = useTmsScheduleStore();
 
-const intermissionDuration = useStorage('default-intermission-duration', 12)
+const defaultIntermissionDuration = useStorage('default-intermission-duration', 12)
 
 const addresses = useStorage('addresses', ["10.10.87.81", "10.10.87.82"]);
 
@@ -569,7 +569,7 @@ async function refresh() {
                 auditorium: transformedAuditorium,
                 scheduledTime: show.scheduledTime,
                 intermissionTime: show.intermissionTime,
-                intermissionEndTime: show.intermissionTime ? new Date(show.intermissionTime.getTime() + intermissionDuration.value * 60000) : null,
+                intermissionEndTime: show.intermissionTime ? new Date(show.intermissionTime.getTime() + defaultIntermissionDuration.value * 60000) : null,
             }
         });
 

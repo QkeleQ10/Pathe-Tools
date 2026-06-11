@@ -15,8 +15,8 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     const status = ref<'no-connection' | 'no-credentials' | 'sending' | 'sent' | 'send-error' | 'receiving' | 'received' | 'receive-error' | 'error'>('no-connection');
     const flags = ref<string[]>([]);
 
-
-    const intermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
+    const defaultIntermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
+    const specialIntermissionDuration = useStorage('special-intermission-duration', 20) // duration of intermissions in minutes
 
     async function filesUploaded(fileList: File[] | FileList) {
         try {
@@ -111,9 +111,14 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                     const featureTime = timeStringToDate(obj.FEATURE_TIME);
 
                     // If the difference between SCHEDULED_TIME and FEATURE_TIME is more than 30 minutes, then FEATURE_TIME is probably the end of the intermission (so subtract {intermissionDuration} minutes for the intermission time). Otherwise, it's probably the main show time.
-                    if (featureTime && featureTime.getTime() - show.scheduledTime.getTime() > 1800000)
-                        show.intermissionTime = new Date(featureTime.getTime() - (intermissionDuration.value * 60000));
-                    else show.mainShowTime = featureTime;
+                    if (featureTime && featureTime.getTime() - show.scheduledTime.getTime() > 1800000) {
+                        let intermissionDuration = show.playlist.includes('FILM+')
+                            ? specialIntermissionDuration.value
+                            : defaultIntermissionDuration.value
+                        show.intermissionTime = new Date(featureTime.getTime() - (intermissionDuration * 60000));
+                    } else {
+                        show.mainShowTime = featureTime;
+                    }
 
                     return show;
                 });
@@ -210,7 +215,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             .replace(" IMX", " IMAX")
             .replace(" PAUZE", '')
 
-        const possibleTags = ['4DX', 'ATMOS', 'IMAX', 'SCREENX', '3D', 'ROOFTOP', 'Music', 'Pride', 'PrideNight', 'Ladies', 'Award', 'Premiere', 'Bollywood', 'BESLOTEN', 'Besloten', 'Re-release', 'NL', 'HFR'];
+        const possibleTags = ['4DX', 'ATMOS', 'IMAX', 'SCREENX', '3D', 'ROOFTOP', 'Music', 'Pride', 'PrideNight', 'Ladies', 'FILM\\+', 'Award', 'Premiere', 'Bollywood', 'BESLOTEN', 'Besloten', 'Re-release', 'NL', 'HFR'];
         const tagsString = transformedString
             .match(new RegExp(`(\\s((${possibleTags.join(')|(')})|\\([A-Z]+\\)))+`, 'g'))?.[0].slice(1) || '';
         return {

@@ -11,11 +11,12 @@ const dialogActive = ref(false);
 
 const emit = defineEmits(['loadWalkIns']);
 
-const lastSentPacket = inject<string>('lastSentPacket', null);
+const lastSentPacket = inject<string>('lastSentPacket', '');
 const lastReceivedPacket = inject<any>('lastReceivedPacket', null);
 const presetConfigurations = inject<{ [key: string]: { name: string, lines: () => DisplayLine[] } }>('presetConfigurations', {});
 
-const intermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
+const defaultIntermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
+const specialIntermissionDuration = useStorage('special-intermission-duration', 20) // duration of intermissions in minutes
 
 const addresses = useStorage('addresses', ["10.10.87.81", "10.10.87.82"]);
 
@@ -117,11 +118,18 @@ function showFormattingInfo() {
                     Opmaak
                 </Button>
 
-                <InputGroup type="number" id="intermissionDuration" v-model.number="intermissionDuration" min="0"
-                    max="30">
-                    <template #label>Standaardduur filmpauzes</template>
-                    <span class="unit">minuten</span>
-                </InputGroup>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <InputGroup type="number" id="defaultIntermissionDuration" v-model.number="defaultIntermissionDuration" min="0"
+                        max="30">
+                        <template #label>Standaardduur filmpauzes</template>
+                        <span class="unit">minuten</span>
+                    </InputGroup>
+                    <InputGroup type="number" id="specialIntermissionDuration" v-model.number="specialIntermissionDuration" min="0"
+                        max="30">
+                        <template #label>Duur filmpauzes FILM+</template>
+                        <span class="unit">minuten</span>
+                    </InputGroup>
+                </div>
             </SettingsSection>
 
             <SettingsSection category-id="show-details" title="Voorstellingen">
@@ -369,7 +377,11 @@ function showFormattingInfo() {
                 <div>
                     <div class="label">Laatst verzonden pakket</div>
                     <div class="flex">
-                        <pre style="width: 48ch;">{{ lastSentPacket }}</pre>
+                        <pre style="width: 48ch;">{{ 
+                            lastSentPacket
+                                ?.match(/.{1,48}/g)
+                                ?.join('\n')
+                        }}</pre>
                         <pre style="width: 16ch;">{{
                             hexToAscii(lastSentPacket)
                                 .replace(/[\n\r\t]/g, " ")
