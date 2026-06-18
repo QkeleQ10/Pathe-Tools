@@ -556,7 +556,7 @@ async function refresh() {
         .map((show, i) => {
             const cleanedTitle = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
             const transformedAuditorium =
-                auditoriumMappings.value[show.auditorium] || show.auditorium.replace(/^\w+\s/, '').split(' ')[0];
+                auditoriumMappings.value[show.auditorium] || `${show.auditoriumNumber}`;
 
             return {
                 i,

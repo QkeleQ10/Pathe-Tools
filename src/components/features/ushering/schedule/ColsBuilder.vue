@@ -11,7 +11,9 @@ export const defaultColumns = [
 export const colTypes: { content: (show: UsherShow) => string; label: string; colHeading: string; value: string; icon: string, defaultWidth: number, minWidth: number }[] = [
     {
         content: (show) =>
-            show.auditorium === 'Rooftop' ? 'RT' : show.auditorium.replace(/^\w+\s/, '')
+            show.auditorium === 'Rooftop'
+                ? 'RT'
+                : show.auditorium.replace(/^\D+(?=\d)/, '')
         , label: "Zaal", colHeading: "Zaal", value: 'auditorium', icon: 'text_fields', defaultWidth: 8, minWidth: 3
     },
     {

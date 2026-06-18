@@ -92,7 +92,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                         return obj;
                     }, {} as Record<string, string>);
                 })
-                .filter(obj => !obj.PLAYLIST.includes('TMS-BLACK'))
+                .filter(obj => ['TMS-BLACK', 'DC Daily Startup', 'DC Daily Shutdown'].every(str => !obj.PLAYLIST.includes(str)))
                 .map(obj => {
                     const show: Show = {
                         title: extractTags(obj.PLAYLIST).title,
@@ -101,7 +101,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                         feature: obj.FEATURE,
                         featureRating: obj.FEATURE_RATING,
                         auditorium: obj.AUDITORIUM,
-                        auditoriumNumber: parseInt(obj.AUDITORIUM?.replace(/^\w+\s/, '')?.split(' ')[0]) || 0,
+                        auditoriumNumber: auditoriumToNumber(obj.AUDITORIUM),
                         scheduledTime: timeStringToDate(obj.SCHEDULED_TIME),
                         showTime: timeStringToDate(obj.SHOW_TIME),
                         creditsTime: timeStringToDate(obj.CREDITS_TIME) || timeStringToDate(obj.END_TIME),
@@ -181,6 +181,11 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         return tsvPattern.test(str) ? splitTsv(str) : splitCsv(str);
     }
 
+    function auditoriumToNumber(auditorium: string): number | null {
+        const num = Number(auditorium?.replace(/^\D+(?=\d)/, '')?.split(/\s|-/)[0]);
+        return !isNaN(num) && num > 0 && num <= 20 ? num : null;
+    }
+
     function timeStringToDate(timeString: string): Date {
         try {
             if (!timeString) return null; // No string provided
@@ -215,7 +220,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             .replace(" IMX", " IMAX")
             .replace(" PAUZE", '')
 
-        const possibleTags = ['4DX', 'ATMOS', 'IMAX', 'SCREENX', '3D', 'ROOFTOP', 'Music', 'Pride', 'PrideNight', 'Ladies', 'FILM\\+', 'Award', 'Premiere', 'Bollywood', 'BESLOTEN', 'Besloten', 'Re-release', 'NL', 'HFR'];
+        const possibleTags = ['4DX', 'ATMOS', 'IMAX', 'DOLBY', 'SCREENX', '3D', 'ROOFTOP', 'Music', 'Pride', 'PrideNight', 'Ladies', 'FILM\\+', 'Award', 'Premiere', 'Bollywood', 'BESLOTEN', 'Besloten', 'Re-release', 'NL', 'HFR'];
         const tagsString = transformedString
             .match(new RegExp(`(\\s((${possibleTags.join(')|(')})|\\([A-Z]+\\)))+`, 'g'))?.[0].slice(1) || '';
         return {

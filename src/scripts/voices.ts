@@ -330,12 +330,16 @@ export function findAuditoriumSound(auditorium: string): string {
     if (auditoriumMappings.value[auditorium])
         return auditoriumMappings.value[auditorium];
 
-    const num = parseInt(auditorium?.replace(/^\w+\s/, '')?.split(' ')[0]);
+    const num = Number(auditorium?.replace(/^\D+(?=\d)/, '')?.split(/\s|-/)[0]);
     if (!isNaN(num) && num > 0 && num <= 20)
         return `auditorium${String(num).padStart(2, '0')}`;
 
-    if (auditorium === 'IMAX') return 'auditorium01';
-    if (auditorium === 'Amersfoort SCRNX') return 'auditorium08';
+    if (auditorium.toLowerCase().includes('rooftop')) return 'rooftop';
+    if (auditorium.toLowerCase().includes('4dx')) return 'plf4dx';
+    if (auditorium.toLowerCase().includes('atmos')) return 'plfatmos';
+    if (auditorium.toLowerCase().includes('dolby')) return 'plfdolbycinema';
+    if (auditorium.toLowerCase().includes('imax')) return 'plfimax';
+    if (auditorium.toLowerCase().includes('scrnx')) return 'plfscreenx';
 
     return auditorium.toLowerCase();
 }

@@ -14,7 +14,7 @@ export type Show = {
     featureRating: string;
     tags: string[];
     auditorium: string;
-    auditoriumNumber: number;
+    auditoriumNumber: number | null;
     scheduledTime: Date;
     showTime: Date;
     mainShowTime?: Date;

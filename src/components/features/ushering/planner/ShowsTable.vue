@@ -27,7 +27,7 @@ function showStarted(show: ShowWithSeats, now: Date): boolean {
         </thead>
         <tbody>
             <tr v-for="show in shows" :key="show.playlist + show.scheduledTime">
-                <td>{{ show.auditorium.replace(/^\w+\s/, '') }}</td>
+                <td>{{ show.auditorium.replace(/^\D+(?=\d)/, '') }}</td>
                 <td>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}</td>
                 <td class="admits">{{ showStarted(show, now) ? '' : show.seatsSold }}</td>
                 <td>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}</td>

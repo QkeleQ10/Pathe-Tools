@@ -178,10 +178,10 @@ function showFormattingInfo() {
                         <li v-for="(spriteName, auditorium) in auditoriumMappings" :key="auditorium" class="grid">
                             <span>{{ auditorium }}</span><br>
                             <small>
-                                '{{ auditoriumMappings[auditorium] || auditorium.replace(/^\w+\s/, '').split(' ')[0] }}'
+                                '{{ auditoriumMappings[auditorium] || auditorium.replace(/^\D+(?=\d)/, '').split(' ')[0] }}'
                             </small>
                             <Input :id="'auditorium' + auditorium" v-model="auditoriumMappings[auditorium]"
-                                :placeholder="auditorium.replace(/^\w+\s/, '').split(' ')[0]"
+                                :placeholder="auditorium.replace(/^\D+(?=\d)/, '').split(' ')[0]"
                                 @blur="emit('loadWalkIns')"
                                 style="position: absolute; top: 50%; right: 64px; width: calc(50%); translate: 0 -50%;" />
                             <div class="actions">
@@ -194,11 +194,11 @@ function showFormattingInfo() {
                         <li v-for="auditorium in auditoriums.filter(a => !(a in auditoriumMappings))" :key="auditorium">
                             <span>{{ auditorium }}</span><br>
                             <small>
-                                '{{ auditorium.replace(/^\w+\s/, '').split(' ')[0] }}'
+                                '{{ auditorium.replace(/^\D+(?=\d)/, '').split(' ')[0] }}'
                             </small>
                             <div class="actions">
                                 <Icon class="edit"
-                                    @click="auditoriumMappings[auditorium] = auditorium.replace(/^\w+\s/, '').split(' ')[0];">
+                                    @click="auditoriumMappings[auditorium] = auditorium.replace(/^\D+(?=\d)/, '').split(' ')[0];">
                                     edit
                                 </Icon>
                             </div>
