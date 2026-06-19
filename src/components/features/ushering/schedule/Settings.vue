@@ -5,6 +5,8 @@ import ColsBuilder, { defaultColumns } from './ColsBuilder.vue';
 
 const dialogActive = ref(false);
 
+const emit = defineEmits(['open-column-editor']);
+
 
 const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', 'creditsTime');
 
@@ -16,7 +18,8 @@ const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 1
 const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
 const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
 
-const fontSize = useStorage('schedule-font-size', 12.5) // font size in pixels
+const autoAdjustRowHeight = useStorage('schedule-row-height-auto-adjust', true);
+const rowHeightMultiplier = useStorage('schedule-row-height-multiplier', 1);
 
 const defaultIntermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
 const specialIntermissionDuration = useStorage('special-intermission-duration', 20) // duration of intermissions in minutes
@@ -32,7 +35,7 @@ const specialIntermissionDuration = useStorage('special-intermission-duration', 
 
         <template #navigation>
             <SettingsCategoryButton category-id="general" label="Algemeen" icon="settings" />
-            <SettingsCategoryButton category-id="columns" label="Kolommen" icon="view_column" />
+            <SettingsCategoryButton category-id="table_edit" label="Indeling" icon="table_edit" />
             <SettingsCategoryButton category-id="annotations" label="Uitlopen" />
             <SettingsCategoryButton category-id="plf" label="4DX-inloop" />
             <SettingsCategoryButton category-id="extra" label="Annotaties" />
@@ -41,40 +44,33 @@ const specialIntermissionDuration = useStorage('special-intermission-duration', 
         <template #content>
 
             <SettingsSection category-id="general" title="Algemeen">
+                <InputGroup type="select" id="sortBy" v-model="sortBy">
+                    <template #label>Sorteren op</template>
+                    <template #input>
+                        <option :value="'creditsTime'">Aftitelingstijd</option>
+                        <option :value="'scheduledTime'">Aanvangstijd</option>
+                    </template>
+                </InputGroup>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <InputGroup type="select" id="fontSize" v-model="fontSize">
-                        <template #label>Lettergrootte</template>
-                        <template #input>
-                            <option :value="11">Kleiner</option>
-                            <option :value="12.5">Normaal</option>
-                            <option :value="14">Groter</option>
-                        </template>
-                    </InputGroup>
-                    <InputGroup type="select" id="sortBy" v-model="sortBy">
-                        <template #label>Sorteren op</template>
-                        <template #input>
-                            <option :value="'creditsTime'">Aftitelingstijd</option>
-                            <option :value="'scheduledTime'">Aanvangstijd</option>
-                        </template>
-                    </InputGroup>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <InputGroup type="number" id="defaultIntermissionDuration" v-model.number="defaultIntermissionDuration" min="0"
-                        max="30">
+                    <InputGroup type="number" id="defaultIntermissionDuration"
+                        v-model.number="defaultIntermissionDuration" min="0" max="30">
                         <template #label>Standaardduur filmpauzes</template>
                         <span class="unit">minuten</span>
                     </InputGroup>
-                    <InputGroup type="number" id="specialIntermissionDuration" v-model.number="specialIntermissionDuration" min="0"
-                        max="30">
+                    <InputGroup type="number" id="specialIntermissionDuration"
+                        v-model.number="specialIntermissionDuration" min="0" max="30">
                         <template #label>Duur filmpauzes FILM+</template>
                         <span class="unit">minuten</span>
                     </InputGroup>
                 </div>
             </SettingsSection>
 
-            <SettingsSection category-id="columns" title="Kolommen">
-                <ColsBuilder style="min-width: 600px;" v-model="columns" />
+            <SettingsSection category-id="table_edit" title="Indeling">
+                <p>De kolomindeling en de rijhoogte kunnen worden aangepast.</p>
+                <Button class="tertiary full left" @click="$emit('open-column-editor'); dialogActive = false">
+                    Kolom- & rij-indeling bewerken
+                </Button>
             </SettingsSection>
 
             <SettingsSection category-id="annotations" title="Uitlopen">

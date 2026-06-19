@@ -20,7 +20,7 @@ const props = defineProps<{
     };
     pageNum: number;
     numPages: number;
-    fontSize: number;
+    rowHeightMultiplier: number;
     sortBy: "scheduledTime" | "creditsTime";
 }>();
 
@@ -44,7 +44,8 @@ defineExpose({
 <template>
     <div class="page" v-if="shows.length > 0">
         <div class="print-component-wrapper">
-            <div class="print-component" ref="printComponent" :style="`font-size: ${fontSize}px;`"
+            <div class="print-component" ref="printComponent"
+                :style="`--row-height-multiplier: ${rowHeightMultiplier};`"
                 :class="{ scheduled: sortBy === 'scheduledTime' }">
                 <div class="scheduled-disclaimer" v-if="sortBy === 'scheduledTime'">{{ "INLOPEN ".repeat(30) }}</div>
                 <div class="header" v-if="'flags' in metadata" contenteditable>
@@ -129,6 +130,9 @@ defineExpose({
     overflow: hidden;
 
     display: block;
+
+    font-size: 12.5px;
+    font-size: calc(12.5px * (0.5 * var(--row-height-multiplier, 1) + 0.5));
 
     --border-color: #ffffff3d;
     --row-color: transparent;
@@ -269,7 +273,12 @@ table.timetable {
     font-family: Arial, Helvetica, sans-serif;
     font-size: inherit;
     table-layout: fixed;
-    --row-height: 1.72em;
+
+    --row-height: 21.5px;
+    --row-height: calc(21.5px * var(--row-height-multiplier, 1));
+
+    --padding-y: 2px;
+    --padding-y: calc(2px * (2 * var(--row-height-multiplier, 1) - 1));
 
     thead>tr {
         background-color: var(--header-color);
@@ -285,7 +294,8 @@ table.timetable {
 
     td {
         position: relative;
-        padding: .16em .48em;
+        padding: 0 6px;
+        vertical-align: middle;
         overflow: hidden;
         text-overflow: ellipsis;
         padding-right: 0;

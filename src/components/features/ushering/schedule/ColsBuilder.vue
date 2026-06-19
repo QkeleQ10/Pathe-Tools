@@ -363,41 +363,9 @@ function getAddButtonPosition(index: number): string {
 
 <template>
     <div class="cols-builder">
-        <small>Deze instelling is nog niet gebruiksvriendelijk en zal ik binnenkort onder handen nemen.</small>
+        <Button class="tertiary" @click="resetToDefaults">Standaardindeling herstellen</Button>
         <br><br>
         <div class="columns-wrapper">
-            <div class="columns" ref="columnsContainer">
-                <template v-for="(col, i) in columns" :key="i">
-                    <div class="column" :style="{ width: `${col.width / totalWidth * 100}%` }"
-                        @click.stop="toggleColumnDropdown(i)">
-                        <span class="col-label">{{ getLabel(col.type) }}</span>
-                        <span class="width-label">{{ col.width }}%</span>
-                        <div v-if="i < columns.length - 1" class="resize-handle"
-                            @mousedown.stop.prevent="onResizeStart($event, i)"></div>
-                        <!-- Column type dropdown -->
-                        <div v-if="activeColumnDropdown === i" class="dropdown column-dropdown" @click.stop>
-                            <button @click.stop="removeColumn(i)">
-                                <Icon class="delete">close</Icon>
-                                Verwijderen
-                            </button>
-                            <button @click.stop="moveColumnLeft(i)" :class="{ disabled: i === 0 }">
-                                <Icon class="move-left">chevron_left</Icon>
-                                Naar links verplaatsen
-                            </button>
-                            <button @click.stop="moveColumnRight(i)" :class="{ disabled: i === columns.length - 1 }">
-                                <Icon class="move-right">chevron_right</Icon>
-                                Naar rechts verplaatsen
-                            </button>
-                            <hr />
-                            <button v-for="opt in colTypes" :key="opt.value" @click="changeColumnType(i, opt.value)"
-                                :class="{ active: col.type === opt.value }">
-                                <Icon>{{ opt.icon }}</Icon>
-                                {{ opt.label }}
-                            </button>
-                        </div>
-                    </div>
-                </template>
-            </div>
             <div class="add-buttons-row">
                 <div class="add-btn-container" :style="{ left: '0' }">
                     <button class="add-btn teardrop" @click.stop="toggleDropdown(0)" :disabled="!canAddColumn"
@@ -428,8 +396,40 @@ function getAddButtonPosition(index: number): string {
                     </div>
                 </template>
             </div>
+            <div class="columns" ref="columnsContainer">
+                <template v-for="(col, i) in columns" :key="i">
+                    <div class="column" :style="{ width: `${col.width / totalWidth * 100}%` }"
+                        :title="getLabel(col.type) + ' (' + col.width + '% breedte)'">
+                        <!-- <span class="col-label">{{ getLabel(col.type) }}</span> -->
+                        <!-- <span class="width-label">{{ col.width }}%</span> -->
+                        <Icon @click.stop="toggleColumnDropdown(i)" class="action">edit</Icon>
+                        <div v-if="i < columns.length - 1" class="resize-handle"
+                            @mousedown.stop.prevent="onResizeStart($event, i)"></div>
+                        <!-- Column type dropdown -->
+                        <div v-if="activeColumnDropdown === i" class="dropdown column-dropdown" @click.stop>
+                            <button @click.stop="removeColumn(i)">
+                                <Icon class="delete">close</Icon>
+                                Verwijderen
+                            </button>
+                            <button @click.stop="moveColumnLeft(i)" :class="{ disabled: i === 0 }">
+                                <Icon class="move-left">chevron_left</Icon>
+                                Naar links verplaatsen
+                            </button>
+                            <button @click.stop="moveColumnRight(i)" :class="{ disabled: i === columns.length - 1 }">
+                                <Icon class="move-right">chevron_right</Icon>
+                                Naar rechts verplaatsen
+                            </button>
+                            <hr />
+                            <button v-for="opt in colTypes" :key="opt.value" @click="changeColumnType(i, opt.value)"
+                                :class="{ active: col.type === opt.value }">
+                                <Icon>{{ opt.icon }}</Icon>
+                                {{ opt.label }}
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
-        <Button class="tertiary" @click="resetToDefaults">Standaardindeling herstellen</Button>
     </div>
 </template>
 
@@ -446,10 +446,10 @@ function getAddButtonPosition(index: number): string {
 .columns {
     display: flex;
     align-items: stretch;
-    height: 50px;
+    height: 40px;
 
     border-radius: 5px;
-    border: 1px solid #ffffff14;
+    border: 1px solid #ffffff3c;
     overflow: visible;
 }
 
@@ -464,10 +464,15 @@ function getAddButtonPosition(index: number): string {
     background-color: #ffffff06;
     color: currentColor;
     user-select: none;
-    cursor: pointer;
 
-    &:hover {
-        background-color: #ffffff1c;
+    &>.action {
+        padding: 2px;
+        color: var(--yellow2);
+        cursor: pointer;
+    }
+
+    &:not(:last-child) {
+        border-right: 1px solid #ffffff3c;
     }
 }
 
@@ -493,16 +498,34 @@ function getAddButtonPosition(index: number): string {
 .resize-handle {
     position: absolute;
     top: 0;
-    right: -3px;
-    width: 6px;
+    right: -6px;
+    width: 12px;
     height: 100%;
     cursor: col-resize;
-    background-color: light-dark(#9da1ac, #30343d);
     z-index: 1;
-}
 
-.resize-handle:hover {
-    background-color: #9da1ac;
+    &::before {
+        position: absolute;
+        content: '';
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 12px;
+        z-index: 3;
+    }
+
+    &::after {
+        position: absolute;
+        content: '';
+        top: 40px;
+        left: 6px;
+        height: 100vh;
+        border-left: 1px dashed black;
+    }
+
+    &:hover::before {
+        background-color: hsl(from var(--yellow2) h s l / 0.1);
+    }
 }
 
 .add-buttons-row {
@@ -516,12 +539,6 @@ function getAddButtonPosition(index: number): string {
     position: absolute;
     transform: translateX(-50%);
     z-index: 2;
-    opacity: 0;
-    transition: opacity .2s;
-}
-
-.cols-builder:hover .add-btn-container {
-    opacity: 1;
 }
 
 .add-btn.teardrop {
@@ -533,7 +550,7 @@ function getAddButtonPosition(index: number): string {
     color: #090a0b;
     background-color: var(--yellow2);
     border: none;
-    border-radius: 50% 0 50% 50%;
+    border-radius: 50% 50% 50% 0;
     transform: rotate(-45deg);
     cursor: pointer;
 

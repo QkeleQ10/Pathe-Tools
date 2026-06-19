@@ -9,18 +9,22 @@ import { useVueToPrint } from 'vue-to-print'
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue'
 import SchedulePage from '@features/ushering/schedule/SchedulePage.vue'
 import UserGuide from '@/components/features/ushering/schedule/UserGuide.vue'
-import ColsBuilder, { defaultColumns } from '@/components/features/ushering/schedule/ColsBuilder.vue'
 import Settings from '@/components/features/ushering/schedule/Settings.vue'
+import ColsBuilder, { defaultColumns } from '@/components/features/ushering/schedule/ColsBuilder.vue'
 
 const store = useTmsScheduleStore()
 const stingers = useStorage<string[]>('credits-stingers', [])
 
 const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', 'creditsTime');
+const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
+
 const trueColours = ref(true);
+const columnEditorOpen = ref(false);
 
 const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
 
-const fontSize = useStorage('schedule-font-size', 12.5) // font size in pixels
+const autoAdjustRowHeight = useStorage('schedule-row-height-auto-adjust', true);
+const rowHeightMultiplier = useStorage('schedule-row-height-multiplier', 1);
 
 const main = useTemplateRef('main')
 
@@ -59,11 +63,19 @@ const pages = computed<UsherShow[][]>(() => {
 
     const transformed = arr || [];
     // Split the transformed shows into two pages for display
-    const MAX_PAGE_SIZE = -(14 / 3) * fontSize.value + 106
+
+    const ROW_HEIGHT = 21.5 * rowHeightMultiplier.value; // in px
+    const PAGE_HEIGHT = 1030 - ROW_HEIGHT; // the page can fit 48 rows at the default height.
+    const MAX_ROWS_PER_PAGE = Math.floor(PAGE_HEIGHT / ROW_HEIGHT); // calculate how many rows can fit on a page based on the current row height multiplier
     const overlap = 2
 
-    const numPages = Math.ceil(transformed.length / MAX_PAGE_SIZE)
+    const numPages = Math.ceil(transformed.length / MAX_ROWS_PER_PAGE)
     const pageSize = Math.ceil(transformed.length / numPages)
+
+    if (autoAdjustRowHeight.value) {
+        console.log(`Auto-adjusting row height: ${transformed.length} shows, ${pageSize} per page, ${numPages} pages.`)
+        rowHeightMultiplier.value = Math.max(0.5, Math.min(1, Math.floor(((PAGE_HEIGHT / transformed.length) / 21.5) / 0.01) * 0.01))
+    }
 
     // Each page includes a small overlap with the previous/next page for context
     return Array.from({ length: numPages }, (_, i) => {
@@ -96,17 +108,34 @@ const { isOverDropZone } = useDropZone(main, {
         <div class="layout">
 
             <main>
+                <template v-if="columnEditorOpen">
+                    <div id="cols-builder-wrapper">
+                        <h3>Kolommen bewerken (bèta)</h3>
+                        <Button class="tertiary" @click="columnEditorOpen = false">Stoppen met bewerken</Button>
+                        <ColsBuilder style="min-width: 600px;" v-model="columns" />
+                    </div>
+                </template>
+
                 <template v-if="pages?.[0]?.length">
                     <div id="pages" ref="pages" :class="{ gray: trueColours }">
                         <SchedulePage v-for="(page, i) in pages" :ref="el => schedulePageRefs[i] = el" :shows="page"
-                            :metadata="store.metadata" :page-num="i" :num-pages="pages.length" :fontSize="fontSize"
-                            :sortBy="sortBy" />
+                            :metadata="store.metadata" :page-num="i" :num-pages="pages.length"
+                            :row-height-multiplier="rowHeightMultiplier" :sort-by="sortBy" />
                     </div>
                 </template>
                 <template v-else>
                     <h1>Tijdenlijstje</h1>
                     <p>Upload eerst een <b>TSV</b>-bestand uit RosettaBridge (optie <b>Dates - ISO</b>) door hem naar
                         deze pagina te slepen.</p>
+                </template>
+
+                <template v-if="columnEditorOpen">
+                    <div id="rows-editor-wrapper">
+                        <h3>Rijen</h3>
+                        <input type="checkbox" id="autoAdjustRowHeight" v-model="autoAdjustRowHeight" /> auto
+                        <input :disabled="autoAdjustRowHeight" type="range" min="0.5" max="1.5" step="0.01" orient="vertical"
+                            v-model.number="rowHeightMultiplier" style="height: 200px; writing-mode: vertical-lr;" />
+                    </div>
                 </template>
             </main>
 
@@ -142,7 +171,12 @@ const { isOverDropZone } = useDropZone(main, {
                         </Button>
                     </template>
 
-                    <Settings />
+                    <Button class="secondary full left" @click="columnEditorOpen = !columnEditorOpen">
+                        <Icon>table_edit</Icon>
+                        Kolom- & rij-indeling bewerken
+                    </Button>
+
+                    <Settings @open-column-editor="columnEditorOpen = true" />
 
                     <InvokableModalDialog>
                         <template #button-content>
@@ -190,5 +224,30 @@ const { isOverDropZone } = useDropZone(main, {
             margin: 0;
         }
     }
+}
+
+#cols-builder-wrapper {
+    width: 210mm;
+    padding: 16px 1.35cm;
+    margin-bottom: 16px;
+    margin-left: auto;
+    margin-right: auto;
+
+    background-color: #11131677;
+    border: 1px solid #ffffff14;
+    border-radius: 5px;
+}
+
+#rows-editor-wrapper {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    padding: 8px;
+    background-color: #11131677;
+    border: 1px solid #ffffff14;
+    border-radius: 5px;
 }
 </style>

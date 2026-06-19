@@ -127,7 +127,8 @@ function displayContextMenu(event: MouseEvent) {
     </tr>
 
     <Transition>
-        <ContextMenu v-if="contextMenuVisible" class="dark" @click-outside="contextMenuVisible = false" :x="contextMenuX" :y="contextMenuY">
+        <ContextMenu v-if="contextMenuVisible" class="dark" @click-outside="contextMenuVisible = false"
+            :x="contextMenuX" :y="contextMenuY">
             <button @click="toggleCreditsStinger(show.title); contextMenuVisible = false">
                 <div class="check" :class="{ 'empty': !stingers.includes(show.title?.trim()) }">
                 </div>
@@ -175,7 +176,8 @@ tr:first-of-type>td .plf-icon {
 
 td {
     position: relative;
-    padding: 2px 6px;
+    padding: 0 6px;
+    vertical-align: middle;
 
     .plf-icon {
         position: absolute;
