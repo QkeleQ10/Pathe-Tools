@@ -11,7 +11,7 @@ const store = usePosScheduleStore();
         <div class="section-content">
             <FileUploadBlock @files-uploaded="store.uploadXml" accept="text/xml,.xml"
                 :highlight="false">
-                <p v-if="'name' in store.metadata" style="margin: 0; flex-grow: 1;"
+                <p v-if="store.metadata" style="margin: 0; flex-grow: 1;"
                     :title="[`Bestandsnaam: ${store.metadata.name}`, `Gewijzigd op: ${format(store.metadata.lastModified, 'PPpp', { locale: nl })}`, `Geüpload op: ${format(store.metadata.uploadedDate, 'PPpp', { locale: nl })}`].join('\n')">
                     <span>
                         Aantallen van {{ format(store.metadata.timestamp, 'PPPPp', { locale: nl }) }}

@@ -120,7 +120,7 @@ const { isOverDropZone } = useDropZone(main, {
                     <div id="pages" ref="pages" :class="{ gray: trueColours }">
                         <SchedulePage v-for="(page, i) in pages" :ref="el => schedulePageRefs[i] = el" :shows="page"
                             :metadata="store.metadata" :page-num="i" :num-pages="pages.length"
-                            :row-height-multiplier="rowHeightMultiplier" :sort-by="sortBy" />
+                            :row-height-multiplier="rowHeightMultiplier" :sort-by="sortBy" :columns="columns" />
                     </div>
                 </template>
                 <template v-else>

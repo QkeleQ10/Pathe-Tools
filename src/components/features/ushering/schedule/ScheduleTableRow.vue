@@ -4,16 +4,15 @@ import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { UsherShow } from '@/scripts/types.ts';
 import Icon4dx from '@/assets/symbols/Icon4dx.vue';
-import { defaultColumns, colTypes } from './ColsBuilder.vue';
+import { colTypes } from './ColsBuilder.vue';
 
-defineProps<{
-    show: UsherShow,
-    sortBy: "scheduledTime" | "creditsTime",
+const props = defineProps<{
+    show: UsherShow;
+    sortBy: "scheduledTime" | "creditsTime";
+    columns: { type: string; width: number }[];
 }>();
 
 const stingers = useStorage<string[]>('credits-stingers', []);
-
-const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1);
 const displayCreditsDuration = useStorage('show-credits-duration', 1);

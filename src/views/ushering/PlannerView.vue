@@ -265,11 +265,13 @@ const showsWith4dx = computed(() =>
                     <Tabs>
 
                         <Tab value="Uitlopen">
-                            <ShowsTable :shows="showsByExitTime" :now="internetTime" />
+                            <ShowsTable :shows="showsByExitTime" :now="internetTime"
+                                :timestamp="posScheduleStore.metadata?.timestamp" />
                         </Tab>
 
                         <Tab value="Inlopen">
-                            <ShowsTable :shows="showsByEntryTime" :now="internetTime" />
+                            <ShowsTable :shows="showsByEntryTime" :now="internetTime"
+                                :timestamp="posScheduleStore.metadata?.timestamp" />
                         </Tab>
 
                         <Tab value="Opties">

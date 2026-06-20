@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue';
-import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { useVueToPrint } from 'vue-to-print';
 import { UsherShow } from '@/scripts/types.ts';
 import { nl } from 'date-fns/locale';
 import ScheduleTableRow from './ScheduleTableRow.vue';
-import { defaultColumns, colTypes } from './ColsBuilder.vue';
+import { colTypes } from './ColsBuilder.vue';
 
 const props = defineProps<{
     shows: UsherShow[];
@@ -22,9 +21,8 @@ const props = defineProps<{
     numPages: number;
     rowHeightMultiplier: number;
     sortBy: "scheduledTime" | "creditsTime";
+    columns: { type: string; width: number }[];
 }>();
-
-const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
 const printComponent = useTemplateRef('printComponent');
 
@@ -81,7 +79,7 @@ defineExpose({
                     </thead>
                     <ScheduleTableRow
                         v-for="(show, i) in [...shows].sort((a, b) => a[sortBy].getTime() - b[sortBy].getTime())"
-                        :key="i" :show="show" :sortBy="sortBy" />
+                        :key="i" :show="show" :sortBy="sortBy" :columns="columns" />
                 </table>
                 <span contenteditable class="custom-content"></span>
                 <div class="footer" contenteditable>

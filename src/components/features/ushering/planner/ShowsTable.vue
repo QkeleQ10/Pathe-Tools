@@ -7,10 +7,11 @@ type ShowWithSeats = Show & { seatsSold: number; seatsTotal: number; occupancy: 
 const props = defineProps<{
     shows: ShowWithSeats[];
     now: Date;
+    timestamp?: Date;
 }>();
 
 function showStarted(show: ShowWithSeats, now: Date): boolean {
-    return show.scheduledTime.getTime() + 900_000 <= now.getTime();
+    return (show.scheduledTime.getTime() + 900_000) <= (props.timestamp?.getTime() || now.getTime());
 }
 </script>
 
@@ -20,18 +21,25 @@ function showStarted(show: ShowWithSeats, now: Date): boolean {
             <tr>
                 <th>Zaal</th>
                 <th>Inloop</th>
-                <th style="opacity: 0.75; font-style: italic;">Voorlopig</th>
+                <th style="color: #fff8;">V</th>
                 <th>Aftiteling</th>
-                <th style="opacity: 0.75; font-style: italic;">Definitief</th>
+                <th style="color: #fff8;">D</th>
+                <th>Titel</th>
             </tr>
         </thead>
         <tbody>
-            <tr v-for="show in shows" :key="show.playlist + show.scheduledTime">
+            <tr v-for="show in shows" :key="show.playlist + show.scheduledTime" :class="{
+                italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
+            }">
                 <td>{{ show.auditorium.replace(/^\D+(?=\d)/, '') }}</td>
                 <td>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}</td>
-                <td class="admits">{{ showStarted(show, now) ? '' : show.seatsSold }}</td>
-                <td>{{ show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}</td>
-                <td class="admits">{{ showStarted(show, now) ? show.seatsSold : '' }}</td>
+                <td class="admits" :style="{ fontStyle: 'normal' }">{{ showStarted(show, now) ? '' : show.seatsSold }}
+                </td>
+                <td :style="{ opacity: show.creditsTime.getTime() === show.endTime.getTime() ? '.2' : '.75' }">{{
+                    show.creditsTime ? format(show.creditsTime, 'HH:mm:ss') : '' }}</td>
+                <td class="admits" :style="{ fontStyle: 'normal' }">{{ showStarted(show, now) ? show.seatsSold : '' }}
+                </td>
+                <td class="title">{{ show.title }}</td>
             </tr>
         </tbody>
     </table>
@@ -42,9 +50,14 @@ function showStarted(show: ShowWithSeats, now: Date): boolean {
     font-size: 12px;
     border-collapse: collapse;
     width: 100%;
+    border: 1px solid #383838;
 
     thead tr {
-        border-bottom: 1px solid #ffffff1a;
+        background-color: #383838;
+    }
+
+    tbody tr:nth-child(even) {
+        background-color: #232323;
     }
 
     th,
@@ -54,9 +67,16 @@ function showStarted(show: ShowWithSeats, now: Date): boolean {
         opacity: 0.75;
 
         &.admits {
-            text-align: right;
+            /* text-align: right; */
             opacity: 1;
-            translate: -50%;
+            /* translate: -50%; */
+        }
+
+        &.title {
+            white-space: nowrap;
+            overflow: hidden;
+            max-width: 65px;
+            mask-image: linear-gradient(to right, black 70%, transparent);
         }
     }
 
