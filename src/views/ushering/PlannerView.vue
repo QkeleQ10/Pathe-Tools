@@ -124,7 +124,7 @@ const showsWith4dx = computed(() =>
         <div class="layout">
 
             <main>
-                <h1>Planner (bèta)
+                <h1>Planner
                     <span v-if="isHovering && internetTime" style="float:right;">
                         {{ format(new Date(rangeStart.getTime() + hoverPos * (rangeEnd.getTime() -
                             rangeStart.getTime())), 'HH:mm', { locale: nl }) }}
@@ -287,6 +287,11 @@ const showsWith4dx = computed(() =>
                         </Tab>
 
                     </Tabs>
+                </div>
+
+                <div class="spacer"></div>
+
+                <div class="flex" style="flex-direction: column;">
                 </div>
             </SidePanel>
 

@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { useStorage } from '@vueuse/core';
 import { Show } from '@/scripts/types';
+import { getDefaultTimetableAuditoriumName } from '@/scripts/auditoriums';
 import { format } from 'date-fns';
+
+const auditoriumMappings = useStorage<Record<string, string>>('timetable-auditorium-mappings', {});
 
 type ShowWithSeats = Show & { seatsSold: number; seatsTotal: number; occupancy: number };
 
@@ -21,9 +25,9 @@ function showStarted(show: ShowWithSeats, now: Date): boolean {
             <tr>
                 <th>Zaal</th>
                 <th>Inloop</th>
-                <th style="color: #fff8;">V</th>
+                <th style="color: #fff8;" title="Voorlopige aantallen">V</th>
                 <th>Aftiteling</th>
-                <th style="color: #fff8;">D</th>
+                <th style="color: #fff8;" title="Definitieve aantallen">D</th>
                 <th>Titel</th>
             </tr>
         </thead>
@@ -31,7 +35,10 @@ function showStarted(show: ShowWithSeats, now: Date): boolean {
             <tr v-for="show in shows" :key="show.playlist + show.scheduledTime" :class="{
                 italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
             }">
-                <td>{{ show.auditorium.replace(/^\D+(?=\d)/, '') }}</td>
+                <td>
+                    {{ auditoriumMappings.value?.[show.auditorium] || getDefaultTimetableAuditoriumName(show.auditorium)
+                    }}
+                </td>
                 <td>{{ show.scheduledTime ? format(show.scheduledTime, 'HH:mm') : '' }}</td>
                 <td class="admits" :style="{ fontStyle: 'normal' }">{{ showStarted(show, now) ? '' : show.seatsSold }}
                 </td>

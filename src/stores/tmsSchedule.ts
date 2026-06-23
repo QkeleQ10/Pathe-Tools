@@ -3,6 +3,7 @@ import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia'
 import { FileMetadata, Show } from '@/scripts/types.ts'
 import { showDialog } from '@/scripts/dialogManager';
+import { getAuditoriumNumber } from '@/scripts/auditoriums';
 
 interface TmsScheduleJson {
     timetable: Show[],
@@ -182,8 +183,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     }
 
     function auditoriumToNumber(auditorium: string): number | null {
-        const num = Number(auditorium?.replace(/^\D+(?=\d)/, '')?.split(/\s|-/)[0]);
-        return !isNaN(num) && num > 0 && num <= 20 ? num : null;
+        return getAuditoriumNumber(auditorium);
     }
 
     function timeStringToDate(timeString: string): Date {

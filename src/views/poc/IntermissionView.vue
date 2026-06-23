@@ -244,6 +244,11 @@ const { isOverDropZone } = useDropZone(main, {
                     </fieldset>
 
                 </div>
+
+                <div class="spacer"></div>
+
+                <div class="flex" style="flex-direction: column;">
+                </div>
             </SidePanel>
 
         </div>

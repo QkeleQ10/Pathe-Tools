@@ -1,4 +1,10 @@
 <script lang="ts">
+import { format } from 'date-fns';
+import { UsherShow } from '@/scripts/types';
+import { getDefaultScheduleAuditoriumName } from '@/scripts/auditoriums';
+
+const auditoriumMappings = useStorage<Record<string, string>>('schedule-auditorium-mappings', {});
+
 export const defaultColumns = [
     { type: 'auditorium', width: 8 },
     { type: 'scheduledTime', width: 9 },
@@ -8,13 +14,10 @@ export const defaultColumns = [
     { type: 'ageRating', width: 3 },
 ];
 
-export const colTypes: { content: (show: UsherShow) => string; label: string; colHeading: string; value: string; icon: string, defaultWidth: number, minWidth: number }[] = [
+export const colTypes: { content: (show: UsherShow, ...args: any[]) => string; label: string; colHeading: string; value: string; icon: string, defaultWidth: number, minWidth: number }[] = [
     {
-        content: (show) =>
-            show.auditorium === 'Rooftop'
-                ? 'RT'
-                : show.auditorium.replace(/^\D+(?=\d)/, '')
-        , label: "Zaal", colHeading: "Zaal", value: 'auditorium', icon: 'text_fields', defaultWidth: 8, minWidth: 3
+        content: (show) => auditoriumMappings.value?.[show.auditorium] ||
+            getDefaultScheduleAuditoriumName(show.auditorium), label: "Zaal", colHeading: "Zaal", value: 'auditorium', icon: 'text_fields', defaultWidth: 8, minWidth: 3
     },
     {
         content: (show) =>
@@ -74,9 +77,7 @@ export const colTypes: { content: (show: UsherShow) => string; label: string; co
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted, useTemplateRef } from 'vue';
-import { useElementSize } from '@vueuse/core';
-import { format } from 'date-fns';
-import { UsherShow } from '@/scripts/types';
+import { useElementSize, useStorage } from '@vueuse/core';
 
 const model = defineModel<{
     type: string;

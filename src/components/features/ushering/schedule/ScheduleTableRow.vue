@@ -3,8 +3,9 @@ import { ref } from 'vue';
 import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { UsherShow } from '@/scripts/types.ts';
-import Icon4dx from '@/assets/symbols/Icon4dx.vue';
 import { colTypes } from './ColsBuilder.vue';
+
+import Icon4dx from '@/assets/symbols/Icon4dx.vue';
 
 const props = defineProps<{
     show: UsherShow;

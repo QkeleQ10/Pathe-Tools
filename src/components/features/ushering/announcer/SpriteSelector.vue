@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useLocalStorage } from '@vueuse/core';
+import { useStorage } from '@vueuse/core';
 import { getSoundName, previewSpriteSound, voices, Voice } from '@/scripts/voices';
 
 const props = defineProps<{
@@ -9,10 +9,11 @@ const props = defineProps<{
     noSelect?: boolean;
     chimes?: boolean;
     additionalSounds?: string[];
+    placeholder?: string;
 }>();
 
 const model = defineModel<string>({ required: true });
-const preferredVoiceIds = useLocalStorage<string[]>('preferred-voices', [], { mergeDefaults: true });
+const preferredVoiceIds = useStorage<string[]>('preferred-voices', []);
 
 const sounds = computed(() => {
     const list = Object.values(voices).flatMap(voice => voice.sounds.slice());
@@ -49,7 +50,7 @@ function preview(key: string) {
 
 <template>
     <div class="sounds-pile" :id="id" v-bind="$attrs">
-        <div class="sound-entry" v-for="key in sounds" :key="key" :class="{ selected: model === key }">
+        <div class="sound-entry" v-for="key in sounds" :key="key" :class="{ selected: model === key || (!model && key === props.placeholder) }">
             <template v-if="props.noSelect">
                 <button type="button" class="select-sound" @click="preview(key)" :title="key">
                     {{ sentenceCase(getSoundName(key)) }}

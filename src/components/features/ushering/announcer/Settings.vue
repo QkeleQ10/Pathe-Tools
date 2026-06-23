@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { provide, ref, computed } from 'vue';
-import { useLocalStorage } from '@vueuse/core';
+import { ref, computed } from 'vue';
+import { useStorage } from '@vueuse/core';
 import { AnnouncementRule } from '@/scripts/types';
-import { voices, getSoundName, defaultVoice, defaultVoiceKey, findAuditoriumSound } from '@/scripts/voices';
+import { defaultVoiceKey } from '@/scripts/voices';
 
 import RuleList from './RuleList.vue';
 import VoicesSelector from './VoicesSelector.vue';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import SpriteSelector from './SpriteSelector.vue';
+import AuditoriumMappings from '../../sections/AuditoriumMappings.vue';
 
 const store = useTmsScheduleStore();
 
@@ -15,22 +16,17 @@ const dialogActive = ref(false);
 
 const emit = defineEmits(['regenerate', 'previewAnnouncement', 'scheduleAnnouncements']);
 
-const defaultIntermissionDuration = useLocalStorage('default-intermission-duration', 12) // duration of intermissions in minutes
-const specialIntermissionDuration = useLocalStorage('special-intermission-duration', 20) // duration of intermissions in minutes
+const defaultIntermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
+const specialIntermissionDuration = useStorage('special-intermission-duration', 20) // duration of intermissions in minutes
 
-const preferredVoices = useLocalStorage<string[]>('preferred-voices', [defaultVoiceKey], { mergeDefaults: true });
-const voiceBehaviour = useLocalStorage<'roundrobin'>('voice-behaviour', 'roundrobin'); // only one behaviour for now, but maybe more in the future
+const preferredVoices = useStorage<string[]>('preferred-voices', [defaultVoiceKey]);
+const voiceBehaviour = useStorage<'roundrobin'>('voice-behaviour', 'roundrobin'); // only one behaviour for now, but maybe more in the future
 
-const chimeSound = useLocalStorage('chime-sound-str', 'chime01'); // which chime sound to use before announcements
+const chimeSound = useStorage('chime-sound-str', 'chime01'); // which chime sound to use before announcements
 
 const dead = computed(() => '');
 
-const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('announcer-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to sound sprite names, e.g. "PULR 1" => "auditorium1"
-const auditoriums = computed(() => {
-    return [...new Set(store.table.map(show => show.auditorium).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
-});
-
-const presetRulesOverrides = useLocalStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {}, { mergeDefaults: true });
+const presetRulesOverrides = useStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {});
 const presetRules = computed<AnnouncementRule[]>({
     get: () => presetRulesDefault.map(rule => ({
         ...rule,
@@ -45,7 +41,7 @@ const presetRules = computed<AnnouncementRule[]>({
     },
 });
 
-const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { mergeDefaults: true });
+const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
 </script>
 
 <template>
@@ -72,15 +68,15 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
         <template #content>
 
             <SettingsSection category-id="general" title="Algemeen">
-                
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <InputGroup type="number" id="defaultIntermissionDuration" v-model.number="defaultIntermissionDuration" min="0"
-                        max="30">
+                    <InputGroup type="number" id="defaultIntermissionDuration"
+                        v-model.number="defaultIntermissionDuration" min="0" max="30">
                         <template #label>Standaardduur filmpauzes</template>
                         <span class="unit">minuten</span>
                     </InputGroup>
-                    <InputGroup type="number" id="specialIntermissionDuration" v-model.number="specialIntermissionDuration" min="0"
-                        max="30">
+                    <InputGroup type="number" id="specialIntermissionDuration"
+                        v-model.number="specialIntermissionDuration" min="0" max="30">
                         <template #label>Duur filmpauzes FILM+</template>
                         <span class="unit">minuten</span>
                     </InputGroup>
@@ -111,42 +107,8 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
 
             <SettingsSection category-id="auditoriums" title="Zalen">
                 <div>
-                    <span class="label">Geluidsfragmenten</span>
-                    <ul class="list scroll short auditorium-mapping-list">
-                        <li v-for="(spriteName, auditorium) in auditoriumMappings" :key="auditorium" class="grid"
-                            style="height: 100px;">
-                            <span>{{ auditorium }}</span><br>
-                            <small v-if="findAuditoriumSound(auditorium).length">'{{
-                                getSoundName(findAuditoriumSound(auditorium)) }}'</small>
-                            <small v-else>Geen geluidsfragment ingesteld</small>
-                            <SpriteSelector :id="'auditorium' + auditorium"
-                                :datalist-id="'auditorium' + auditorium + 'datalist'"
-                                v-model="auditoriumMappings[auditorium]" :placeholder="findAuditoriumSound(auditorium)"
-                                @update:modelValue="emit('scheduleAnnouncements')"
-                                style="position: absolute; top: 0; right: 32px; width: calc(70%);" />
-                            <div class="actions">
-                                <Icon class="delete"
-                                    @click="delete auditoriumMappings[auditorium]; emit('scheduleAnnouncements')">
-                                    close
-                                </Icon>
-                            </div>
-                        </li>
-                        <li v-for="auditorium in auditoriums.filter(a => !(a in auditoriumMappings))" :key="auditorium">
-                            <span>{{ auditorium }}</span><br>
-                            <small v-if="findAuditoriumSound(auditorium).length">'{{
-                                getSoundName(findAuditoriumSound(auditorium)) }}'</small>
-                            <small v-else>Geen geluidsfragment ingesteld</small>
-                            <div class="actions">
-                                <Icon class="edit"
-                                    @click="auditoriumMappings[auditorium] = findAuditoriumSound(auditorium);">
-                                    edit
-                                </Icon>
-                            </div>
-                        </li>
-                    </ul>
-                    <p v-if="!auditoriums.length && !Object.keys(auditoriumMappings).length">
-                        Upload eerst een bestand.
-                    </p>
+                    <span class="label">Geluidsfragmenten zalen</span>
+                    <AuditoriumMappings :preview="{ announcer: true }" />
                 </div>
             </SettingsSection>
 
@@ -166,24 +128,6 @@ const customRules = useLocalStorage<AnnouncementRule[]>('custom-rules', [], { me
 </template>
 
 <style scoped>
-.auditorium-mapping-list {
-    li {
-        position: relative;
-
-        small {
-            opacity: .75;
-        }
-
-        .actions {
-            position: absolute;
-            right: 12px;
-            bottom: 8px;
-            display: flex;
-            gap: 4px;
-        }
-    }
-}
-
 .manual-sounds-list {
     display: flex;
     flex-wrap: wrap;

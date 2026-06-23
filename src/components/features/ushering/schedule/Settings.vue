@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useStorage } from '@vueuse/core';
-import ColsBuilder, { defaultColumns } from './ColsBuilder.vue';
+import AuditoriumMappings from '../../sections/AuditoriumMappings.vue';
 
 const dialogActive = ref(false);
 
 const emit = defineEmits(['open-column-editor']);
 
-
 const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', 'creditsTime');
-
-const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
 const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
@@ -35,6 +32,7 @@ const specialIntermissionDuration = useStorage('special-intermission-duration', 
 
         <template #navigation>
             <SettingsCategoryButton category-id="general" label="Algemeen" icon="settings" />
+            <SettingsCategoryButton category-id="auditoriums" label="Zalen" icon="room_preferences" />
             <SettingsCategoryButton category-id="table_edit" label="Indeling" icon="table_edit" />
             <SettingsCategoryButton category-id="annotations" label="Uitlopen" />
             <SettingsCategoryButton category-id="plf" label="4DX-inloop" />
@@ -63,6 +61,13 @@ const specialIntermissionDuration = useStorage('special-intermission-duration', 
                         <template #label>Duur filmpauzes FILM+</template>
                         <span class="unit">minuten</span>
                     </InputGroup>
+                </div>
+            </SettingsSection>
+
+            <SettingsSection category-id="auditoriums" title="Zalen">
+                <div>
+                    <span class="label">Weergave zalen</span>
+                    <AuditoriumMappings :preview="{ schedule: true }" />
                 </div>
             </SettingsSection>
 

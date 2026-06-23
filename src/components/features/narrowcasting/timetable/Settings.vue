@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { ref, h, inject, computed } from 'vue';
-import { useLocalStorage, useStorage } from '@vueuse/core';
+import { ref, h, inject } from 'vue';
+import { useStorage } from '@vueuse/core';
 import { DisplayLine } from '@/scripts/types';
 import { showDialog } from '@/scripts/dialogManager';
-import { useTmsScheduleStore } from '@/stores/tmsSchedule';
-
-const store = useTmsScheduleStore();
+import AuditoriumMappings from '../../sections/AuditoriumMappings.vue';
 
 const dialogActive = ref(false);
 
@@ -23,11 +21,6 @@ const addresses = useStorage('addresses', ["10.10.87.81", "10.10.87.82"]);
 const aboutToStartTime = useStorage('about-to-start-time', 0);
 const isStartedTime = useStorage('is-started-time', 9);
 const hideTime = useStorage('hide-time', 17);
-
-const auditoriumMappings = useLocalStorage<{ [key: string]: string }>('timetable-auditorium-mappings', {}, { mergeDefaults: true }); // mapping from auditorium names to displayed names, e.g. "PULR 3 (4DX)" => "3"; "Rooftop" => "RT"
-const auditoriums = computed(() => {
-    return [...new Set(store.table.map(show => show.auditorium).filter(Boolean))].sort((a, b) => ("" + a).localeCompare(b, undefined, { numeric: true }));
-});
 
 const animation = useStorage('animation', 0x00);
 const animationSpeed = useStorage('animation-speed', 0x07);
@@ -119,13 +112,13 @@ function showFormattingInfo() {
                 </Button>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <InputGroup type="number" id="defaultIntermissionDuration" v-model.number="defaultIntermissionDuration" min="0"
-                        max="30">
+                    <InputGroup type="number" id="defaultIntermissionDuration"
+                        v-model.number="defaultIntermissionDuration" min="0" max="30">
                         <template #label>Standaardduur filmpauzes</template>
                         <span class="unit">minuten</span>
                     </InputGroup>
-                    <InputGroup type="number" id="specialIntermissionDuration" v-model.number="specialIntermissionDuration" min="0"
-                        max="30">
+                    <InputGroup type="number" id="specialIntermissionDuration"
+                        v-model.number="specialIntermissionDuration" min="0" max="30">
                         <template #label>Duur filmpauzes FILM+</template>
                         <span class="unit">minuten</span>
                     </InputGroup>
@@ -174,39 +167,7 @@ function showFormattingInfo() {
             <SettingsSection category-id="auditoriums" title="Zalen">
                 <div>
                     <span class="label">Weergave zalen</span>
-                    <ul class="list scroll short auditorium-mapping-list">
-                        <li v-for="(spriteName, auditorium) in auditoriumMappings" :key="auditorium" class="grid">
-                            <span>{{ auditorium }}</span><br>
-                            <small>
-                                '{{ auditoriumMappings[auditorium] || auditorium.replace(/^\D+(?=\d)/, '').split(' ')[0] }}'
-                            </small>
-                            <Input :id="'auditorium' + auditorium" v-model="auditoriumMappings[auditorium]"
-                                :placeholder="auditorium.replace(/^\D+(?=\d)/, '').split(' ')[0]"
-                                @blur="emit('loadWalkIns')"
-                                style="position: absolute; top: 50%; right: 64px; width: calc(50%); translate: 0 -50%;" />
-                            <div class="actions">
-                                <Icon class="delete"
-                                    @click="delete auditoriumMappings[auditorium]; emit('loadWalkIns')">
-                                    close
-                                </Icon>
-                            </div>
-                        </li>
-                        <li v-for="auditorium in auditoriums.filter(a => !(a in auditoriumMappings))" :key="auditorium">
-                            <span>{{ auditorium }}</span><br>
-                            <small>
-                                '{{ auditorium.replace(/^\D+(?=\d)/, '').split(' ')[0] }}'
-                            </small>
-                            <div class="actions">
-                                <Icon class="edit"
-                                    @click="auditoriumMappings[auditorium] = auditorium.replace(/^\D+(?=\d)/, '').split(' ')[0];">
-                                    edit
-                                </Icon>
-                            </div>
-                        </li>
-                    </ul>
-                    <p v-if="!auditoriums.length && !Object.keys(auditoriumMappings).length">
-                        Upload eerst een bestand.
-                    </p>
+                    <AuditoriumMappings :preview="{ timetable: true }" />
                 </div>
             </SettingsSection>
 
@@ -377,7 +338,7 @@ function showFormattingInfo() {
                 <div>
                     <div class="label">Laatst verzonden pakket</div>
                     <div class="flex">
-                        <pre style="width: 48ch;">{{ 
+                        <pre style="width: 48ch;">{{
                             lastSentPacket
                                 ?.match(/.{1,48}/g)
                                 ?.join('\n')
@@ -401,24 +362,6 @@ function showFormattingInfo() {
 </template>
 
 <style scoped>
-.auditorium-mapping-list {
-    li {
-        position: relative;
-
-        small {
-            opacity: .75;
-        }
-
-        .actions {
-            position: absolute;
-            right: 12px;
-            bottom: 8px;
-            display: flex;
-            gap: 4px;
-        }
-    }
-}
-
 :deep(#motd) {
     font-family: monospace;
     font-size: 14px;

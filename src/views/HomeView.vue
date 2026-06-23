@@ -19,7 +19,7 @@ import { RouterLink } from 'vue-router';
             </RouterLink>
             <RouterLink to="/ushering/planner" style="text-decoration: none;">
                 <Button class="secondary">
-                    <Icon>note_alt</Icon>Planner (bèta)
+                    <Icon>note_alt</Icon>Planner
                 </Button>
             </RouterLink>
         </div>

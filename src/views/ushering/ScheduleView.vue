@@ -18,7 +18,6 @@ const stingers = useStorage<string[]>('credits-stingers', [])
 const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', 'creditsTime');
 const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);
 
-const trueColours = ref(true);
 const columnEditorOpen = ref(false);
 
 const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
@@ -117,7 +116,7 @@ const { isOverDropZone } = useDropZone(main, {
                 </template>
 
                 <template v-if="pages?.[0]?.length">
-                    <div id="pages" ref="pages" :class="{ gray: trueColours }">
+                    <div id="pages" ref="pages" class="gray">
                         <SchedulePage v-for="(page, i) in pages" :ref="el => schedulePageRefs[i] = el" :shows="page"
                             :metadata="store.metadata" :page-num="i" :num-pages="pages.length"
                             :row-height-multiplier="rowHeightMultiplier" :sort-by="sortBy" :columns="columns" />
@@ -133,8 +132,9 @@ const { isOverDropZone } = useDropZone(main, {
                     <div id="rows-editor-wrapper">
                         <h3>Rijen</h3>
                         <input type="checkbox" id="autoAdjustRowHeight" v-model="autoAdjustRowHeight" /> auto
-                        <input :disabled="autoAdjustRowHeight" type="range" min="0.5" max="1.5" step="0.01" orient="vertical"
-                            v-model.number="rowHeightMultiplier" style="height: 200px; writing-mode: vertical-lr;" />
+                        <input :disabled="autoAdjustRowHeight" type="range" min="0.5" max="1.5" step="0.01"
+                            orient="vertical" v-model.number="rowHeightMultiplier"
+                            style="height: 200px; writing-mode: vertical-lr;" />
                     </div>
                 </template>
             </main>
@@ -192,7 +192,6 @@ const { isOverDropZone } = useDropZone(main, {
 
                 <div class="flex" style="flex-direction: column;">
                     <span>Klik op tekst in het voorbeeld om te bewerken.</span>
-                    <!-- <InputSwitch v-model="trueColours" identifier="trueColours">Ware kleuren</InputSwitch> -->
                 </div>
             </SidePanel>
 

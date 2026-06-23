@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, computed } from 'vue';
-import { useDropZone, useStorage, useLocalStorage } from '@vueuse/core';
+import { useDropZone, useStorage } from '@vueuse/core';
 import { Announcement, AnnouncementRule, Show } from '@/scripts/types.ts';
 import { voices, Voice, defaultVoice, defaultVoiceKey, preloadVoiceAudio, findAuditoriumSound } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
@@ -19,7 +19,7 @@ const userHasInteracted = inject<Ref<boolean>>('userHasInteracted');
 
 const main = useTemplateRef('main');
 
-const presetRulesOverrides = useLocalStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {}, { mergeDefaults: true });
+const presetRulesOverrides = useStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {});
 const presetRules = computed<AnnouncementRule[]>({
     get: () => presetRulesDefault.map(rule => ({
         ...rule,
@@ -34,11 +34,11 @@ const presetRules = computed<AnnouncementRule[]>({
     },
 });
 
-const customRules = useStorage<AnnouncementRule[]>('custom-rules', [], localStorage, { mergeDefaults: true });
+const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
 
-const preferredVoices = useStorage<string[]>('preferred-voices', [defaultVoiceKey], localStorage, { mergeDefaults: true });
+const preferredVoices = useStorage<string[]>('preferred-voices', [defaultVoiceKey]);
 
-const chimeSound = useStorage('chime-sound-str', 'chime01', localStorage); // which chime sound to use before announcements
+const chimeSound = useStorage('chime-sound-str', 'chime01'); // which chime sound to use before announcements
 
 const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([]);
 const customAnnouncementDate = ref<Date>(new Date(internetTime.value.getTime() + 5 * 60000)); // default to 5 minutes from now
@@ -369,6 +369,11 @@ const { isOverDropZone } = useDropZone(main, {
                     <Settings @regenerate="regenerate" @previewAnnouncement="previewAnnouncement"
                         @scheduleAnnouncements="scheduleAnnouncements" />
 
+                </div>
+
+                <div class="spacer"></div>
+
+                <div class="flex" style="flex-direction: column;">
                 </div>
             </SidePanel>
         </div>
