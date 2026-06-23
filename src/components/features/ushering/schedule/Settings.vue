@@ -24,12 +24,13 @@ const specialIntermissionDuration = useStorage('special-intermission-duration', 
 </script>
 
 <template>
-    <SettingsDialog v-model:active="dialogActive">
-        <template #button-content>
-            <Icon>settings</Icon>
-            Instellingen
-        </template>
+    <Button class="secondary full left" @click="dialogActive = true">
+        <Icon>settings</Icon>
+        Instellingen
+    </Button>
 
+    <SettingsDialog v-model:active="dialogActive">
+        
         <template #navigation>
             <SettingsCategoryButton category-id="general" label="Algemeen" icon="settings" />
             <SettingsCategoryButton category-id="auditoriums" label="Zalen" icon="room_preferences" />

@@ -45,17 +45,18 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
 </script>
 
 <template>
-    <SettingsDialog v-model:active="dialogActive">
-        <template #button-content>
-            <Icon>settings</Icon>
-            Instellingen
+    <Button class="secondary full left" @click="dialogActive = true">
+        <Icon>settings</Icon>
+        Instellingen
             <small v-if="customRules.filter(r => r.enabled).length === 1" style="margin-left: 4px;">
                 ({{customRules.filter(r => r.enabled).length}} eigen regel actief)
             </small>
             <small v-else-if="customRules.filter(r => r.enabled).length > 1" style="margin-left: 4px;">
                 ({{customRules.filter(r => r.enabled).length}} eigen regels actief)
             </small>
-        </template>
+    </Button>
+
+    <SettingsDialog v-model:active="dialogActive">
 
         <template #navigation>
             <SettingsCategoryButton category-id="general" label="Algemeen" icon="settings" />

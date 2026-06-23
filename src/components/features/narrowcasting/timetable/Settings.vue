@@ -72,11 +72,12 @@ function showFormattingInfo() {
 </script>
 
 <template>
+    <Button class="secondary full left" @click="dialogActive = true">
+        <Icon>settings</Icon>
+        Instellingen
+    </Button>
+
     <SettingsDialog v-model:active="dialogActive">
-        <template #button-content>
-            <Icon>settings</Icon>
-            Instellingen
-        </template>
 
         <template #navigation>
             <SettingsCategoryButton category-id="general" label="Algemeen" icon="settings" />

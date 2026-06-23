@@ -6,12 +6,15 @@ import { UsherShow } from '@/scripts/types.ts';
 import { colTypes } from './ColsBuilder.vue';
 
 import Icon4dx from '@/assets/symbols/Icon4dx.vue';
+import { getDefaultScheduleAuditoriumName } from '@/scripts/auditoriums.ts';
 
 const props = defineProps<{
     show: UsherShow;
     sortBy: "scheduledTime" | "creditsTime";
     columns: { type: string; width: number }[];
 }>();
+
+const auditoriumMappings = useStorage<Record<string, string>>('schedule-auditorium-mappings', {});
 
 const stingers = useStorage<string[]>('credits-stingers', []);
 
@@ -114,6 +117,13 @@ function displayContextMenu(event: MouseEvent) {
                         {{ show.tags.join(' ') }}
                     </span>
 
+                </template>
+
+                <template v-else-if="col.type === 'auditorium'">
+                    <span contenteditable>
+                        {{ auditoriumMappings?.[show.auditorium] ||
+                            getDefaultScheduleAuditoriumName(show.auditorium) }}
+                    </span>
                 </template>
 
                 <template v-else>

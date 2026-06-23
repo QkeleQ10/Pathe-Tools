@@ -36,9 +36,14 @@ const props = defineProps<{
 }
 
 button.primary .icon,
-button.secondary .icon {
-    vertical-align: middle;
+button.secondary .icon,
+button.tertiary .icon {
     --size: 22px;
     margin-right: 8px;
+}
+
+button.icon-button .icon {
+    vertical-align: middle;
+    --size: 18px;
 }
 </style>

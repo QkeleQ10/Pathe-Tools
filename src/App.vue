@@ -2,8 +2,9 @@
 import { provide, computed, ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { format } from 'date-fns';
-import { useStorage, useWindowSize } from '@vueuse/core';
+import { useWindowSize } from '@vueuse/core';
 import { useInternetTime } from './composables/useInternetTime';
+import GlobalSettings from './components/features/sections/GlobalSettings.vue';
 
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -17,15 +18,13 @@ document.addEventListener('click', () => userHasInteracted.value = true, { once:
 provide('userHasInteracted', userHasInteracted);
 
 const aboutOpen = ref(false);
+const settingsOpen = ref(false);
 </script>
 
 <template>
     <header ref="header" v-if="$route.meta.showHeader ?? true">
         <div class="wrapper">
             <nav v-if="$route.meta.showNavigation ?? true">
-                <!-- <RouterLink to="/">
-                    <Icon>home</Icon>
-                </RouterLink> -->
 
                 <RouterLink to="/" id="logo-wrapper">
                     <img alt="Pathé logo" class="logo" src="@assets/logo-international-white.svg" height="42" />
@@ -46,6 +45,7 @@ const aboutOpen = ref(false);
                 <a @click="aboutOpen = true" title="Over deze website">
                     <Icon>help</Icon>
                 </a>
+                <IconButton @click="settingsOpen = true" title="Globale instellingen">settings</IconButton>
                 <div id="clock">{{ format(internetTime, 'HH:mm:ss') }}</div>
             </div>
         </div>
@@ -77,6 +77,7 @@ const aboutOpen = ref(false);
             </div>
         </ModalDialog>
     </Transition>
+    <GlobalSettings v-model:active="settingsOpen" />
 </template>
 
 <style>
@@ -134,7 +135,8 @@ header {
         font: 11px "Trade Gothic Bold Condensed 20", Arial, Helvetica, sans-serif;
     }
 
-    &:hover, &.router-link-active {
+    &:hover,
+    &.router-link-active {
         opacity: 1;
     }
 }
@@ -144,7 +146,8 @@ nav {
     align-items: center;
 }
 
-header a {
+header a,
+header button {
     margin-right: 2em;
     color: #ffffffb3;
     font-weight: 500;
@@ -159,7 +162,9 @@ header a {
 
 header a:hover,
 header a.router-link-active,
-header a.active {
+header a.active,
+header button:hover,
+header button.active {
     color: #fff;
     text-shadow: 0px 0px 1px #fff;
 

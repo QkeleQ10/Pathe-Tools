@@ -5,7 +5,7 @@ const props = defineProps<{
     accept?: string;
     multiple?: boolean;
     dropzone?: boolean;
-    primary?: boolean;
+    primary?: boolean | null;
 }>();
 const emit = defineEmits<{
     'files-uploaded': [files: FileList]
@@ -23,9 +23,11 @@ function onUpload(e: Event): void {
 </script>
 
 <template>
-    <Button class="file-upload-area full" :class="primary ? 'primary' : 'secondary'" @click="fileInput.click()">
-        <Icon>upload</Icon> Uploaden
-        <slot></slot>
+    <Button class="file-upload-area full" :class="{ primary: props.primary, secondary: props.primary === false }"
+        @click="fileInput.click()">
+        <slot>
+            <Icon>upload</Icon> Uploaden
+        </slot>
         <input type="file" ref="fileInput" :accept="props.accept" :multiple="props.multiple || null"
             style="display: none" @change="onUpload" />
     </Button>

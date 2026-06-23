@@ -16,9 +16,9 @@ const props = defineProps<{
 
 const store = useTmsScheduleStore();
 
-const timetableAuditoriumMappings = useStorage<Record<string, string>>('timetable-auditorium-mappings', {}, window.sessionStorage);
-const scheduleAuditoriumMappings = useStorage<Record<string, string>>('schedule-auditorium-mappings', {}, window.sessionStorage);
-const announcerAuditoriumMappings = useStorage<Record<string, string>>('announcer-auditorium-mappings', {}, window.sessionStorage);
+const timetableAuditoriumMappings = useStorage<Record<string, string>>('timetable-auditorium-mappings', {});
+const scheduleAuditoriumMappings = useStorage<Record<string, string>>('schedule-auditorium-mappings', {});
+const announcerAuditoriumMappings = useStorage<Record<string, string>>('announcer-auditorium-mappings', {});
 
 const loadedAuditoriums = computed(() => {
     return [...new Set(store.table.map(show => show.auditorium).filter(Boolean))];
@@ -101,7 +101,10 @@ const selectedAnnouncerSound = computed({
             </li>
         </ul>
         <p v-if="!auditoriums.length">
-            Upload eerst een bestand.
+            Upload een TSV-bestand om zalen te bewerken.
+        </p>
+        <p v-else-if="!loadedAuditoriums.length">
+            Upload een TSV-bestand om alle zalen te bewerken.
         </p>
 
         <Transition>

@@ -31,13 +31,6 @@ provide('scrollToCategory', scrollToCategory);
 </script>
 
 <template>
-    <slot name="invoker">
-        <Button class="secondary full left" @click="active = true">
-            <slot name="button-content">
-                Settings
-            </slot>
-        </Button>
-    </slot>
     <Teleport to="body">
         <Transition>
             <div v-if="active" class="modal-overlay" role="dialog" aria-modal="true" @click.self="active = false">
