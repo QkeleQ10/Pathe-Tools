@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, inject, useTemplateRef, onMounted, onBeforeUnmount, Ref, watch, computed } from 'vue';
 import { useDropZone, useStorage } from '@vueuse/core';
-import { Announcement, AnnouncementRule, Show } from '@/scripts/types.ts';
+import { Announcement, AnnouncementRule, AnnouncementState, Show } from '@/scripts/types.ts';
 import { voices, Voice, defaultVoice, defaultVoiceKey, preloadVoiceAudio, findAuditoriumSound } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
@@ -46,11 +46,18 @@ const customAnnouncementDate = ref<Date>(new Date(internetTime.value.getTime() +
 const scheduledAnnouncements = ref<Announcement[]>([])
 store.$subscribe(() => scheduleAnnouncements(), { deep: true })
 
-let interval: NodeJS.Timeout | null = null;
+const playbackQueue: { announcement?: Announcement; audio: HTMLAudioElement }[] = [];
+const MAX_GENERATORS = 2;
+const MAX_BUFFERED_ANNOUNCEMENTS = 3;
+const PREFETCH_WINDOW_MS = 60_000;
+
+let interval: ReturnType<typeof setInterval> | null = null;
+let isProcessingPlaybackQueue = false;
 
 onMounted(() => {
     scheduleAnnouncements();
-    interval = setInterval(() => generateAndEnqueue(), 10000);
+    interval = setInterval(() => updateScheduler(), 1000);
+    updateScheduler();
 })
 
 onBeforeUnmount(() => {
@@ -96,25 +103,20 @@ function sanitizePreferredVoices() {
  * Clean up all scheduled announcements and audio elements
  */
 function cleanupAnnouncements() {
+    playbackQueue.length = 0;
+    isProcessingPlaybackQueue = false;
+
     for (const announcement of scheduledAnnouncements.value) {
-        // Clear any pending timeouts
-        if (announcement.scheduled) {
-            clearTimeout(announcement.scheduled);
-            announcement.scheduled = null;
-        }
-        // Remove audio elements from DOM
-        if (announcement.audio) {
-            announcement.audio.pause();
-            announcement.audio.remove();
-            announcement.audio = null;
-        }
+        releaseAnnouncementAudio(announcement);
+        announcement.generatePromise = undefined;
+        if (announcement.state !== AnnouncementState.Finished) announcement.state = AnnouncementState.Pending;
     }
 }
 
 /**
  * Schedule all announcements based on the rules and the imported timetable
  */
-async function scheduleAnnouncements(debug: boolean = false) {
+function scheduleAnnouncements(debug: boolean = false) {
     // Clean up previously scheduled announcements before creating new ones
     cleanupAnnouncements();
 
@@ -134,7 +136,7 @@ async function scheduleAnnouncements(debug: boolean = false) {
                         ...segment,
                         spriteName: segment.spriteName.replace('auditorium#', findAuditoriumSound(show.auditorium)),
                     })),
-                    audio: null,
+                    state: AnnouncementState.Pending,
                 };
                 if (debug || announcement.time.getTime() > internetTime.value.getTime()) {
                     arr.push(announcement);
@@ -156,58 +158,214 @@ async function scheduleAnnouncements(debug: boolean = false) {
 
     if (debug) console.log(scheduledAnnouncements.value);
 
-    generateAndEnqueue();
+    updateScheduler();
 }
 
 async function regenerate() {
-    for (const announcement of scheduledAnnouncements.value.filter(announcement => announcement.audio)) {
-        announcement.audio?.remove();
-        announcement.audio = null;
+    for (const announcement of scheduledAnnouncements.value) {
+        releaseAnnouncementAudio(announcement);
+        announcement.generatePromise = undefined;
+        if (announcement.state !== AnnouncementState.Finished) {
+            announcement.state = AnnouncementState.Pending;
+        }
     }
-    generateAndEnqueue();
+    updateScheduler();
 }
 
-/**
- * Generate and enqueue all announcements in the next 30 seconds
- */
-async function generateAndEnqueue() {
-    for (const announcement of scheduledAnnouncements.value.filter(announcement => {
-        const timeUntilAnnouncement = announcement.time.getTime() - internetTime.value.getTime() - 1000;
-        return timeUntilAnnouncement > -10000 && timeUntilAnnouncement < 30000 && !announcement.scheduled;
-    })) {
-        await generateAudio(announcement);
-        await enqueueAnnouncement(announcement);
+function updateScheduler() {
+    const now = internetTime.value.getTime();
+    const orderedAnnouncements = [...scheduledAnnouncements.value].sort((a, b) => a.time.getTime() - b.time.getTime());
+    let generatingAnnouncements = orderedAnnouncements.filter(announcement =>
+        announcement.state === AnnouncementState.Generating
+    ).length;
+
+    for (const announcement of orderedAnnouncements) {
+        if (announcement.state === AnnouncementState.Ready && announcement.time.getTime() <= (now + 1000)) {
+            queueAnnouncementForPlayback(announcement);
+        }
+    }
+
+    let bufferedAnnouncements = orderedAnnouncements.filter(announcement =>
+        announcement.state === AnnouncementState.Generating ||
+        announcement.state === AnnouncementState.Ready ||
+        announcement.state === AnnouncementState.Playing
+    ).length;
+
+    for (const announcement of orderedAnnouncements) {
+        if (bufferedAnnouncements >= MAX_BUFFERED_ANNOUNCEMENTS) break;
+        if (announcement.state !== AnnouncementState.Pending) continue;
+        if (generatingAnnouncements >= MAX_GENERATORS) break;
+
+        const timeUntilAnnouncement = announcement.time.getTime() - now;
+        if (timeUntilAnnouncement > PREFETCH_WINDOW_MS) break;
+
+        if (startGenerating(announcement)) {
+            bufferedAnnouncements += 1;
+            generatingAnnouncements += 1;
+        }
+    }
+
+    void processPlaybackQueue();
+}
+
+function startGenerating(announcement: Announcement) {
+    if (announcement.state !== AnnouncementState.Pending || announcement.generatePromise) return false;
+
+    announcement.state = AnnouncementState.Generating;
+    announcement.generatePromise = (async () => {
+        const segmentsWithVoices = prepareSegments(announcement.segments, enabledVoices.value);
+        announcement.audio = await assembleAudio(segmentsWithVoices);
+        announcement.state = AnnouncementState.Ready;
+    })()
+        .catch(error => {
+            console.warn('Kon omroep niet genereren', error);
+            announcement.state = AnnouncementState.Pending;
+        })
+        .finally(() => {
+            announcement.generatePromise = undefined;
+            updateScheduler();
+        });
+
+    return true;
+}
+
+function queueAnnouncementForPlayback(announcement: Announcement) {
+    if (announcement.state === AnnouncementState.Playing || announcement.state === AnnouncementState.Finished) return;
+    if (playbackQueue.some(job => job.announcement === announcement)) return;
+
+    playbackQueue.push({ announcement, audio: announcement.audio as HTMLAudioElement });
+}
+
+function queueStandalonePlayback(audio: HTMLAudioElement) {
+    playbackQueue.push({ audio });
+}
+
+async function processPlaybackQueue() {
+    if (isProcessingPlaybackQueue) return;
+
+    isProcessingPlaybackQueue = true;
+
+    try {
+        while (true) {
+            const job = playbackQueue.shift();
+            if (!job) return;
+
+            if (job.announcement) {
+                if (job.announcement.state !== AnnouncementState.Ready || !job.announcement.audio) continue;
+
+                job.announcement.state = AnnouncementState.Playing;
+
+                try {
+                    await playAudioElement(job.announcement.audio);
+                } catch (error) {
+                    console.warn('Kon omroep niet afspelen', error);
+                }
+
+                finishAnnouncement(job.announcement);
+            } else {
+                try {
+                    await playAudioElement(job.audio);
+                } catch (error) {
+                    console.warn('Kon preview niet afspelen', error);
+                }
+
+                releaseStandaloneAudio(job.audio);
+            }
+            updateScheduler();
+        }
+    } finally {
+        isProcessingPlaybackQueue = false;
     }
 }
 
-async function generateAudio(announcement: Announcement) {
-    if (announcement.audio) return;
-    const segmentsWithVoices = prepareSegments(announcement.segments, enabledVoices.value);
-    announcement.audio = await assembleAudio(segmentsWithVoices);
+function playAudioElement(audio: HTMLAudioElement) {
+    return new Promise<void>((resolve, reject) => {
+        const onEnded = () => resolve();
+        const onError = () => reject(new Error('Audio playback failed'));
+
+        audio.addEventListener('ended', onEnded, { once: true });
+        audio.addEventListener('error', onError, { once: true });
+
+        const result = audio.play();
+        if (result) {
+            result.catch(error => {
+                audio.removeEventListener('ended', onEnded);
+                audio.removeEventListener('error', onError);
+                reject(error);
+            });
+        }
+    });
 }
 
-async function enqueueAnnouncement(announcement: Announcement) {
-    if (announcement.scheduled) return;
-    const timeUntilAnnouncement = announcement.time.getTime() - internetTime.value.getTime() - 1000;
+function releaseAnnouncementAudio(announcement: Announcement) {
+    if (!announcement.audio) return;
 
-    const timeout = setTimeout(() => {
-        if (!announcement.audio) return;
-        console.debug("Playing announcement: ", announcement);
-        announcement.audio.play();
-        announcement.audio.addEventListener('ended', () => {
-            announcement.audio?.remove();
-            announcement.audio = null; // Clear the audio reference after playing
-        }, { once: true });
-    }, Math.max(0, timeUntilAnnouncement));
+    const audio = announcement.audio;
+    const source = audio.src;
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+    audio.remove();
 
-    announcement.scheduled = timeout; // Mark the announcement as scheduled
-}
-
-async function playAnnouncement(announcement: Announcement) {
-    await generateAudio(announcement);
-    if (announcement.audio) {
-        announcement.audio.play();
+    if (source.startsWith('blob:')) {
+        URL.revokeObjectURL(source);
     }
+
+    announcement.audio = undefined;
+}
+
+function releaseStandaloneAudio(audio: HTMLAudioElement) {
+    const source = audio.src;
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+    audio.remove();
+
+    if (source.startsWith('blob:')) {
+        URL.revokeObjectURL(source);
+    }
+}
+
+function finishAnnouncement(announcement: Announcement) {
+    releaseAnnouncementAudio(announcement);
+    announcement.state = AnnouncementState.Finished;
+}
+
+function cloneAnnouncementForPreview(announcement: Announcement): Announcement {
+    return {
+        time: new Date(announcement.time),
+        show: announcement.show,
+        segments: announcement.segments.map(segment => ({ ...segment })),
+        state: AnnouncementState.Pending,
+    };
+}
+
+async function previewAnnouncement(announcementOrSegments: Announcement | { spriteName: string; offset: number }[]) {
+    const announcement = Array.isArray(announcementOrSegments)
+        ? {
+            time: new Date(internetTime.value),
+            segments: announcementOrSegments.map(segment => ({ ...segment })),
+            state: AnnouncementState.Pending,
+        } satisfies Announcement
+        : cloneAnnouncementForPreview(announcementOrSegments);
+
+    startGenerating(announcement);
+    await announcement.generatePromise;
+
+    if (announcement.state === AnnouncementState.Ready && announcement.audio) {
+        queueStandalonePlayback(announcement.audio);
+        void processPlaybackQueue();
+    }
+}
+
+function previewCustomAnnouncementNow() {
+    scheduledAnnouncements.value.push({
+        time: new Date(internetTime.value),
+        segments: customAnnouncementSegments.value.map(segment => ({ ...segment })),
+        state: AnnouncementState.Pending,
+    });
+
+    updateScheduler();
 }
 
 function showMatchesFilter(show: Show, index: number, rule: AnnouncementRule) {
@@ -277,16 +435,6 @@ function assembleAudio(segments: { voice: Voice; spriteName: string; offset: num
     })
 }
 
-async function previewAnnouncement(
-    segments: { spriteName: string; offset: number }[],
-    selectedVoices: Voice[] = enabledVoices.value,
-    includeChime: boolean = true
-) {
-    const preparedSegments = prepareSegments(segments, selectedVoices, includeChime);
-    const audio = await assembleAudio(preparedSegments);
-    audio.play();
-}
-
 const { isOverDropZone } = useDropZone(main, {
     onDrop: store.filesUploaded,
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
@@ -326,7 +474,7 @@ const { isOverDropZone } = useDropZone(main, {
                             v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
                             :announcement="announcement"
                             :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
-                            @preview="playAnnouncement(announcement)"
+                            @preview="previewAnnouncement($event)"
                             @delete="scheduledAnnouncements.splice(scheduledAnnouncements.indexOf(announcement), 1)" />
                     </TransitionGroup>
                 </ul>
@@ -347,12 +495,12 @@ const { isOverDropZone } = useDropZone(main, {
                                     style="height: 48px">
                                     Inplannen voor</InputDate>
                                 <Button class="primary"
-                                    @click="scheduledAnnouncements.push({ time: new Date(customAnnouncementDate), segments: customAnnouncementSegments.map(segment => ({ ...segment })), audio: null })">
+                                    @click="scheduledAnnouncements.push({ time: new Date(customAnnouncementDate), segments: customAnnouncementSegments.map(segment => ({ ...segment })), state: AnnouncementState.Pending })">
                                     <Icon>timer</Icon>
                                     Omroep inplannen
                                 </Button>
                                 <Button class="secondary add-rule"
-                                    @click="previewAnnouncement(customAnnouncementSegments)">
+                                    @click="previewCustomAnnouncementNow()">
                                     <Icon>play_arrow</Icon>
                                     Nu afspelen
                                 </Button>

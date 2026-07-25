@@ -88,40 +88,4 @@ button.status-box {
         outline-offset: 2px;
     }
 }
-
-.status-light {
-    position: relative;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: var(--color);
-
-    .working &::before {
-        content: "";
-        position: absolute;
-        top: -2px;
-        bottom: -2px;
-        left: -2px;
-        right: -2px;
-        background-color: var(--color);
-        border-radius: 50%;
-        animation: pulsate 750ms linear infinite;
-    }
-}
-
-@keyframes pulsate {
-    0% {
-        scale: 0.8;
-        opacity: 0.0;
-    }
-
-    50% {
-        opacity: 1.0;
-    }
-
-    100% {
-        scale: 1.3;
-        opacity: 0.0;
-    }
-}
 </style>

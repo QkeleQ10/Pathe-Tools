@@ -47,12 +47,21 @@ export type TimetableShow = {
     }
 }
 
+export enum AnnouncementState {
+    Pending = 'Pending',
+    Generating = 'Generating',
+    Ready = 'Ready',
+    Playing = 'Playing',
+    Finished = 'Finished',
+}
+
 export type Announcement = {
     time: Date;
     segments: { spriteName: string; offset: number }[];
-    audio: HTMLAudioElement | null;
+    state: AnnouncementState;
+    audio?: HTMLAudioElement;
+    generatePromise?: Promise<void>;
     show?: Show;
-    scheduled?: NodeJS.Timeout;
 };
 
 export type AnnouncementRule = {

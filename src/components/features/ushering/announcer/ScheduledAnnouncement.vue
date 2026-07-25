@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, inject, Ref, watchEffect } from 'vue';
 import { format } from 'date-fns';
-import { Announcement } from '@/scripts/types.ts';
+import { Announcement, AnnouncementState } from '@/scripts/types.ts';
 import { getSoundName } from '@/scripts/voices';
 
-const internetTime = inject<Ref<Date>>('internetTime');
+const internetTime = inject<Ref<Date>>('internetTime')!;
 
 const props = defineProps<{
     announcement: Announcement;
 }>();
 defineEmits<{
-    (e: 'preview', segments: { spriteName: string; offset: number; }[]): void;
+    (e: 'preview', announcement: Announcement): void;
     (e: 'delete'): void;
 }>();
 
@@ -29,41 +29,56 @@ function formatTimeLeft(timeInMs: number) {
     }
 }
 
-watchEffect(() => {
-    if (props.announcement.audio) {
-        props.announcement.audio.addEventListener("timeupdate", function () {
-            currentTime.value = props.announcement.audio.currentTime;
-        });
-        props.announcement.audio.addEventListener('play', () => {
-            isPlaying.value = true;
-        });
-        props.announcement.audio.addEventListener('pause', () => {
-            isPlaying.value = false;
-        });
-    } else isPlaying.value = false;
+watchEffect((onCleanup) => {
+    const audio = props.announcement.audio;
+
+    if (!audio) {
+        isPlaying.value = props.announcement.state === AnnouncementState.Playing;
+        currentTime.value = 0;
+        return;
+    }
+
+    const onTimeUpdate = () => {
+        currentTime.value = audio.currentTime;
+    };
+    const onPlay = () => {
+        isPlaying.value = true;
+    };
+    const onPause = () => {
+        isPlaying.value = false;
+    };
+
+    audio.addEventListener('timeupdate', onTimeUpdate);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+
+    isPlaying.value = props.announcement.state === AnnouncementState.Playing;
+
+    onCleanup(() => {
+        audio.removeEventListener('timeupdate', onTimeUpdate);
+        audio.removeEventListener('play', onPlay);
+        audio.removeEventListener('pause', onPause);
+    });
 });
 </script>
 
 <template>
-    <li class="announcement" v-if="announcement.time.getTime() > internetTime.getTime() || announcement.audio">
+    <li class="announcement" v-if="announcement.state !== AnnouncementState.Finished">
 
         <div class="contents" style="flex: 60% 1 1;" :class="{ 'playing': isPlaying }" :style="{
-            '--progress': (currentTime / announcement.audio?.duration * 100) + '%'
+            '--progress': (currentTime / (announcement.audio?.duration || 1) * 100) + '%'
         }">
-            <div style="font-size: 14px;">
+            <div class="status">
                 {{ format(announcement.time, 'HH:mm:ss') }}
                 (over {{ formatTimeLeft(announcement.time.getTime() - internetTime.getTime()) }})
             </div>
             <div class="bar">
-                <Icon class="fill" v-if="announcement.audio && !isPlaying" @click="announcement.audio.play()">
-                    play_arrow
-                </Icon>
-                <Icon class="fill" v-else-if="announcement.audio && isPlaying" @click="announcement.audio.pause()">
-                    pause
-                </Icon>
-                <Icon class="icon" v-else @click="$emit('preview', announcement.segments)">
-                    play_circle
-                </Icon>
+                <div class="status-light" @click="$emit('preview', announcement)" :class="{
+                    inactive: announcement.state === AnnouncementState.Pending,
+                    neutral: announcement.state === AnnouncementState.Ready,
+                    healthy: announcement.state === AnnouncementState.Playing,
+                    working: announcement.state === AnnouncementState.Playing || announcement.state === AnnouncementState.Generating
+                }" title="Voorbeeld afspelen"></div>
                 <div class="segments">
                     '{{announcement.segments
                         .map(segment => getSoundName(segment.spriteName))
@@ -84,7 +99,9 @@ watchEffect(() => {
             Handmatig toegevoegd
         </div>
 
-        <Icon class="delete" @click="$emit('delete')">close</Icon>
+        <Icon v-if="announcement.state === AnnouncementState.Pending" class="delete" @click="$emit('delete')">close
+        </Icon>
+        <div v-else style="width: 18px;"></div>
     </li>
 </template>
 
@@ -104,6 +121,10 @@ watchEffect(() => {
     .contents {
         --progress: 0%;
 
+        .status {
+            font-size: 14px;
+        }
+
         .bar {
             margin-block: 4px;
             display: flex;
@@ -116,7 +137,7 @@ watchEffect(() => {
             border-radius: 5px;
             overflow: hidden;
 
-            .icon {
+            .status-light {
                 cursor: pointer;
             }
 

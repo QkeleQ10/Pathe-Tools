@@ -378,6 +378,67 @@ em.label {
     }
 }
 
+.status-light {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--color);
+
+    &.working::before {
+        content: "";
+        position: absolute;
+        top: -2px;
+        bottom: -2px;
+        left: -2px;
+        right: -2px;
+        background-color: var(--color);
+        border-radius: 50%;
+        animation: pulsate 750ms linear infinite;
+    }
+}
+
+.status-box,
+.status-light {
+    --color: hsl(223, 87%, 64%);
+
+    &.inactive {
+        --color: hsl(0, 0%, 64%);
+    }
+
+    &.healthy {
+        --color: hsl(111, 87%, 64%);
+    }
+
+    &.unhealthy {
+        --color: hsl(0, 87%, 64%);
+    }
+
+    &.neutral {
+        --color: hsl(223, 87%, 64%);
+    }
+
+    &.yellow {
+        --color: var(--yellow1);
+    }
+}
+
+@keyframes pulsate {
+    0% {
+        scale: 0.8;
+        opacity: 0.0;
+    }
+
+    50% {
+        opacity: 1.0;
+    }
+
+    100% {
+        scale: 1.3;
+        opacity: 0.0;
+    }
+}
+
 .v-leave-active {
     transition: opacity 200ms ease;
 }
