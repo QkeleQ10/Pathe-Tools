@@ -7,7 +7,7 @@ import { defaultVoiceKey } from '@/scripts/voices';
 import RuleList from './RuleList.vue';
 import VoicesSelector from './VoicesSelector.vue';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
-import SpriteSelector from './SpriteSelector.vue';
+import SpritePile from './SpritePile.vue';
 import AuditoriumMappings from '../../sections/AuditoriumMappings.vue';
 
 const store = useTmsScheduleStore();
@@ -87,7 +87,7 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
             <SettingsSection category-id="voice" title="Geluid">
                 <div>
                     <span class="label">Geluid vóór omroep</span>
-                    <SpriteSelector chimes :additional-sounds="['chime00']" v-model="chimeSound"
+                    <SpritePile chimes :additional-sounds="['chime00']" v-model="chimeSound"
                         @update="emit('regenerate')" />
                 </div>
                 <div>
@@ -103,7 +103,7 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
             </SettingsSection>
 
             <SettingsSection category-id="sprites" title="Voorbeeld geluidsfragmenten">
-                <SpriteSelector v-model="dead" style="max-height: none;" no-select />
+                <SpritePile v-model="dead" style="max-height: none;" no-select />
             </SettingsSection>
 
             <SettingsSection category-id="auditoriums" title="Zalen">

@@ -259,18 +259,6 @@ em.label {
     border: 1px solid #ffffff14;
     border-radius: 5px;
 
-    &.scroll {
-        overflow-y: auto;
-        max-height: 500px;
-    }
-
-    &.short {
-        max-height: 220px;
-    }
-
-    &:empty {
-        display: none;
-    }
 
     &>li {
         padding: 8px 12px;
@@ -289,6 +277,23 @@ em.label {
     &>li .delete {
         color: #ff6b6b;
         cursor: pointer;
+    }
+
+    &.scroll {
+        overflow-y: auto;
+        max-height: 500px;
+
+        &.fixed {
+            min-height: 500px;
+
+            &>li {
+                border-bottom: 1px solid #ffffff14;
+            }
+        }
+    }
+
+    &.short {
+        max-height: 220px;
     }
 }
 

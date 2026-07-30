@@ -489,20 +489,21 @@ const { isOverDropZone } = useDropZone(main, {
                         <Icon>add</Icon>
                         <span>Nieuwe omroep</span>
                         <template #footer>
-                            <h3>Afspeelopties</h3>
+                            <br>
+                            <h3>Timing</h3>
                             <div class="flex buttons">
+                                <Button class="primary add-rule" @click="previewCustomAnnouncementNow()">
+                                    <Icon>play_arrow</Icon>
+                                    Nu afspelen
+                                </Button>
+                                <small style="align-self: center;">of</small>
                                 <InputDate identifier="customAnnouncementDate" v-model="customAnnouncementDate"
                                     style="height: 48px">
                                     Inplannen voor</InputDate>
-                                <Button class="primary"
+                                <Button class="secondary"
                                     @click="scheduledAnnouncements.push({ time: new Date(customAnnouncementDate), segments: customAnnouncementSegments.map(segment => ({ ...segment })), state: AnnouncementState.Pending })">
                                     <Icon>timer</Icon>
                                     Omroep inplannen
-                                </Button>
-                                <Button class="secondary add-rule"
-                                    @click="previewCustomAnnouncementNow()">
-                                    <Icon>play_arrow</Icon>
-                                    Nu afspelen
                                 </Button>
                             </div>
                         </template>

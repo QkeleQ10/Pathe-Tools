@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useStorage } from '@vueuse/core';
 import { getSoundName, previewSpriteSound, voices, Voice } from '@/scripts/voices';
 
 const props = defineProps<{
     id?: string;
+    noSelect?: boolean;
     chimes?: boolean;
     additionalSounds?: string[];
     placeholder?: string;
@@ -13,37 +14,7 @@ const props = defineProps<{
 const model = defineModel<string>({ required: true });
 const preferredVoiceIds = useStorage<string[]>('preferred-voices', []);
 
-const searchQuery = ref(model.value || props.placeholder || '');
-
-const sortByQuery = (items: string[], query: string) => {
-    query = query.toLowerCase();
-
-    return items
-        .map(key => ({
-            item: key,
-            score: Math.max(
-                score(key, query),
-                score(getSoundName(key), query)
-            )
-        }))
-        .sort((a, b) => b.score - a.score)
-        .map(x => x.item);
-};
-
-const score = (text = "", query: string) => {
-    text = text.toLowerCase();
-
-    if (text === query) return 100;
-    if (text.startsWith(query)) return 75;
-    if (text.includes(query)) return 50;
-
-    // Loose subsequence match ("crd" matches "credits")
-    let i = 0;
-    for (const c of text) if (c === query[i]) i++;
-    return i / query.length;
-};
-
-const sortedSounds = computed(() => {
+const sounds = computed(() => {
     const list = Object.values(voices).flatMap(voice => voice.sounds.slice());
 
     if (props.additionalSounds) {
@@ -52,20 +23,17 @@ const sortedSounds = computed(() => {
 
     const unique = Array.from(new Set(list)).filter((e): e is string => typeof e === 'string');
 
-    const results = unique
+    return unique
         .filter(e => e.startsWith('chime') === !!props.chimes)
         .sort((a, b) => getSoundName(a).localeCompare(getSoundName(b), 'nl', { numeric: true, sensitivity: 'base' }));
-
-    return sortByQuery(results, searchQuery.value);
 });
 
 function sentenceCase(string: string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function select(key: string) {
-    if (key)
-        model.value = key;
+function selected(key: string) {
+    model.value = key;
 }
 
 const preferredVoices = computed(() =>
@@ -80,41 +48,38 @@ function preview(key: string) {
 </script>
 
 <template>
-    <div class="sprite-selector">
-        <Input class="sound-search" placeholder="Zoeken..." v-model="searchQuery"
-            @keyup.enter="select(sortedSounds[0])" />
-        <div class="sprite-row" :id="id" v-bind="$attrs">
-            <div class="sprite" v-for="key in sortedSounds" :key="key"
-                :class="{ selected: model === key || (!model && key === props.placeholder) }">
-                <button type="button" class="select-sound" @click="select(key)" :title="key">
+    <div class="sprite-pile" :id="id" v-bind="$attrs">
+        <div class="sprite" v-for="key in sounds" :key="key" :class="{ selected: model === key || (!model && key === props.placeholder) }">
+            <template v-if="props.noSelect">
+                <button type="button" class="select-sound" @click="preview(key)" :title="key">
+                    {{ sentenceCase(getSoundName(key)) }}
+                    <Icon fill>play_arrow</Icon>
+                </button>
+            </template>
+            <template v-else>
+                <button type="button" class="select-sound" @click="selected(key)" :title="key">
                     {{ sentenceCase(getSoundName(key)) }}
                 </button>
-                <button v-if="model === key && !props.additionalSounds?.includes(key)" type="button" class="preview-button"
+                <button v-if="!props.additionalSounds?.includes(key)" type="button" class="preview-button"
                     @click="preview(key)" title="Voorbeeld afspelen">
                     <Icon fill>play_arrow</Icon>
                 </button>
-            </div>
+            </template>
         </div>
     </div>
 </template>
 
 <style scoped>
-.sprite-selector {
-    display: grid;
-    gap: 4px;
-}
-
-.sprite-row {
+.sprite-pile {
     max-height: 100px;
     overflow-y: auto;
     display: flex;
+    flex-wrap: wrap;
     gap: 2px 4px;
 }
 
 .sprite {
     display: flex;
-    width: max-content;
-    flex-shrink: 0;
     height: 26px;
     font: inherit;
     font-size: 13px;

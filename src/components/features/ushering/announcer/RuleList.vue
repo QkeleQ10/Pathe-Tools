@@ -145,7 +145,7 @@ function addRule() {
                             Bewerken
                         </Button>
                     </div>
-                    <AnnouncementBuilder no-button v-model="rule.segments" v-model:show="showAnnouncementBuilder">
+                    <AnnouncementBuilder no-button v-model="rule.segments" v-model:show="showAnnouncementBuilder" :auditorium-known="true">
                         <Icon>build</Icon>
                         <span>{{rule.segments.map(segment => getSoundName(segment.spriteName)).join(' - ')}}</span>
                     </AnnouncementBuilder>
