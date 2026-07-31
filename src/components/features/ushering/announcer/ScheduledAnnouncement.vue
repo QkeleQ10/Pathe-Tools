@@ -11,6 +11,7 @@ const props = defineProps<{
 }>();
 defineEmits<{
     (e: 'preview', announcement: Announcement): void;
+    (e: 'edit', announcement: Announcement): void;
     (e: 'delete'): void;
 }>();
 
@@ -73,6 +74,7 @@ watchEffect((onCleanup) => {
                 (over {{ formatTimeLeft(announcement.time.getTime() - internetTime.getTime()) }})
             </div>
             <div class="bar">
+                <!-- this is the preview button -->
                 <div class="status-light" @click="$emit('preview', announcement)" :class="{
                     inactive: announcement.state === AnnouncementState.Pending,
                     neutral: announcement.state === AnnouncementState.Ready,
@@ -99,9 +101,10 @@ watchEffect((onCleanup) => {
             Handmatig toegevoegd
         </div>
 
-        <Icon v-if="announcement.state === AnnouncementState.Pending" class="delete" @click="$emit('delete')">close
-        </Icon>
-        <div v-else style="width: 18px;"></div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+            <IconButton class="edit" @click="$emit('edit', announcement)" title="Tijd bewerken">edit</IconButton>
+            <IconButton class="delete" @click="$emit('delete')" title="Verwijderen">close</IconButton>
+        </div>
     </li>
 </template>
 

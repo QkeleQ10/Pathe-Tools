@@ -6,7 +6,7 @@ const model = defineModel<Date>();
 
 const transformedModel = computed<string>({
     get() {
-        return model.value ? format(model.value, 'yyyy-MM-dd\'T\'HH:mm') : '';
+        return model.value ? format(model.value, 'yyyy-MM-dd\'T\'HH:mm:ss') : '';
     },
     set(value: string) {
         const date = new Date(value);
@@ -17,7 +17,7 @@ const transformedModel = computed<string>({
 </script>
 
 <template>
-    <input type="datetime-local" :value="transformedModel"
+    <input type="datetime-local" :value="transformedModel" step="1"
         @blur="transformedModel = ($event.target as HTMLInputElement).value" />
 </template>
 

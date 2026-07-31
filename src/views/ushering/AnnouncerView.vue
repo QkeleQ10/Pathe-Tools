@@ -42,6 +42,11 @@ const chimeSound = useStorage('chime-sound-str', 'chime01'); // which chime soun
 
 const customAnnouncementSegments = ref<{ spriteName: string; offset: number }[]>([]);
 const customAnnouncementDate = ref<Date>(new Date(internetTime.value.getTime() + 5 * 60000)); // default to 5 minutes from now
+const isCustomAnnouncementDateValid = computed(() => customAnnouncementDate.value.getTime() >= internetTime.value.getTime());
+
+const announcementBeingEdited = ref<Announcement | null>(null);
+const editedAnnouncementDate = ref<Date>(new Date());
+const isEditedAnnouncementDateValid = computed(() => editedAnnouncementDate.value.getTime() >= internetTime.value.getTime());
 
 const scheduledAnnouncements = ref<Announcement[]>([])
 store.$subscribe(() => scheduleAnnouncements(), { deep: true })
@@ -110,6 +115,23 @@ function cleanupAnnouncements() {
         releaseAnnouncementAudio(announcement);
         announcement.generatePromise = undefined;
         if (announcement.state !== AnnouncementState.Finished) announcement.state = AnnouncementState.Pending;
+    }
+}
+
+function createAnnouncement(time: Date, segments: { spriteName: string; offset: number }[], show?: Show): Announcement {
+    return {
+        time,
+        show,
+        segments: segments.map(segment => ({ ...segment })),
+        state: AnnouncementState.Pending,
+    };
+}
+
+function removeAnnouncementFromPlaybackQueue(announcement: Announcement) {
+    for (let index = playbackQueue.length - 1; index >= 0; index--) {
+        if (playbackQueue[index].announcement === announcement) {
+            playbackQueue.splice(index, 1);
+        }
     }
 }
 
@@ -302,7 +324,11 @@ function releaseAnnouncementAudio(announcement: Announcement) {
 
     const audio = announcement.audio;
     const source = audio.src;
+    const wasPlaying = !audio.paused && !audio.ended;
     audio.pause();
+    if (wasPlaying) {
+        audio.dispatchEvent(new Event('ended'));
+    }
     audio.removeAttribute('src');
     audio.load();
     audio.remove();
@@ -340,6 +366,11 @@ function cloneAnnouncementForPreview(announcement: Announcement): Announcement {
     };
 }
 
+function previewScheduledAnnouncement(announcement: Announcement) {
+    scheduledAnnouncements.value.push(createAnnouncement(new Date(internetTime.value), announcement.segments, announcement.show));
+    updateScheduler();
+}
+
 async function previewAnnouncement(announcementOrSegments: Announcement | { spriteName: string; offset: number }[]) {
     const announcement = Array.isArray(announcementOrSegments)
         ? {
@@ -358,13 +389,54 @@ async function previewAnnouncement(announcementOrSegments: Announcement | { spri
     }
 }
 
-function previewCustomAnnouncementNow() {
-    scheduledAnnouncements.value.push({
-        time: new Date(internetTime.value),
-        segments: customAnnouncementSegments.value.map(segment => ({ ...segment })),
-        state: AnnouncementState.Pending,
-    });
+function openAnnouncementEditDialog(announcement: Announcement) {
+    announcementBeingEdited.value = announcement;
+    editedAnnouncementDate.value = new Date(announcement.time);
+}
 
+function closeAnnouncementEditDialog() {
+    announcementBeingEdited.value = null;
+}
+
+function saveEditedAnnouncement() {
+    if (!announcementBeingEdited.value || !isEditedAnnouncementDateValid.value) return;
+
+    const announcement = announcementBeingEdited.value;
+    const updatedAnnouncement = createAnnouncement(editedAnnouncementDate.value, announcement.segments, announcement.show);
+    const index = scheduledAnnouncements.value.indexOf(announcement);
+
+    if (index < 0) {
+        closeAnnouncementEditDialog();
+        return;
+    }
+
+    removeAnnouncementFromPlaybackQueue(announcement);
+    releaseAnnouncementAudio(announcement);
+    scheduledAnnouncements.value.splice(index, 1, updatedAnnouncement);
+    closeAnnouncementEditDialog();
+    updateScheduler();
+}
+
+function deleteScheduledAnnouncement(announcement: Announcement) {
+    const index = scheduledAnnouncements.value.indexOf(announcement);
+    if (index < 0) return;
+
+    removeAnnouncementFromPlaybackQueue(announcement);
+    releaseAnnouncementAudio(announcement);
+    scheduledAnnouncements.value.splice(index, 1);
+    updateScheduler();
+}
+
+function previewCustomAnnouncementNow() {
+    scheduledAnnouncements.value.push(createAnnouncement(new Date(internetTime.value), customAnnouncementSegments.value));
+
+    updateScheduler();
+}
+
+function scheduleCustomAnnouncement() {
+    if (!isCustomAnnouncementDateValid.value) return;
+
+    scheduledAnnouncements.value.push(createAnnouncement(new Date(customAnnouncementDate.value), customAnnouncementSegments.value));
     updateScheduler();
 }
 
@@ -474,8 +546,9 @@ const { isOverDropZone } = useDropZone(main, {
                             v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
                             :announcement="announcement"
                             :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
-                            @preview="previewAnnouncement($event)"
-                            @delete="scheduledAnnouncements.splice(scheduledAnnouncements.indexOf(announcement), 1)" />
+                            @preview="previewScheduledAnnouncement($event)"
+                            @edit="openAnnouncementEditDialog($event)"
+                            @delete="deleteScheduledAnnouncement(announcement)" />
                     </TransitionGroup>
                 </ul>
             </main>
@@ -501,7 +574,8 @@ const { isOverDropZone } = useDropZone(main, {
                                     style="height: 48px">
                                     Inplannen voor</InputDate>
                                 <Button class="secondary"
-                                    @click="scheduledAnnouncements.push({ time: new Date(customAnnouncementDate), segments: customAnnouncementSegments.map(segment => ({ ...segment })), state: AnnouncementState.Pending })">
+                                    :disabled="!isCustomAnnouncementDateValid"
+                                    @click="scheduleCustomAnnouncement()">
                                     <Icon>timer</Icon>
                                     Omroep inplannen
                                 </Button>
@@ -539,6 +613,22 @@ const { isOverDropZone } = useDropZone(main, {
                 </p>
             </div>
         </Transition>
+
+        <Teleport to="body">
+            <Transition>
+                <ModalDialog v-if="announcementBeingEdited" @dismiss="closeAnnouncementEditDialog">
+                    <h3>Omroep verplaatsen</h3>
+
+                    <div style="display: flex; gap: 8px; margin-top: 16px;">
+                        <InputDate v-model="editedAnnouncementDate" style="height: 48px"></InputDate>
+                        <Button class="primary" :disabled="!isEditedAnnouncementDateValid" @click="saveEditedAnnouncement">
+                            <Icon>timer</Icon>
+                            Opslaan
+                        </Button>
+                    </div>
+                </ModalDialog>
+            </Transition>
+        </Teleport>
     </div>
 </template>
 
