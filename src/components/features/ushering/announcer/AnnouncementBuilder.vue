@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import SpriteSelector from './SpriteSelector.vue';
+import { computed } from 'vue';
+import { getSoundName } from '@/scripts/voices';
+import SpriteLibrary from './SpriteLibrary.vue';
 
-const model = defineModel<{ spriteName: string; offset: number }[]>({ default: [] });
+const segments = defineModel<{ spriteName: string; offset: number }[]>({ default: [] });
 const showAnnouncementBuilder = defineModel<boolean>('show', { default: false });
 const props = defineProps({
     noButton: {
@@ -14,9 +16,14 @@ const props = defineProps({
     }
 });
 
-function addSegment() {
-    model.value.push({
-        spriteName: '',
+const displaySegments = computed(() => segments.value.map(segment => ({
+    ...segment,
+    label: segment.spriteName ? getSoundName(segment.spriteName) : 'Nog geen onderdeel'
+})));
+
+function addSprite(spriteName: string) {
+    segments.value.push({
+        spriteName,
         offset: 0,
     });
 }
@@ -32,27 +39,24 @@ function addSegment() {
 
     <Transition>
         <ModalDialog v-if="showAnnouncementBuilder" @dismiss="showAnnouncementBuilder = false">
-            <h3>Omroeponderdelen</h3>
-            <ul class="list scroll fixed">
-                <li class="segment" v-for="(segment, i) in model" :key="i" style="position: relative;">
-                    <SpriteSelector :id="'spriteName' + i" :datalist-id="'spriteName' + i + 'datalist'"
-                        v-model="segment.spriteName" :additional-sounds="auditoriumKnown ? ['auditorium#'] : []" />
+            <div class="builder-layout">
+                <div class="segment-list-panel">
+                    <h3>Omroeponderdelen</h3>
+                    <ul class="list scroll fixed segments-list">
+                        <li class="segment" v-for="(segment, i) in displaySegments" :key="i">
+                            <span class="segment-label">{{ segment.label }}</span>
+                            <Icon class="delete" @click="segments.splice(i, 1)">close</Icon>
+                        </li>
+                        <p v-if="!segments.length" class="empty-state">Geen onderdelen geselecteerd.</p>
+                    </ul>
+                </div>
 
-                    <!-- <InputGroup type="number" id="offset" v-model.number="segment.offset" min="0" max="30">
-                        <template #label>Nalooptijd</template>
-<span class="unit">ms</span>
-</InputGroup> -->
-
-                    <Icon class="delete" @click="model.splice(i, 1)">
-                        close</Icon>
-                </li>
-                <p v-if="!model.length" style="margin: 16px;">Geen onderdelen</p>
-            </ul>
-            <div class="toolbar">
-                <Button class="tertiary add-rule" @click="addSegment">
-                    <Icon>add</Icon>
-                    Nieuw onderdeel
-                </Button>
+                <div class="sprite-library-panel">
+                    <h3>Onderdelen toevoegen</h3>
+                    <SpriteLibrary
+                        :additional-sounds="auditoriumKnown ? ['auditorium#'] : []"
+                        @select="addSprite" />
+                </div>
             </div>
             <slot name="footer">
             </slot>
@@ -61,6 +65,16 @@ function addSegment() {
 </template>
 
 <style scoped>
+.builder-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.sprite-library {
+    max-height: 500px;
+}
+
 .segment {
     display: grid;
     align-items: center;
@@ -68,15 +82,14 @@ function addSegment() {
     gap: 8px;
 }
 
-.list {
-    border-radius: 5px 5px 0 0;
+.segment-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.toolbar {
-    padding: 8px 12px;
-    margin: 0;
-    border: 1px solid #ffffff14;
-    border-top: 0;
-    border-radius: 0 0 5px 5px;
+.empty-state {
+    margin: 16px;
+    opacity: .75;
 }
 </style>
