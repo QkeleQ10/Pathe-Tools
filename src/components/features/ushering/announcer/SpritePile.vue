@@ -24,8 +24,7 @@ const sounds = computed(() => {
     const unique = Array.from(new Set(list)).filter((e): e is string => typeof e === 'string');
 
     return unique
-        .filter(e => e.startsWith('chime') === !!props.chimes)
-        .sort((a, b) => getSoundName(a).localeCompare(getSoundName(b), 'nl', { numeric: true, sensitivity: 'base' }));
+        .filter(e => e.startsWith('chime') === !!props.chimes);
 });
 
 function sentenceCase(string: string) {

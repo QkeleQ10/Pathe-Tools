@@ -53,8 +53,7 @@ const sortedSounds = computed(() => {
     const unique = Array.from(new Set(list)).filter((e): e is string => typeof e === 'string');
 
     const results = unique
-        .filter(e => e.startsWith('chime') === !!props.chimes)
-        .sort((a, b) => getSoundName(a).localeCompare(getSoundName(b), 'nl', { numeric: true, sensitivity: 'base' }));
+        .filter(e => e.startsWith('chime') === !!props.chimes);
 
     return sortByQuery(results, searchQuery.value);
 });
