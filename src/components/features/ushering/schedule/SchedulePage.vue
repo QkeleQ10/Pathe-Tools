@@ -70,7 +70,7 @@ defineExpose({
                             <td v-for="(col, i) in columns" :key="i" nowrap
                                 :class="{ [`td-${col.type}`]: true, 'sorting-variable': col.type === sortBy }">
                                 <span contenteditable
-                                    v-if="col.type === 'intermissionTime' && !shows.some(show => show.intermissionTime)"></span>
+                                    v-if="col.type === 'intermissionTime' && !shows.some(show => show.hasIntermission)"></span>
                                 <span contenteditable v-else>
                                     {{colTypes.find(c => c.value === col.type)?.colHeading || ''}}
                                 </span>

@@ -22,6 +22,7 @@ export type Show = {
     creditsTime: Date;
     endTime: Date;
     duration: string;
+    hasIntermission: boolean;
 };
 
 export type UsherShow = Show & {

@@ -40,7 +40,11 @@ export const colTypes: { content: (show: UsherShow, ...args: any[]) => string; l
     },
     {
         content: (show) =>
-            show.intermissionTime ? format(show.intermissionTime, 'HH:mm:ss') : ''
+            show.hasIntermission
+                ? show.intermissionTime
+                    ? format(show.intermissionTime, 'HH:mm:ss')
+                    : 'pauze?'
+                : ''
         , label: "Pauze", colHeading: "Pauze", value: 'intermissionTime', icon: 'schedule', defaultWidth: 14, minWidth: 5
     },
     {

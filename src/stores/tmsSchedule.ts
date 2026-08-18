@@ -28,12 +28,12 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
             try {
                 json = await transformToJson(file);
             } catch (error) {
-                throw new Error("Error transforming file to JSON: " + error.message);
+                throw new Error("Error transforming file to JSON: " + (error instanceof Error ? error.message : String(error)));
             }
             try {
                 await importJson(json);
             } catch (error) {
-                throw new Error("Error importing JSON: " + error.message);
+                throw new Error("Error importing JSON: " + (error instanceof Error ? error.message : String(error)));
             }
         } catch (error) {
             console.error("Error processing file:", error);
@@ -43,7 +43,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                 h('h3', "Fout"),
                 h('p', [
                     "Fout bij verwerken van bestand.", h('br'),
-                    h('code', error.message)
+                    h('code', (error instanceof Error ? error.message : String(error)))
                 ])
             ])
             throw error;
@@ -107,7 +107,8 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                         showTime: timeStringToDate(obj.SHOW_TIME),
                         creditsTime: timeStringToDate(obj.CREDITS_TIME) || timeStringToDate(obj.END_TIME),
                         endTime: timeStringToDate(obj.END_TIME),
-                        duration: obj.DURATION
+                        duration: obj.DURATION,
+                        hasIntermission: obj.PLAYLIST.includes('PAUZE')
                     };
                     const featureTime = timeStringToDate(obj.FEATURE_TIME);
 
@@ -186,7 +187,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         return getAuditoriumNumber(auditorium);
     }
 
-    function timeStringToDate(timeString: string): Date {
+    function timeStringToDate(timeString: string): Date | null {
         try {
             if (!timeString) return null; // No string provided
 
@@ -230,7 +231,7 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
     }
 
     function shouldShiftToToday(): boolean {
-        return Boolean(globalThis.shiftToToday);
+        return Boolean((globalThis as any).shiftToToday);
     }
 
     function shiftScheduleToToday(schedule: Show[]): Show[] {
