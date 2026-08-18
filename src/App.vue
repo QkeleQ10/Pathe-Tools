@@ -19,6 +19,8 @@ provide('userHasInteracted', userHasInteracted);
 
 const aboutOpen = ref(false);
 const settingsOpen = ref(false);
+
+const dismissedNotification = useStorage('dismissedNotification20260818', false);
 </script>
 
 <template>
@@ -77,6 +79,17 @@ const settingsOpen = ref(false);
             </div>
         </ModalDialog>
     </Transition>
+
+    <Transition>
+        <ModalDialog v-if="!dismissedNotification" @dismiss="dismissedNotification = true">
+            <p>
+                Sinds de nieuwe RosettaBrige-update worden pauzes niet ingeladen in de tijdenlijst en de omroepen.
+                <br><br>
+                Ik ben op zoek naar een oplossing. 
+            </p>
+        </ModalDialog>
+    </Transition>
+
     <GlobalSettings v-model:active="settingsOpen" />
 </template>
 
