@@ -2,7 +2,7 @@
 import { provide, computed, ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { format } from 'date-fns';
-import { useWindowSize } from '@vueuse/core';
+import { useStorage, useWindowSize } from '@vueuse/core';
 import { useInternetTime } from './composables/useInternetTime';
 import GlobalSettings from './components/features/sections/GlobalSettings.vue';
 
