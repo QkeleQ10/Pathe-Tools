@@ -7,6 +7,7 @@ import UsheringScheduleView from '../views/ushering/ScheduleView.vue';
 import UsheringAnnouncerView from '../views/ushering/AnnouncerView.vue';
 import UsheringPlannerView from '../views/ushering/PlannerView.vue';
 import NarrowcastingTimetableView from '../views/narrowcasting/TimetableView.vue';
+import CombinedView from '@/views/CombinedView.vue';
 import PocIntermissionView from '../views/poc/IntermissionView.vue';
 
 const routes: RouteRecordRaw[] = [
@@ -62,6 +63,14 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/slideshow',
         redirect: '/narrowcasting/slideshow'
+    },
+    {
+        path: '/combined',
+        name: 'combined',
+        component: CombinedView,
+        meta: {
+            title: '',
+        }
     },
     {
         path: '/narrowcasting/slideshow',
