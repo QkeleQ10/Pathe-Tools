@@ -15,7 +15,7 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
     multiple: false
 });
 
-const showTimetable = useStorage('pwa-show-timetable', true);
+const showTimetable = useStorage('pwa-show-timetable', false);
 const showAnnouncer = useStorage('pwa-show-announcer', true);
 </script>
 
