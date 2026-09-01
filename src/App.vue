@@ -21,6 +21,10 @@ const aboutOpen = ref(false);
 const settingsOpen = ref(false);
 
 const dismissedNotification = useStorage('dismissedNotification20260818', false);
+
+function openExternalLink(url: string) {
+    window.open(url, '_blank');
+}
 </script>
 
 <template>
@@ -79,10 +83,11 @@ const dismissedNotification = useStorage('dismissedNotification20260818', false)
                 bij Pathé Utrecht Leidsche Rijn!
             </p>
             <div class="flex" style="gap: 24px;">
-                <Button class="tertiary" title="E-mail" href="mailto:quinten@althues.nl">
+                <Button class="tertiary" title="E-mail" @click="openExternalLink('mailto:quinten@althues.nl')">
                     E-mail
                 </Button>
-                <Button class="tertiary" title="GitHub" href="https://github.com/QkeleQ10/Pathe-Tools">
+                <Button class="tertiary" title="GitHub"
+                    @click="openExternalLink('https://github.com/QkeleQ10/Pathe-Tools')">
                     GitHub
                 </Button>
             </div>
