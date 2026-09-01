@@ -26,7 +26,16 @@ const dismissedNotification = useStorage('dismissedNotification20260818', false)
 <template>
     <header ref="header" v-if="$route.meta.showHeader ?? true">
         <div class="wrapper">
-            <nav v-if="$route.meta.showNavigation ?? true">
+
+            <nav v-if="$route.meta.pwaNavigation ?? false">
+                <RouterLink to="/" id="logo-wrapper" target="_blank">
+                    <img alt="Pathé logo" class="logo" src="@assets/logo-international-white.svg" height="42" />
+                </RouterLink>
+
+                <div id="pwa-nav"></div>
+            </nav>
+
+            <nav v-else>
 
                 <RouterLink to="/" id="logo-wrapper">
                     <img alt="Pathé logo" class="logo" src="@assets/logo-international-white.svg" height="42" />
@@ -40,8 +49,6 @@ const dismissedNotification = useStorage('dismissedNotification20260818', false)
                     <RouterLink to="/poc/intermission">Filmpauze</RouterLink>
                 </template>
             </nav>
-            <nav v-else>
-            </nav>
 
             <div class="flex" style="align-items: center; gap: 0;">
                 <a @click="aboutOpen = true" title="Over deze website">
@@ -50,8 +57,10 @@ const dismissedNotification = useStorage('dismissedNotification20260818', false)
                 <IconButton @click="settingsOpen = true" title="Globale instellingen">settings</IconButton>
                 <div id="clock">{{ format(internetTime, 'HH:mm:ss') }}</div>
             </div>
+
         </div>
     </header>
+    <span v-else></span>
 
     <HeroImage />
 
@@ -85,7 +94,7 @@ const dismissedNotification = useStorage('dismissedNotification20260818', false)
             <p>
                 Sinds de nieuwe RosettaBrige-update worden pauzes niet ingeladen in de tijdenlijst en de omroepen.
                 <br><br>
-                Ik ben op zoek naar een oplossing. 
+                Ik ben op zoek naar een oplossing.
             </p>
         </ModalDialog>
     </Transition>

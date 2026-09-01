@@ -46,6 +46,7 @@
 html {
     scroll-padding-top: calc(70px + 40px);
     color-scheme: dark;
+    accent-color: var(--yellow1);
     background: transparent !important;
 
     &:has(.fake-fullscreen) {
@@ -405,8 +406,6 @@ em.label {
 
 .status-box,
 .status-light {
-    --color: hsl(223, 87%, 64%);
-
     &.inactive {
         --color: hsl(0, 0%, 64%);
     }

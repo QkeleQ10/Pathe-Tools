@@ -122,8 +122,10 @@ export function useAnnouncerScheduler(options: {
 
             store.table.forEach((show, index) => {
                 if (showMatchesFilter(show, index, rule)) {
+                    const triggerTime = show[rule.trigger.property];
+                    if (!triggerTime) return;
                     const announcement = {
-                        time: new Date(show[rule.trigger.property].getTime() - (rule.trigger.preponeMinutes || 0) * 60000 - 5000),
+                        time: new Date(triggerTime.getTime() - (rule.trigger.preponeMinutes || 0) * 60000 - 5000),
                         show,
                         segments: rule.segments.map(segment => ({
                             ...segment,
@@ -416,7 +418,8 @@ export function useAnnouncerScheduler(options: {
     function showMatchesFilter(show: Show, index: number, rule: AnnouncementRule) {
         let matches = true;
 
-        if (!show[rule.trigger.property] || !show[rule.trigger.property].getTime()) return false;
+        const triggerTime = show[rule.trigger.property];
+        if (!triggerTime || !triggerTime.getTime()) return false;
 
         if (rule.filter.plfOnly && !show.auditorium.includes('4DX')) matches = false;
         if (rule.filter.playlistTitleIncludes && !show.title.toLowerCase().includes(rule.filter.playlistTitleIncludes.toLowerCase())) matches = false;

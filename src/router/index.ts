@@ -7,7 +7,7 @@ import UsheringScheduleView from '../views/ushering/ScheduleView.vue';
 import UsheringAnnouncerView from '../views/ushering/AnnouncerView.vue';
 import UsheringPlannerView from '../views/ushering/PlannerView.vue';
 import NarrowcastingTimetableView from '../views/narrowcasting/TimetableView.vue';
-import CombinedView from '@/views/CombinedView.vue';
+import PwaView from '@/views/PwaView.vue';
 import PocIntermissionView from '../views/poc/IntermissionView.vue';
 
 const routes: RouteRecordRaw[] = [
@@ -65,11 +65,11 @@ const routes: RouteRecordRaw[] = [
         redirect: '/narrowcasting/slideshow'
     },
     {
-        path: '/combined',
-        name: 'combined',
-        component: CombinedView,
+        path: '/pwa',
+        name: 'PWA',
+        component: PwaView,
         meta: {
-            title: '',
+            pwaNavigation: true,
         }
     },
     {

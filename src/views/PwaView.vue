@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue';
-import { useDropZone } from '@vueuse/core';
+import { useDropZone, useStorage } from '@vueuse/core';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule.ts';
 
 import TimetableUploadSection from '@features/sections/TimetableUploadSection.vue';
@@ -14,15 +14,17 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
     // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
     multiple: false
 });
+
+const showTimetable = useStorage('pwa-show-timetable', true);
+const showAnnouncer = useStorage('pwa-show-announcer', true);
 </script>
 
 <template>
     <div ref="main" class="content">
         <div class="layout">
 
-
-            <Timetable />
-            <Announcer />
+            <Timetable v-if="showTimetable" />
+            <Announcer v-if="showAnnouncer" />
 
             <main style="display: grid; grid-template-columns: auto 1fr; gap: 32px;">
                 <div id="timetable-main-tp-target"></div>
@@ -39,6 +41,17 @@ const { isOverDropZone } = useDropZone(useTemplateRef('main'), {
 
                     omroepen
                     <div id="announcer-settings-tp-target"></div>
+
+                    <Teleport to="#pwa-nav">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <InputCheckbox class="enclose-box" identifier="showTimetable" v-model="showTimetable">
+                                Timetable
+                            </InputCheckbox>
+                            <InputCheckbox class="enclose-box" identifier="showAnnouncer" v-model="showAnnouncer">
+                                Omroepen
+                            </InputCheckbox>
+                        </div>
+                    </Teleport>
 
                 </div>
 
