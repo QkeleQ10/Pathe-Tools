@@ -97,7 +97,7 @@ const recentAnnouncementCount = computed(() =>
                 <ScheduledAnnouncement
                     v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
                     :announcement="announcement"
-                    :key="announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
+                    :key="announcement.source + announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
                     @preview="previewScheduledAnnouncement($event)" @edit="openAnnouncementEditDialog($event)"
                     @delete="deleteScheduledAnnouncement(announcement)" />
             </TransitionGroup>
@@ -129,8 +129,7 @@ const recentAnnouncementCount = computed(() =>
                 </template>
             </AnnouncementBuilder>
 
-            <Button class="secondary full left" @click="scheduleAnnouncements()"
-                @contextmenu="scheduleAnnouncements(true)">
+            <Button class="secondary full left" @click="scheduleAnnouncements()">
                 <Icon>refresh</Icon>
                 <span>Omroepen vernieuwen</span>
             </Button>

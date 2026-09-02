@@ -1,10 +1,19 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 
-import { Announcement, AnnouncementRule, AnnouncementState, Show } from '@/scripts/types.ts';
+import {
+    Announcement,
+    AnnouncementRule,
+    AnnouncementSource,
+    AnnouncementState,
+    Show,
+    TheAnyThingAnnouncement,
+    TmsAnnouncement,
+} from '@/scripts/types.ts';
 import { voices, Voice, defaultVoice, preloadVoiceAudio, findAuditoriumSound } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
 
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
+import { useTheAnyThingStore } from '@/stores/theAnyThing';
 
 type AnnouncementSegment = { spriteName: string; offset: number };
 type AnnouncementsSchedule = Announcement[];
@@ -22,8 +31,15 @@ export function useAnnouncerScheduler(options: {
     chimeSound: Ref<string>;
 }) {
     const tmsScheduleStore = useTmsScheduleStore();
+    const theAnyThingStore = useTheAnyThingStore();
 
-    const scheduledAnnouncements = ref<AnnouncementsSchedule>([]);
+    const manualAnnouncements = ref<AnnouncementsSchedule>([]);
+    const showAnnouncements = ref<AnnouncementsSchedule>([]);
+    const theAnyThingAnnouncements = ref<AnnouncementsSchedule>([]);
+    const scheduledAnnouncements = computed(() =>
+        [...manualAnnouncements.value, ...showAnnouncements.value, ...theAnyThingAnnouncements.value]
+            .sort((a, b) => a.time.getTime() - b.time.getTime())
+    );
     const customAnnouncementSegments = ref<AnnouncementSegment[]>([]);
     const customAnnouncementDate = ref<Date>(new Date(options.internetTime.value.getTime() + 5 * 60000));
     const isCustomAnnouncementDateValid = computed(() => customAnnouncementDate.value.getTime() >= options.internetTime.value.getTime());
@@ -44,7 +60,14 @@ export function useAnnouncerScheduler(options: {
     let interval: ReturnType<typeof setInterval> | null = null;
     let isProcessingPlaybackQueue = false;
 
-    const stopStoreSubscription = tmsScheduleStore.$subscribe(() => scheduleAnnouncements(), { deep: true });
+    const stopTmsScheduleSubscription = tmsScheduleStore.$subscribe(() => scheduleShowAnnouncements(), { deep: true });
+    const stopTheAnyThingSubscription = theAnyThingStore.$subscribe(() => scheduleTheAnyThingAnnouncements(), { deep: true });
+
+    watch(
+        () => [options.presetRules.value, options.customRules.value],
+        () => scheduleShowAnnouncements(),
+        { deep: true }
+    );
 
     watch(
         () => [Object.keys(voices).join('|'), options.preferredVoices.value.join('|')],
@@ -63,14 +86,16 @@ export function useAnnouncerScheduler(options: {
     );
 
     onMounted(() => {
-        scheduleAnnouncements();
+        scheduleShowAnnouncements();
+        scheduleTheAnyThingAnnouncements();
         interval = setInterval(() => updateScheduler(), 1000);
         updateScheduler();
     });
 
     onBeforeUnmount(() => {
         if (interval) clearInterval(interval);
-        stopStoreSubscription();
+        stopTmsScheduleSubscription();
+        stopTheAnyThingSubscription();
         cleanupAnnouncements();
     });
 
@@ -84,24 +109,88 @@ export function useAnnouncerScheduler(options: {
         }
     }
 
+    function cleanupAnnouncement(announcement: Announcement) {
+        removeAnnouncementFromPlaybackQueue(announcement);
+        releaseAnnouncementAudio(announcement);
+        announcement.generatePromise = undefined;
+        if (announcement.state !== AnnouncementState.Finished) announcement.state = AnnouncementState.Pending;
+    }
+
     function cleanupAnnouncements() {
         playbackQueue.length = 0;
         isProcessingPlaybackQueue = false;
-
         for (const announcement of scheduledAnnouncements.value) {
-            releaseAnnouncementAudio(announcement);
-            announcement.generatePromise = undefined;
-            if (announcement.state !== AnnouncementState.Finished) announcement.state = AnnouncementState.Pending;
+            cleanupAnnouncement(announcement);
         }
     }
 
-    function createAnnouncement(time: Date, segments: AnnouncementSegment[], show?: Show): Announcement {
-        return {
-            time,
-            show,
-            segments: segments.map(segment => ({ ...segment })),
-            state: AnnouncementState.Pending,
-        };
+    function clearAnnouncements(source: AnnouncementSource) {
+        const announcements = getAnnouncementCollection(source);
+        for (const announcement of announcements) {
+            cleanupAnnouncement(announcement);
+        }
+        announcements.length = 0;
+    }
+
+    function getAnnouncementCollection(source: AnnouncementSource) {
+        if (source === 'manual') return manualAnnouncements.value;
+        if (source === 'show') return showAnnouncements.value;
+        return theAnyThingAnnouncements.value;
+    }
+
+    function scheduleShowAnnouncements() {
+        clearAnnouncements('show');
+
+        const array: Announcement[] = [];
+        for (const rule of [...options.presetRules.value, ...options.customRules.value]) {
+            if (!rule.enabled) continue;
+
+            let arr: Announcement[] = [];
+            tmsScheduleStore.table.forEach((show, index) => {
+                if (showMatchesFilter(show, index, rule)) {
+                    const triggerTime = show[rule.trigger.property];
+                    if (!triggerTime) return;
+                    const announcement = new TmsAnnouncement(
+                        new Date(triggerTime.getTime() - (rule.trigger.preponeMinutes || 0) * 60000 - 5000),
+                        rule.segments.map(segment => ({
+                            ...segment,
+                            spriteName: segment.spriteName.replace('auditorium#', findAuditoriumSound(show.auditorium)),
+                        })),
+                        show
+                    );
+                    if (announcement.time.getTime() > options.internetTime.value.getTime()) arr.push(announcement);
+                }
+            });
+
+            arr.sort((a, b) => a.time.getTime() - b.time.getTime());
+            if (rule.filter.firstShowOnly) arr = arr.slice(0, 1);
+            if (rule.filter.lastShowOnly) arr = arr.slice(-1);
+            array.push(...arr);
+        }
+
+        showAnnouncements.value = array.sort((a, b) => a.time.getTime() - b.time.getTime());
+        updateScheduler();
+    }
+
+    function scheduleTheAnyThingAnnouncements() {
+        clearAnnouncements('theanything');
+        theAnyThingAnnouncements.value = theAnyThingStore.flatBookings
+            .filter(booking => booking.bookingUntilNotRounded.getTime() > options.internetTime.value.getTime())
+            .map(booking => new TheAnyThingAnnouncement(
+                booking.bookingUntilNotRounded,
+                [
+                    { spriteName: 'endshow', offset: 0 },
+                    { spriteName: 'theanything', offset: 0 },
+                    { spriteName: `num${String(booking.roomNumber).padStart(2, '0')}`, offset: 0 }
+                ],
+                booking
+            ));
+        updateScheduler();
+    }
+
+    function scheduleAnnouncements() {
+        scheduleShowAnnouncements();
+        scheduleTheAnyThingAnnouncements();
     }
 
     function removeAnnouncementFromPlaybackQueue(announcement: Announcement) {
@@ -112,53 +201,6 @@ export function useAnnouncerScheduler(options: {
         }
     }
 
-    function scheduleAnnouncements(debug: boolean = false) {
-        cleanupAnnouncements();
-
-        let array: Announcement[] = [];
-
-        for (const rule of [...options.presetRules.value, ...options.customRules.value]) {
-            if (!rule.enabled) continue;
-
-            let arr: Announcement[] = [];
-
-            tmsScheduleStore.table.forEach((show, index) => {
-                if (showMatchesFilter(show, index, rule)) {
-                    const triggerTime = show[rule.trigger.property];
-                    if (!triggerTime) return;
-                    const announcement = {
-                        time: new Date(triggerTime.getTime() - (rule.trigger.preponeMinutes || 0) * 60000 - 5000),
-                        show,
-                        segments: rule.segments.map(segment => ({
-                            ...segment,
-                            spriteName: segment.spriteName.replace('auditorium#', findAuditoriumSound(show.auditorium)),
-                        })),
-                        state: AnnouncementState.Pending,
-                    };
-                    if (debug || announcement.time.getTime() > options.internetTime.value.getTime()) {
-                        arr.push(announcement);
-                    }
-                }
-            });
-
-            arr.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-            if (rule.filter.firstShowOnly) {
-                arr = arr.slice(0, 1);
-            }
-            if (rule.filter.lastShowOnly) {
-                arr = arr.slice(-1);
-            }
-
-            array.push(...arr);
-        }
-
-        scheduledAnnouncements.value = array.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-        if (debug) console.log(scheduledAnnouncements.value);
-
-        updateScheduler();
-    }
 
     async function regenerate() {
         for (const announcement of scheduledAnnouncements.value) {
@@ -335,26 +377,17 @@ export function useAnnouncerScheduler(options: {
     }
 
     function cloneAnnouncementForPreview(announcement: Announcement): Announcement {
-        return {
-            time: new Date(announcement.time),
-            show: announcement.show,
-            segments: announcement.segments.map(segment => ({ ...segment })),
-            state: AnnouncementState.Pending,
-        };
+        return new Announcement(announcement.time, announcement.segments);
     }
 
     function previewScheduledAnnouncement(announcement: Announcement) {
-        scheduledAnnouncements.value.push(createAnnouncement(new Date(options.internetTime.value), announcement.segments, announcement.show));
+        manualAnnouncements.value.push(new Announcement(options.internetTime.value, announcement.segments));
         updateScheduler();
     }
 
     async function previewAnnouncement(announcementOrSegments: Announcement | AnnouncementSegment[]) {
         const announcement = Array.isArray(announcementOrSegments)
-            ? {
-                time: new Date(options.internetTime.value),
-                segments: announcementOrSegments.map(segment => ({ ...segment })),
-                state: AnnouncementState.Pending,
-            } satisfies Announcement
+            ? new Announcement(options.internetTime.value, announcementOrSegments)
             : cloneAnnouncementForPreview(announcementOrSegments);
 
         startGenerating(announcement);
@@ -379,33 +412,33 @@ export function useAnnouncerScheduler(options: {
         if (!announcementBeingEdited.value || !isEditedAnnouncementDateValid.value) return;
 
         const announcement = announcementBeingEdited.value;
-        const updatedAnnouncement = createAnnouncement(editedAnnouncementDate.value, announcement.segments, announcement.show);
-        const index = scheduledAnnouncements.value.indexOf(announcement);
+        const collection = getAnnouncementCollection(announcement.source);
+        const index = collection.indexOf(announcement);
 
         if (index < 0) {
             closeAnnouncementEditDialog();
             return;
         }
 
-        removeAnnouncementFromPlaybackQueue(announcement);
-        releaseAnnouncementAudio(announcement);
-        scheduledAnnouncements.value.splice(index, 1, updatedAnnouncement);
+        cleanupAnnouncement(announcement);
+        collection.splice(index, 1);
+        manualAnnouncements.value.push(new Announcement(editedAnnouncementDate.value, announcement.segments));
         closeAnnouncementEditDialog();
         updateScheduler();
     }
 
     function deleteScheduledAnnouncement(announcement: Announcement) {
-        const index = scheduledAnnouncements.value.indexOf(announcement);
+        const collection = getAnnouncementCollection(announcement.source);
+        const index = collection.indexOf(announcement);
         if (index < 0) return;
 
-        removeAnnouncementFromPlaybackQueue(announcement);
-        releaseAnnouncementAudio(announcement);
-        scheduledAnnouncements.value.splice(index, 1);
+        cleanupAnnouncement(announcement);
+        collection.splice(index, 1);
         updateScheduler();
     }
 
     function previewCustomAnnouncementNow() {
-        scheduledAnnouncements.value.push(createAnnouncement(new Date(options.internetTime.value), customAnnouncementSegments.value));
+        manualAnnouncements.value.push(new Announcement(options.internetTime.value, customAnnouncementSegments.value));
 
         updateScheduler();
     }
@@ -413,7 +446,7 @@ export function useAnnouncerScheduler(options: {
     function scheduleCustomAnnouncement() {
         if (!isCustomAnnouncementDateValid.value) return;
 
-        scheduledAnnouncements.value.push(createAnnouncement(new Date(customAnnouncementDate.value), customAnnouncementSegments.value));
+        manualAnnouncements.value.push(new Announcement(customAnnouncementDate.value, customAnnouncementSegments.value));
         updateScheduler();
     }
 

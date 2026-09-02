@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, inject, Ref, watchEffect } from 'vue';
 import { format } from 'date-fns';
-import { Announcement, AnnouncementState } from '@/scripts/types.ts';
+import { Announcement, AnnouncementState, TheAnyThingAnnouncement, TmsAnnouncement } from '@/scripts/types.ts';
 import { getSoundName } from '@/scripts/voices';
 
 const internetTime = inject<Ref<Date>>('internetTime')!;
@@ -89,17 +89,43 @@ watchEffect((onCleanup) => {
             </div>
         </div>
 
-        <Icon class="divider-icon">{{ announcement.show ? 'link' : 'link_off' }}</Icon>
+        <template v-if="announcement instanceof TmsAnnouncement">
+            <div>
+                <Icon class="divider-icon">link</Icon>
+                <img src="@/assets/partners/rosettaBridge.png"
+                    style="width: 18px; height: 18px; border-radius: 4px;">
+            </div>
 
-        <div class="film" style="flex: 40% 1 1;" v-if="announcement.show">
-            <div>{{ announcement.show.playlist }}</div>
-            <div>{{ format(announcement.show.scheduledTime, 'HH:mm') }} –
-                {{ format(announcement.show.endTime, 'HH:mm:ss') }} (zaal {{ announcement.show.auditorium }})</div>
-        </div>
+            <div class="film" style="flex: 40% 1 1;">
+                <div>{{ announcement.tmsShow.playlist }}</div>
+                <div>{{ format(announcement.tmsShow.scheduledTime, 'HH:mm') }} –
+                    {{ format(announcement.tmsShow.endTime, 'HH:mm:ss') }} (zaal {{ announcement.tmsShow.auditorium }})
+                </div>
+            </div>
+        </template>
 
-        <div style="flex: 40% 1 1; opacity: .5;" v-else>
-            Handmatig toegevoegd
-        </div>
+        <template v-else-if="announcement instanceof TheAnyThingAnnouncement">
+            <div>
+                <Icon class="divider-icon">link</Icon>
+                <img src="@/assets/partners/theAnyThing.png"
+                    style="width: 18px; height: 18px; border-radius: 4px;">
+            </div>
+
+            <div class="film" style="flex: 40% 1 1;">
+                <div>{{ announcement.theAnyThingBooking.productName }}</div>
+                <div>{{ format(announcement.theAnyThingBooking.bookingFrom, 'HH:mm') }} –
+                    {{ format(announcement.theAnyThingBooking.bookingUntilNotRounded, 'HH:mm:ss') }} ({{
+                        announcement.theAnyThingBooking.roomName }})</div>
+            </div>
+        </template>
+
+        <template v-else>
+            <Icon class="divider-icon">link_off</Icon>
+
+            <div class="film" style="flex: 40% 1 1;">
+                Handmatig toegevoegd
+            </div>
+        </template>
 
         <div style="display: flex; flex-direction: column; gap: 8px">
             <IconButton class="edit" @click="$emit('edit', announcement)" title="Tijd bewerken">edit</IconButton>
@@ -116,7 +142,8 @@ watchEffect((onCleanup) => {
 }
 
 .announcement {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 18px 1fr 18px;
     align-items: center;
     gap: 16px;
     padding: 16px;

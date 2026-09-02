@@ -48,7 +48,7 @@ export type TimetableShow = {
     }
 }
 
-export type TheAnyThingBooking = { 
+export type TheAnyThingBooking = {
     bookingId: string;
     productName: string;
     locationName: string;
@@ -71,14 +71,42 @@ export enum AnnouncementState {
     Finished = 'Finished',
 }
 
-export type Announcement = {
+export type AnnouncementSource = 'manual' | 'show' | 'theanything';
+export type AnnouncementSegment = { spriteName: string; offset: number };
+
+export class Announcement {
+    readonly source: AnnouncementSource = 'manual';
     time: Date;
-    segments: { spriteName: string; offset: number }[];
-    state: AnnouncementState;
+    segments: AnnouncementSegment[];
+    state: AnnouncementState = AnnouncementState.Pending;
     audio?: HTMLAudioElement;
     generatePromise?: Promise<void>;
-    show?: Show;
-};
+
+    constructor(time: Date, segments: AnnouncementSegment[]) {
+        this.time = new Date(time);
+        this.segments = segments.map(segment => ({ ...segment }));
+    }
+}
+
+export class TmsAnnouncement extends Announcement {
+    readonly source: AnnouncementSource = 'show';
+    tmsShow: Show;
+
+    constructor(time: Date, segments: AnnouncementSegment[], tmsShow: Show) {
+        super(time, segments);
+        this.tmsShow = tmsShow;
+    }
+}
+
+export class TheAnyThingAnnouncement extends Announcement {
+    readonly source: AnnouncementSource = 'theanything';
+    theAnyThingBooking: TheAnyThingBooking;
+
+    constructor(time: Date, segments: AnnouncementSegment[], theAnyThingBooking: TheAnyThingBooking) {
+        super(time, segments);
+        this.theAnyThingBooking = theAnyThingBooking;
+    }
+}
 
 export type AnnouncementRule = {
     id: string;

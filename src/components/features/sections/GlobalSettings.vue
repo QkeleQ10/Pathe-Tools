@@ -66,7 +66,7 @@ function clearSettings(): void {
             <SettingsCategoryButton category-id="auditoriums" label="Zalen" icon="room_preferences" />
             <SettingsCategoryButton category-id="theanything" label="TheAnyThing" icon="room_preferences">
                 <template #icon>
-                    <img src="@/assets/partners/theAnyThing.png" alt="TheAnyThing logo"
+                    <img src="@/assets/partners/theAnyThing.png"
                         style="width: 18px; height: 18px; border-radius: 4px;" />
                 </template>
             </SettingsCategoryButton>
@@ -104,7 +104,9 @@ function clearSettings(): void {
                         ? 'neutral'
                         : 'unhealthy'" :working="theAnyThingStore.status === 'CONNECTING'">
                     <template #label>TheAnyThing {{ theAnyThingStore.flatBookings[0]?.locationName || '' }}</template>
-                    <template #description v-if="theAnyThingStore.bookings">{{ Object.keys(theAnyThingStore.bookings).length }} zalen &bull; Bijgewerkt om {{ format(theAnyThingStore.timestamp, 'HH:mm:ss') }}</template>
+                    <template #description v-if="theAnyThingStore.bookings">{{
+                        Object.keys(theAnyThingStore.bookings).length }} zalen &bull; Bijgewerkt om {{
+                            format(theAnyThingStore.timestamp, 'HH:mm:ss') }}</template>
                     <template #description v-else>Geen gegevens</template>
                 </StatusBox>
                 {{ theAnyThingStore.flatBookings }}
