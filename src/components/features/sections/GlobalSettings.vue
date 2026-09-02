@@ -109,7 +109,6 @@ function clearSettings(): void {
                             format(theAnyThingStore.timestamp, 'HH:mm:ss') }}</template>
                     <template #description v-else>Geen gegevens</template>
                 </StatusBox>
-                {{ theAnyThingStore.flatBookings }}
             </SettingsSection>
 
             <SettingsSection category-id="export" title="Im-/exporteren">
