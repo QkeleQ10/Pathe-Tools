@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, inject, useTemplateRef, computed, type Ref } from 'vue';
-import { useDropZone, useStorage } from '@vueuse/core';
+import { ref, inject, computed, type Ref } from 'vue';
+import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -17,8 +17,6 @@ import Settings, { presetRulesDefault } from '@/components/features/ushering/ann
 const store = useTmsScheduleStore();
 const internetTime = inject<Ref<Date>>('internetTime', ref(new Date()));
 const userHasInteracted = inject<Ref<boolean>>('userHasInteracted');
-
-const main = useTemplateRef('main');
 
 const presetRulesOverrides = useStorage<{ [key: string]: boolean }>('announcement-rules-overrides', {});
 const presetRules = computed<AnnouncementRule[]>({
@@ -70,12 +68,6 @@ const {
 const recentAnnouncementCount = computed(() =>
     scheduledAnnouncements.value.filter(announcement => internetTime.value.getTime() - announcement.time.getTime() < 10000).length
 );
-
-const { isOverDropZone } = useDropZone(main, {
-    onDrop: store.filesUploaded,
-    // dataTypes: ['text/csv', '.csv', 'text/tsv', '.tsv'],
-    multiple: false
-})
 </script>
 
 <template>

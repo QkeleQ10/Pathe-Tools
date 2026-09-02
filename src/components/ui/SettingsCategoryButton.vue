@@ -21,7 +21,9 @@ const handleClick = () => {
 
 <template>
     <button class="settings-category-button" :class="{ active: isActive }" @click="handleClick">
-        <Icon>{{ icon }}</Icon>
+        <slot name="icon">
+            <Icon>{{ icon }}</Icon>
+        </slot>
         <span>{{ label }}</span>
     </button>
 </template>

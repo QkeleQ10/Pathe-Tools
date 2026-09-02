@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useStorage } from '@vueuse/core';
+import { format } from 'date-fns';
+
+import { useTheAnyThingStore } from '@/stores/theAnyThing.ts';
+
 import AuditoriumMappings from './AuditoriumMappings.vue';
+
+const theAnyThingStore = useTheAnyThingStore();
 
 const dialogActive = ref(false);
 
@@ -58,6 +64,12 @@ function clearSettings(): void {
         <template #navigation>
             <SettingsCategoryButton category-id="general" label="Algemeen" icon="settings" />
             <SettingsCategoryButton category-id="auditoriums" label="Zalen" icon="room_preferences" />
+            <SettingsCategoryButton category-id="theanything" label="TheAnyThing" icon="room_preferences">
+                <template #icon>
+                    <img src="@/assets/partners/theAnyThing.png" alt="TheAnyThing logo"
+                        style="width: 18px; height: 18px; border-radius: 4px;" />
+                </template>
+            </SettingsCategoryButton>
             <SettingsCategoryButton category-id="export" label="Im-/exporteren" icon="file_export" />
         </template>
 
@@ -80,6 +92,22 @@ function clearSettings(): void {
 
             <SettingsSection category-id="auditoriums" title="Zalen">
                 <AuditoriumMappings :preview="{ schedule: true }" />
+            </SettingsSection>
+
+            <SettingsSection category-id="theanything" title="TheAnyThing">
+                <InputGroup type="text" id="theAnyThingTheatreId" v-model="theAnyThingStore.theatreId">
+                    <template #label>Theater-ID</template>
+                </InputGroup>
+                <StatusBox :health="theAnyThingStore.status === 'OPEN'
+                    ? 'healthy'
+                    : theAnyThingStore.status === 'CONNECTING'
+                        ? 'neutral'
+                        : 'unhealthy'" :working="theAnyThingStore.status === 'CONNECTING'">
+                    <template #label>TheAnyThing {{ theAnyThingStore.flatBookings[0]?.locationName || '' }}</template>
+                    <template #description v-if="theAnyThingStore.bookings">{{ Object.keys(theAnyThingStore.bookings).length }} zalen &bull; Bijgewerkt om {{ format(theAnyThingStore.timestamp, 'HH:mm:ss') }}</template>
+                    <template #description v-else>Geen gegevens</template>
+                </StatusBox>
+                {{ theAnyThingStore.flatBookings }}
             </SettingsSection>
 
             <SettingsSection category-id="export" title="Im-/exporteren">

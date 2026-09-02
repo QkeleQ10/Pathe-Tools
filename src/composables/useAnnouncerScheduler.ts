@@ -1,7 +1,9 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
+
 import { Announcement, AnnouncementRule, AnnouncementState, Show } from '@/scripts/types.ts';
 import { voices, Voice, defaultVoice, preloadVoiceAudio, findAuditoriumSound } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
+
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 
 type AnnouncementSegment = { spriteName: string; offset: number };
@@ -19,7 +21,7 @@ export function useAnnouncerScheduler(options: {
     preferredVoices: Ref<string[]>;
     chimeSound: Ref<string>;
 }) {
-    const store = useTmsScheduleStore();
+    const tmsScheduleStore = useTmsScheduleStore();
 
     const scheduledAnnouncements = ref<AnnouncementsSchedule>([]);
     const customAnnouncementSegments = ref<AnnouncementSegment[]>([]);
@@ -42,7 +44,7 @@ export function useAnnouncerScheduler(options: {
     let interval: ReturnType<typeof setInterval> | null = null;
     let isProcessingPlaybackQueue = false;
 
-    const stopStoreSubscription = store.$subscribe(() => scheduleAnnouncements(), { deep: true });
+    const stopStoreSubscription = tmsScheduleStore.$subscribe(() => scheduleAnnouncements(), { deep: true });
 
     watch(
         () => [Object.keys(voices).join('|'), options.preferredVoices.value.join('|')],
@@ -120,7 +122,7 @@ export function useAnnouncerScheduler(options: {
 
             let arr: Announcement[] = [];
 
-            store.table.forEach((show, index) => {
+            tmsScheduleStore.table.forEach((show, index) => {
                 if (showMatchesFilter(show, index, rule)) {
                     const triggerTime = show[rule.trigger.property];
                     if (!triggerTime) return;

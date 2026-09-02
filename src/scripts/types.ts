@@ -48,6 +48,21 @@ export type TimetableShow = {
     }
 }
 
+export type TheAnyThingBooking = { 
+    bookingId: string;
+    productName: string;
+    locationName: string;
+    roomId: string;
+    roomName: string;
+    roomNumber: number;
+    roomDirection: string;
+    userGivenName: string;
+    bookingFrom: Date;
+    bookingUntil: Date;
+    bookingUntilNotRounded: Date;
+    bookingState: string;
+}
+
 export enum AnnouncementState {
     Pending = 'Pending',
     Generating = 'Generating',
