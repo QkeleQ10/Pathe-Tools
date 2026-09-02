@@ -29,6 +29,7 @@ export function useAnnouncerScheduler(options: {
     customRules: Ref<AnnouncementRule[]>;
     preferredVoices: Ref<string[]>;
     chimeSound: Ref<string>;
+    announceTheAnything: Ref<boolean>;
 }) {
     const tmsScheduleStore = useTmsScheduleStore();
     const theAnyThingStore = useTheAnyThingStore();
@@ -174,6 +175,7 @@ export function useAnnouncerScheduler(options: {
 
     function scheduleTheAnyThingAnnouncements() {
         clearAnnouncements('theanything');
+        if (options.announceTheAnything.value !== true) return;
         theAnyThingAnnouncements.value = theAnyThingStore.flatBookings
             .filter(booking => booking.bookingUntilNotRounded.getTime() > options.internetTime.value.getTime())
             .map(booking => new TheAnyThingAnnouncement(

@@ -42,6 +42,8 @@ const presetRules = computed<AnnouncementRule[]>({
 });
 
 const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
+
+const announceTheAnything = useStorage('announce-the-anything-end', true);
 </script>
 
 <template>
@@ -81,6 +83,12 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
                         <template #label>Duur filmpauzes FILM+</template>
                         <span class="unit">minuten</span>
                     </InputGroup>
+                </div>
+                <div>
+                    <span class="label">TheAnyThing</span>
+                    <InputSwitch v-model="announceTheAnything" identifier="announce-the-anything"
+                        @change="emit('scheduleAnnouncements')">
+                        Einde boeking omroepen</InputSwitch>
                 </div>
             </SettingsSection>
 

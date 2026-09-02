@@ -92,8 +92,7 @@ watchEffect((onCleanup) => {
         <template v-if="announcement instanceof TmsAnnouncement">
             <div>
                 <Icon class="divider-icon">link</Icon>
-                <img src="@/assets/partners/rosettaBridge.png"
-                    style="width: 18px; height: 18px; border-radius: 4px;">
+                <img src="@/assets/partners/rosettaBridge.png" style="width: 18px; height: 18px; border-radius: 4px;">
             </div>
 
             <div class="film" style="flex: 40% 1 1;">
@@ -107,12 +106,12 @@ watchEffect((onCleanup) => {
         <template v-else-if="announcement instanceof TheAnyThingAnnouncement">
             <div>
                 <Icon class="divider-icon">link</Icon>
-                <img src="@/assets/partners/theAnyThing.png"
-                    style="width: 18px; height: 18px; border-radius: 4px;">
+                <img src="@/assets/partners/theAnyThing.png" style="width: 18px; height: 18px; border-radius: 4px;">
             </div>
 
             <div class="film" style="flex: 40% 1 1;">
                 <div>{{ announcement.theAnyThingBooking.productName }}</div>
+                <div>{{ announcement.theAnyThingBooking.userGivenName }}</div>
                 <div>{{ format(announcement.theAnyThingBooking.bookingFrom, 'HH:mm') }} –
                     {{ format(announcement.theAnyThingBooking.bookingUntilNotRounded, 'HH:mm:ss') }} ({{
                         announcement.theAnyThingBooking.roomName }})</div>
@@ -180,7 +179,8 @@ watchEffect((onCleanup) => {
                 width: var(--progress);
                 background: var(--yellow2);
                 border-radius: 6px;
-                transition: --progress 250ms linear, width 250ms linear, opacity 150ms 150ms;
+                transition: width 250ms linear, opacity 150ms;
+                transition-delay: 150ms;
                 opacity: 0;
             }
         }

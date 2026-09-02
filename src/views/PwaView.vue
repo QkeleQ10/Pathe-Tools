@@ -58,7 +58,7 @@ const showAnnouncer = useStorage('pwa-show-announcer', true);
                 <div class="spacer"></div>
 
                 <div class="flex" style="flex-direction: column;">
-                    <span>Het voorbeeld is slechts indicatief.</span>
+                    <span>tijdelijke pagina</span>
                 </div>
             </SidePanel>
 

@@ -103,10 +103,13 @@ function clearSettings(): void {
                     : theAnyThingStore.status === 'CONNECTING'
                         ? 'neutral'
                         : 'unhealthy'" :working="theAnyThingStore.status === 'CONNECTING'">
-                    <template #label>TheAnyThing {{ theAnyThingStore.flatBookings[0]?.locationName || '' }}</template>
-                    <template #description v-if="theAnyThingStore.bookings">{{
-                        Object.keys(theAnyThingStore.bookings).length }} zalen &bull; Bijgewerkt om {{
-                            format(theAnyThingStore.timestamp, 'HH:mm:ss') }}</template>
+                    <template #label v-if="theAnyThingStore.flatBookings.length > 0">TheAnyThing x {{ theAnyThingStore.flatBookings[0]?.locationName || '' }}</template>
+                    <template #label v-else>TheAnyThing</template>
+                    <template #description v-if="theAnyThingStore.flatBookings.length > 0">
+                        {{ Object.keys(theAnyThingStore.bookings).length }} zalen
+                        &bull;
+                        Bijgewerkt om {{ format(theAnyThingStore.timestamp, 'HH:mm:ss') }}
+                    </template>
                     <template #description v-else>Geen gegevens</template>
                 </StatusBox>
             </SettingsSection>

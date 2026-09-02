@@ -7,6 +7,7 @@ import { nl } from 'date-fns/locale';
 import { AnnouncementRule } from '@/scripts/types.ts';
 import { defaultVoiceKey } from '@/scripts/voices';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
+import { useTheAnyThingStore } from '@/stores/theAnyThing';
 import { useAnnouncerScheduler } from '@/composables/useAnnouncerScheduler';
 
 import AnnouncementBuilder from '@features/ushering/announcer/AnnouncementBuilder.vue';
@@ -14,7 +15,9 @@ import AnnouncementTimingForm from '@features/ushering/announcer/AnnouncementTim
 import ScheduledAnnouncement from '@features/ushering/announcer/ScheduledAnnouncement.vue';
 import Settings, { presetRulesDefault } from '@/components/features/ushering/announcer/Settings.vue';
 
-const store = useTmsScheduleStore();
+const tmsScheduleStore = useTmsScheduleStore();
+const theAnyThingStore = useTheAnyThingStore();
+
 const internetTime = inject<Ref<Date>>('internetTime', ref(new Date()));
 const userHasInteracted = inject<Ref<boolean>>('userHasInteracted');
 
@@ -63,6 +66,7 @@ const {
     customRules,
     preferredVoices,
     chimeSound,
+    announceTheAnything: useStorage('announce-the-anything-end', true),
 });
 
 const recentAnnouncementCount = computed(() =>
@@ -73,7 +77,7 @@ const recentAnnouncementCount = computed(() =>
 <template>
     <Teleport defer to="#announcer-main-tp-target">
         <h1>Omroepen</h1>
-        <template v-if="store.table.length < 1">
+        <template v-if="tmsScheduleStore.table.length < 1">
             <p>
                 <template v-if="recentAnnouncementCount < 1">Er
                     zijn geen omroepen gepland. <br></template>
@@ -86,7 +90,7 @@ const recentAnnouncementCount = computed(() =>
             <p>
                 Er zijn geen omroepen gepland. <br>
                 Het geüploade bestand bevat voorstellingen van {{
-                    format(store.table[0].endTime, 'PPPP', {
+                    format(tmsScheduleStore.table[0].endTime, 'PPPP', {
                         locale: nl
                     }) }}. <br>
                 Upload eventueel een recenter bestand of plan handmatig omroepen in.
@@ -108,6 +112,22 @@ const recentAnnouncementCount = computed(() =>
     <Teleport defer to="#announcer-settings-tp-target">
         <div class="flex" style="flex-direction: column;">
 
+            <StatusBox :health="theAnyThingStore.status === 'OPEN'
+                ? 'healthy'
+                : theAnyThingStore.status === 'CONNECTING'
+                    ? 'neutral'
+                    : 'unhealthy'" :working="theAnyThingStore.status === 'CONNECTING'">
+                <template #label v-if="theAnyThingStore.flatBookings.length > 0">TheAnyThing x {{
+                    theAnyThingStore.flatBookings[0]?.locationName || '' }}</template>
+                <template #label v-else>TheAnyThing</template>
+                <template #description v-if="theAnyThingStore.flatBookings.length > 0">
+                    {{ Object.keys(theAnyThingStore.bookings).length }} zalen
+                    &bull;
+                    Bijgewerkt om {{ format(theAnyThingStore.timestamp, 'HH:mm:ss') }}
+                </template>
+                <template #description v-else>Geen gegevens</template>
+            </StatusBox>
+
             <AnnouncementBuilder v-model="customAnnouncementSegments">
                 <Icon>add</Icon>
                 <span>Nieuwe omroep</span>
@@ -128,11 +148,6 @@ const recentAnnouncementCount = computed(() =>
                     </div>
                 </template>
             </AnnouncementBuilder>
-
-            <Button class="secondary full left" @click="scheduleAnnouncements()">
-                <Icon>refresh</Icon>
-                <span>Omroepen vernieuwen</span>
-            </Button>
 
             <Settings @regenerate="regenerate" @previewAnnouncement="previewAnnouncement"
                 @scheduleAnnouncements="scheduleAnnouncements" />
