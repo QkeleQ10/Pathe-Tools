@@ -176,7 +176,7 @@ export function useAnnouncerScheduler(options: {
     function scheduleTheAnyThingAnnouncements() {
         clearAnnouncements('theanything');
         if (options.announceTheAnything.value !== true) return;
-        theAnyThingAnnouncements.value = theAnyThingStore.flatBookings
+        theAnyThingAnnouncements.value = theAnyThingStore.bookings
             .filter(booking => booking.bookingUntilNotRounded.getTime() > options.internetTime.value.getTime())
             .map(booking => new TheAnyThingAnnouncement(
                 booking.bookingUntilNotRounded,
