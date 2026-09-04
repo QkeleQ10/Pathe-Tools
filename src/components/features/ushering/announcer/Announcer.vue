@@ -112,7 +112,7 @@ const recentAnnouncementCount = computed(() =>
     <Teleport defer to="#announcer-settings-tp-target">
         <div class="flex" style="flex-direction: column;">
 
-            <StatusBox :health="theAnyThingStore.status === 'OPEN'
+            <StatusBox v-if="theAnyThingStore.theatreId" :health="theAnyThingStore.status === 'OPEN'
                 ? 'healthy'
                 : theAnyThingStore.status === 'CONNECTING'
                     ? 'neutral'

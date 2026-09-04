@@ -44,14 +44,10 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
             heartbeat: { message: '{"action":"getBookings"}', interval: 5 * 60 * 1000, pongTimeout: 5000, },
             onConnected(ws) {
                 console.log('WebSocket connected:', ws)
-                bookings.value = [];
-                timestamp.value = 0;
                 fetchBookingsAction()
             },
             onDisconnected(ws, event) {
                 console.log('WebSocket disconnected:', event)
-                bookings.value = [];
-                timestamp.value = 0;
             },
             onMessage(ws, event) {
                 console.log('WebSocket message received:', event.data)
@@ -109,7 +105,7 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
         const ongoingBookings = currentBookings.filter(booking =>
             !newBookingIds.has(booking.bookingId) &&
             booking.bookingFrom.getTime() < now &&
-            booking.bookingUntil.getTime() > now
+            (booking.bookingUntilNotRounded.getTime() + 300000) > now
         );
 
         return [...newBookings, ...ongoingBookings];

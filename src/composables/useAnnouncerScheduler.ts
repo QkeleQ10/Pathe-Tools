@@ -174,19 +174,58 @@ export function useAnnouncerScheduler(options: {
     }
 
     function scheduleTheAnyThingAnnouncements() {
-        clearAnnouncements('theanything');
-        if (options.announceTheAnything.value !== true) return;
-        theAnyThingAnnouncements.value = theAnyThingStore.bookings
-            .filter(booking => booking.bookingUntilNotRounded.getTime() > options.internetTime.value.getTime())
-            .map(booking => new TheAnyThingAnnouncement(
-                booking.bookingUntilNotRounded,
-                [
+        const announcementsByBookingId = new Map(
+            theAnyThingAnnouncements.value.map(announcement => [announcement.theAnyThingBooking.bookingId, announcement])
+        );
+        const updatedAnnouncements: AnnouncementsSchedule = [];
+
+        if (options.announceTheAnything.value === true) {
+            for (const booking of theAnyThingStore.bookings) {
+                if (booking.bookingUntilNotRounded.getTime() <= options.internetTime.value.getTime()) continue;
+
+                const segments = [
                     { spriteName: 'endshow', offset: 0 },
                     { spriteName: 'theanything', offset: 0 },
                     { spriteName: `num${String(booking.roomNumber).padStart(2, '0')}`, offset: 0 }
-                ],
-                booking
-            ));
+                ];
+                const announcement = announcementsByBookingId.get(booking.bookingId);
+
+                if (!announcement) {
+                    updatedAnnouncements.push(new TheAnyThingAnnouncement(
+                        booking.bookingUntilNotRounded,
+                        segments,
+                        booking
+                    ));
+                    continue;
+                }
+
+                const hasChanged =
+                    announcement.time.getTime() !== booking.bookingUntilNotRounded.getTime() ||
+                    announcement.segments.some((segment, index) =>
+                        segment.spriteName !== segments[index]?.spriteName || segment.offset !== segments[index]?.offset
+                    ) ||
+                    announcement.segments.length !== segments.length;
+
+                if (hasChanged) {
+                    cleanupAnnouncement(announcement);
+                    announcement.time = new Date(booking.bookingUntilNotRounded);
+                    announcement.segments = segments.map(segment => ({ ...segment }));
+                    if (announcement.state === AnnouncementState.Finished) {
+                        announcement.state = AnnouncementState.Pending;
+                    }
+                }
+
+                announcement.theAnyThingBooking = booking;
+                updatedAnnouncements.push(announcement);
+                announcementsByBookingId.delete(booking.bookingId);
+            }
+        }
+
+        for (const announcement of announcementsByBookingId.values()) {
+            cleanupAnnouncement(announcement);
+        }
+
+        theAnyThingAnnouncements.value = updatedAnnouncements;
         updateScheduler();
     }
 
