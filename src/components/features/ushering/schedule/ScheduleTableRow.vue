@@ -192,8 +192,8 @@ td {
     .plf-icon {
         position: absolute;
         top: 0;
-        left: -3em;
-        height: .88em;
+        left: -2.75em;
+        height: .8em;
         translate: 0 -50%;
         fill: var(--color);
     }
@@ -247,7 +247,7 @@ td {
 
     .final-show {
         position: absolute;
-        right: 0;
+        left: -1em;
         --size: 12px;
         opacity: .5;
     }

@@ -1,13 +1,12 @@
 <script lang="ts">
 import { format } from 'date-fns';
 import { UsherShow } from '@/scripts/types';
-import { getDefaultScheduleAuditoriumName } from '@/scripts/auditoriums';
 
 export const defaultColumns = [
     { type: 'auditorium', width: 8 },
-    { type: 'scheduledTime', width: 9 },
-    { type: 'intermissionTime', width: 14 },
-    { type: 'creditsTime', width: 17 },
+    { type: 'scheduledTime', width: 12 },
+    { type: 'intermissionTime', width: 12 },
+    { type: 'creditsTime', width: 16 },
     { type: 'title', width: 49 },
     { type: 'ageRating', width: 3 },
 ];
