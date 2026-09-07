@@ -66,7 +66,8 @@ const {
     customRules,
     preferredVoices,
     chimeSound,
-    announceTheAnything: useStorage('announce-the-anything-end', true),
+    announceTheAnythingEnd: useStorage('announce-the-anything-end', true),
+    announceTheAnythingNextBooking: useStorage('announce-the-anything-next-booking', true),
 });
 
 const recentAnnouncementCount = computed(() =>

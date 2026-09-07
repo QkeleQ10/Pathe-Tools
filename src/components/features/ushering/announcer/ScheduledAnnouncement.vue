@@ -83,7 +83,7 @@ watchEffect((onCleanup) => {
                 }" title="Voorbeeld afspelen"></div>
                 <div class="segments">
                     '{{announcement.segments
-                        .map(segment => getSoundName(segment.spriteName))
+                        .map((segment, i, a) => getSoundName(segment.spriteName) + ((segment.offset > 0 && i < a.length - 1) ? ` —` : ''))
                         .join(' ')}}'
                 </div>
             </div>
@@ -113,7 +113,7 @@ watchEffect((onCleanup) => {
                 <div>{{ announcement.theAnyThingBooking.productName }}</div>
                 <div>{{ announcement.theAnyThingBooking.userGivenName }}</div>
                 <div>{{ format(announcement.theAnyThingBooking.bookingFrom, 'HH:mm') }} –
-                    {{ format(announcement.theAnyThingBooking.bookingUntilNotRounded, 'HH:mm:ss') }} ({{
+                    {{ format(announcement.theAnyThingBooking.bookingUntilNotRounded, 'HH:mm') }} ({{
                         announcement.theAnyThingBooking.roomName }})</div>
             </div>
         </template>

@@ -14,6 +14,7 @@ import { assembleAudioClient } from '@/scripts/assembleAudio';
 
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import { useTheAnyThingStore } from '@/stores/theAnyThing';
+import { format } from 'date-fns';
 
 type AnnouncementSegment = { spriteName: string; offset: number };
 type AnnouncementsSchedule = Announcement[];
@@ -29,7 +30,8 @@ export function useAnnouncerScheduler(options: {
     customRules: Ref<AnnouncementRule[]>;
     preferredVoices: Ref<string[]>;
     chimeSound: Ref<string>;
-    announceTheAnything: Ref<boolean>;
+    announceTheAnythingEnd: Ref<boolean>;
+    announceTheAnythingNextBooking: Ref<boolean>;
 }) {
     const tmsScheduleStore = useTmsScheduleStore();
     const theAnyThingStore = useTheAnyThingStore();
@@ -175,24 +177,34 @@ export function useAnnouncerScheduler(options: {
 
     function scheduleTheAnyThingAnnouncements() {
         const announcementsByBookingId = new Map(
-            theAnyThingAnnouncements.value.map(announcement => [announcement.theAnyThingBooking.bookingId, announcement])
+            theAnyThingAnnouncements.value.map(announcement => [(announcement as TheAnyThingAnnouncement).theAnyThingBooking.bookingId, announcement])
         );
         const updatedAnnouncements: AnnouncementsSchedule = [];
 
-        if (options.announceTheAnything.value === true) {
+        if (options.announceTheAnythingEnd.value === true) {
             for (const booking of theAnyThingStore.bookings) {
-                if (booking.bookingUntilNotRounded.getTime() <= options.internetTime.value.getTime()) continue;
+                if (booking.estimatedEndTime.getTime() <= options.internetTime.value.getTime()) continue;
 
                 const segments = [
                     { spriteName: 'endshow', offset: 0 },
                     { spriteName: 'theanything', offset: 0 },
-                    { spriteName: `num${String(booking.roomNumber).padStart(2, '0')}`, offset: 0 }
+                    { spriteName: `num${String(booking.roomNumber).padStart(2, '0')}`, offset: 400 },
                 ];
-                const announcement = announcementsByBookingId.get(booking.bookingId);
+
+                if (booking.nextBookingStartTime && options.announceTheAnythingNextBooking.value === true) {
+                    const timeUntilNextBooking = Math.max(0, booking.nextBookingStartTime.getTime() - booking.estimatedEndTime.getTime());
+
+                    segments.push(
+                        { spriteName: 'nextbookingin', offset: 0 },
+                        ...durationToSegments(timeUntilNextBooking)
+                    );
+                }
+
+                const announcement = announcementsByBookingId.get(booking.bookingId) as TheAnyThingAnnouncement | undefined;
 
                 if (!announcement) {
                     updatedAnnouncements.push(new TheAnyThingAnnouncement(
-                        booking.bookingUntilNotRounded,
+                        booking.estimatedEndTime,
                         segments,
                         booking
                     ));
@@ -200,7 +212,7 @@ export function useAnnouncerScheduler(options: {
                 }
 
                 const hasChanged =
-                    announcement.time.getTime() !== booking.bookingUntilNotRounded.getTime() ||
+                    announcement.time.getTime() !== booking.estimatedEndTime.getTime() ||
                     announcement.segments.some((segment, index) =>
                         segment.spriteName !== segments[index]?.spriteName || segment.offset !== segments[index]?.offset
                     ) ||
@@ -208,7 +220,7 @@ export function useAnnouncerScheduler(options: {
 
                 if (hasChanged) {
                     cleanupAnnouncement(announcement);
-                    announcement.time = new Date(booking.bookingUntilNotRounded);
+                    announcement.time = new Date(booking.estimatedEndTime);
                     announcement.segments = segments.map(segment => ({ ...segment }));
                     if (announcement.state === AnnouncementState.Finished) {
                         announcement.state = AnnouncementState.Pending;
@@ -548,7 +560,36 @@ export function useAnnouncerScheduler(options: {
             const url = await assembleAudioClient(segments);
             const audio = new Audio(url);
             resolve(audio);
+            //download the audio
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `announcement-${format(new Date(), 'yyyy-MM-dd-HH-mm-ss')}.mp3`;
+            a.click();
         });
+    }
+
+    function durationToSegments(durationMs: number, includeSeconds: boolean = false): AnnouncementSegment[] {
+        const segments: AnnouncementSegment[] = [];
+
+        const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        const addUnit = (value: number, unit: 'hours' | 'minutes' | 'seconds') => {
+            if (value <= 0) return;
+
+            segments.push(
+                { spriteName: `num${String(value).padStart(2, '0')}`, offset: 0 },
+                { spriteName: `time${unit}`, offset: 0 },
+            );
+        };
+
+        addUnit(hours, 'hours');
+        if (hours < 2) addUnit(minutes, 'minutes');
+        if (includeSeconds && hours < 1) addUnit(seconds, 'seconds');
+
+        return segments;
     }
 
     return {

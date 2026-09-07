@@ -60,6 +60,8 @@ export type TheAnyThingBooking = {
     bookingFrom: Date;
     bookingUntil: Date;
     bookingUntilNotRounded: Date;
+    estimatedEndTime: Date;
+    nextBookingStartTime: Date | null;
     bookingState: string;
 }
 

@@ -315,7 +315,8 @@ export function getSoundName(string: string): string {
         theanything: 'TheAnyThing',
         timehours: "uur",
         timeminutes: "minuten",
-        timeseconds: "seconden"
+        timeseconds: "seconden",
+        nextbookingin: "volgende boeking over",
     };
 
     string = string.toLowerCase().trim();

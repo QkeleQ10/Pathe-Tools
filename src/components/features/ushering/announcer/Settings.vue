@@ -43,19 +43,20 @@ const presetRules = computed<AnnouncementRule[]>({
 
 const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
 
-const announceTheAnything = useStorage('announce-the-anything-end', true);
+const announceTheAnythingEnd = useStorage('announce-the-anything-end', true);
+const announceTheAnythingNextBooking = useStorage('announce-the-anything-next-booking', true);
 </script>
 
 <template>
     <Button class="secondary full left" @click="dialogActive = true">
         <Icon>settings</Icon>
         Instellingen
-            <small v-if="customRules.filter(r => r.enabled).length === 1" style="margin-left: 4px;">
-                ({{customRules.filter(r => r.enabled).length}} eigen regel actief)
-            </small>
-            <small v-else-if="customRules.filter(r => r.enabled).length > 1" style="margin-left: 4px;">
-                ({{customRules.filter(r => r.enabled).length}} eigen regels actief)
-            </small>
+        <small v-if="customRules.filter(r => r.enabled).length === 1" style="margin-left: 4px;">
+            ({{customRules.filter(r => r.enabled).length}} eigen regel actief)
+        </small>
+        <small v-else-if="customRules.filter(r => r.enabled).length > 1" style="margin-left: 4px;">
+            ({{customRules.filter(r => r.enabled).length}} eigen regels actief)
+        </small>
     </Button>
 
     <SettingsDialog v-model:active="dialogActive">
@@ -86,9 +87,12 @@ const announceTheAnything = useStorage('announce-the-anything-end', true);
                 </div>
                 <div>
                     <span class="label">TheAnyThing</span>
-                    <InputSwitch v-model="announceTheAnything" identifier="announce-the-anything"
+                    <InputSwitch v-model="announceTheAnythingEnd" identifier="announce-the-anything"
                         @change="emit('scheduleAnnouncements')">
                         Einde boeking omroepen</InputSwitch>
+                    <InputSwitch v-show="announceTheAnythingEnd" v-model="announceTheAnythingNextBooking"
+                        identifier="announce-the-anything-next-booking" @change="emit('scheduleAnnouncements')">
+                        Tijd tot volgende boeking noemen in omroep</InputSwitch>
                 </div>
             </SettingsSection>
 
