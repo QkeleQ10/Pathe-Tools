@@ -561,10 +561,10 @@ export function useAnnouncerScheduler(options: {
             const audio = new Audio(url);
             resolve(audio);
             //download the audio
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `announcement-${format(new Date(), 'yyyy-MM-dd-HH-mm-ss')}.mp3`;
-            a.click();
+            // const a = document.createElement('a');
+            // a.href = url;
+            // a.download = `announcement-${format(new Date(), 'yyyy-MM-dd-HH-mm-ss')}.mp3`;
+            // a.click();
         });
     }
 
