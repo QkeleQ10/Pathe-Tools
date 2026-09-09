@@ -105,7 +105,7 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
             booking.bookingUntilNotRounded.getTime(),
         ));
 
-        if (estimatedEndTime > booking.estimatedEndTime || estimatedEndTime.getTime() < Date.now()) return;
+        if (estimatedEndTime > booking.estimatedEndTime || estimatedEndTime.getTime() < Date.now() || booking.estimatedEndTime.getTime() < Date.now()) return;
 
         console.log(`Updating estimated end time for booking ${booking.bookingId} \nfrom ${booking.estimatedEndTime.toISOString()} \n  to ${estimatedEndTime.toISOString()}`);
 
