@@ -2,11 +2,15 @@
 import { ref } from 'vue';
 import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
-import { UsherShow } from '@/scripts/types.ts';
+import { PLF, UsherShow } from '@/scripts/types.ts';
+import { getDefaultScheduleAuditoriumName } from '@/scripts/auditoriums.ts';
 import { colTypes } from './ColsBuilder.vue';
 
 import Icon4dx from '@/assets/symbols/Icon4dx.vue';
-import { getDefaultScheduleAuditoriumName } from '@/scripts/auditoriums.ts';
+import IconImax from '@/assets/symbols/IconImax.vue';
+import IconDolbyCinema from '@/assets/symbols/IconDolbyCinema.vue';
+import IconDolbyAtmos from '@/assets/symbols/IconDolbyAtmos.vue';
+import IconScreenx from '@/assets/symbols/IconScreenx.vue';
 
 const props = defineProps<{
     show: UsherShow;
@@ -22,6 +26,14 @@ const displayPreshowDuration = useStorage('show-preshow-duration', 1);
 const displayCreditsDuration = useStorage('show-credits-duration', 1);
 const shortGapInterval = useStorage('short-gap-interval', 10);
 const longGapInterval = useStorage('long-gap-interval', 35);
+
+const plfTypes = useStorage<Record<PLF, boolean>>('plf-types', {
+    '4DX': true,
+    'DOLBY': false,
+    'ATMOS': false,
+    'IMX': false,
+    'SCREENX': false,
+})
 
 const contextMenuVisible = ref(false);
 const contextMenuX = ref(0);
@@ -49,13 +61,22 @@ function displayContextMenu(event: MouseEvent) {
     contextMenuY.value = event.clientY;
     contextMenuVisible.value = true;
 }
+
+const plfIcons: Record<PLF, any> = {
+    '4DX': Icon4dx,
+    'DOLBY': IconDolbyCinema,
+    'ATMOS': IconDolbyAtmos,
+    'IMX': IconImax,
+    'SCREENX': IconScreenx,
+}
 </script>
 
 <template>
     <tr :class="{
         targeting: contextMenuVisible,
         'no-print': !printRow,
-        italic: show.auditorium?.includes('4DX'), bold: show.featureRating === '16' || show.featureRating === '18',
+        italic: show.plfs.some(plf => plfTypes[plf]),
+        bold: show.featureRating === '16' || show.featureRating === '18',
         'final-show': !show.nextStartTime
     }" @contextmenu="displayContextMenu">
         <template v-for="col in columns" :key="col.type">
@@ -71,8 +92,10 @@ function displayContextMenu(event: MouseEvent) {
                             ? format(show.scheduledTime, 'HH:mm')
                             : '' }}
                     </span>
-                    <span class="preshow-duration" contenteditable
-                        v-if="(show.scheduledTime && show.mainShowTime) && ((displayPreshowDuration === 1 && show.auditorium?.includes('4DX')) || displayPreshowDuration === 2)">
+                    <span class="preshow-duration" contenteditable v-if="
+                        (show.scheduledTime && show.mainShowTime) &&
+                        ((displayPreshowDuration === 1 && show.plfs.some(plf => plfTypes[plf])) ||
+                            displayPreshowDuration === 2)">
                         +{{ Math.round((show.mainShowTime.getTime() - show.scheduledTime.getTime()) /
                             60000) }}
                     </span>
@@ -81,15 +104,16 @@ function displayContextMenu(event: MouseEvent) {
 
                 <template v-else-if="col.type === 'creditsTime'">
 
-                    <Icon4dx class="plf-icon" src="@assets/symbols/icon-4dx.svg"
-                        v-if="sortBy === 'creditsTime' && show.isNearPlf" />
+                    <component class="plf-icon" v-for="plf in show.nearbyPLFs" :is="plfIcons[plf]" :key="plf"
+                        v-if="sortBy === 'creditsTime'" />
+
                     <div class="double-usherout"
                         v-if="sortBy === 'creditsTime' && show.timeToNextUsherout <= shortGapInterval * 60000 && shortGapInterval > 0">
                     </div>
                     <div class="long-gap"
                         v-if="sortBy === 'creditsTime' && show.timeToNextUsherout >= longGapInterval * 60000 && longGapInterval > 0">
                     </div>
-                    <div class="plf-overlap" v-if="show.overlapWithPlf"></div>
+                    <div class="plf-overlap" v-if="show.overlapWithPLF"></div>
                     <span class="credits-time">
                         <span contenteditable
                             :style="{ opacity: show.creditsTime.getTime() === show.endTime.getTime() ? '.5' : '1' }">
@@ -193,7 +217,8 @@ td {
         position: absolute;
         top: 0;
         left: -2.75em;
-        height: .8em;
+        max-height: .8em;
+        max-width: 2.2em;
         translate: 0 -50%;
         fill: var(--color);
     }

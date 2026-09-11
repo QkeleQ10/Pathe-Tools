@@ -253,7 +253,8 @@ const { handlePrint } = useVueToPrint({
         position: absolute;
         top: 50%;
         left: 0;
-        height: 11px;
+        max-height: 11px;
+        max-width: 30px;
         translate: 0 -50%;
         fill: currentColor;
     }

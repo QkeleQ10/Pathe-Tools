@@ -31,14 +31,14 @@ label.no-label {
     }
 }
 
-label.enclose-box {
+.enclose-box {
     flex-direction: row-reverse;
     justify-content: start;
     height: 40px;
     width: 100%;
     padding: 0 12px;
     font: 16px Heebo, arial, sans-serif;
-    border: 1px solid light-dark(#9da1ac, #30343d);
+    border: 1px solid #ffffff14;
     color: currentColor;
     border-radius: 6px;
     line-height: 16px;

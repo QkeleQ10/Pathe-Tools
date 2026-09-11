@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useStorage } from '@vueuse/core';
+import { PLF } from '@/scripts/types.ts';
+
 import AuditoriumMappings from '../../sections/AuditoriumMappings.vue';
 
 const dialogActive = ref(false);
@@ -11,9 +13,18 @@ const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', '
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1) // 0 = never, 1 = only for 4DX, 2 = always
 const displayCreditsDuration = useStorage('show-credits-duration', 1) // 0 = never, 1 = only for post-credits, 2 = always
-const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
+
 const shortGapInterval = useStorage('short-gap-interval', 10) // double usher-out if the difference is less than 10 minutes
 const longGapInterval = useStorage('long-gap-interval', 35) // long gap if the difference is greater than 30 minutes
+
+const plfTypes = useStorage<Record<PLF, boolean>>('plf-types', {
+    '4DX': true,
+    'DOLBY': false,
+    'ATMOS': false,
+    'IMX': false,
+    'SCREENX': false,
+})
+const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
 
 const autoAdjustRowHeight = useStorage('schedule-row-height-auto-adjust', true);
 const rowHeightMultiplier = useStorage('schedule-row-height-multiplier', 1);
@@ -30,13 +41,13 @@ const specialIntermissionDuration = useStorage('special-intermission-duration', 
     </Button>
 
     <SettingsDialog v-model:active="dialogActive">
-        
+
         <template #navigation>
             <SettingsCategoryButton category-id="general" label="Algemeen" icon="settings" />
             <SettingsCategoryButton category-id="auditoriums" label="Zalen" icon="room_preferences" />
             <SettingsCategoryButton category-id="table_edit" label="Indeling" icon="table_edit" />
             <SettingsCategoryButton category-id="annotations" label="Uitlopen" />
-            <SettingsCategoryButton category-id="plf" label="4DX-inloop" />
+            <SettingsCategoryButton category-id="plf" label="PLF's" />
             <SettingsCategoryButton category-id="extra" label="Annotaties" />
         </template>
 
@@ -111,14 +122,35 @@ const specialIntermissionDuration = useStorage('special-intermission-duration', 
                 </small>
             </SettingsSection>
 
-            <SettingsSection category-id="plf" title="4DX-inloop">
+            <SettingsSection category-id="plf" title="Premium Large Formats">
+                <div>
+                    <span class="label">Premium Large Formats</span>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                        <InputCheckbox class="enclose-box" identifier="plf4dx" v-model="plfTypes['4DX']">
+                            4DX
+                        </InputCheckbox>
+                        <InputCheckbox class="enclose-box" identifier="plfDolby" v-model="plfTypes['DOLBY']">
+                            Dolby Cinema
+                        </InputCheckbox>
+                        <InputCheckbox class="enclose-box" identifier="plfAtmos" v-model="plfTypes['ATMOS']">
+                            Dolby Atmos
+                        </InputCheckbox>
+                        <InputCheckbox class="enclose-box" identifier="plfImx" v-model="plfTypes['IMX']">
+                            IMAX
+                        </InputCheckbox>
+                        <InputCheckbox class="enclose-box" identifier="plfScreenx" v-model="plfTypes['SCREENX']">
+                            ScreenX
+                        </InputCheckbox>
+                    </div>
+                </div>
+                <small>De geselecteerde Premium Large Formats (PLF's) worden schuingedrukt. PLF-inlopen worden gekenmerkt door symbolen tussen de uitlopen.</small>
                 <InputGroup type="number" id="plfTimeBefore" v-model.number="plfTimeBefore" min="0" max="30">
                     <template #label>Tijd voor aanvang</template>
                     <span class="unit">minuten</span>
                 </InputGroup>
                 <small v-if="plfTimeBefore > 0">
-                    Uitlopen tijdens de 4DX-inloop worden gemarkeerd met een
-                    streeplijntje. De 4DX-inloop begint {{ plfTimeBefore }} minuten
+                    Uitlopen tijdens een PLF-inloop worden gemarkeerd met een
+                    streeplijntje. De inloop begint {{ plfTimeBefore }} minuten
                     voor de aanvangstijd en eindigt wanneer de hoofdfilm begint.
                 </small>
             </SettingsSection>
@@ -136,7 +168,7 @@ const specialIntermissionDuration = useStorage('special-intermission-duration', 
                     <template #label>Tijd tussen inloop en start hoofdfilm tonen</template>
                     <template #input>
                         <option :value="0">Nooit tonen</option>
-                        <option :value="1">Alleen bij 4DX-inloop</option>
+                        <option :value="1">Alleen bij PLF-inloop</option>
                         <option :value="2">Altijd tonen</option>
                     </template>
                 </InputGroup>

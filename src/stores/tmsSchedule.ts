@@ -1,7 +1,7 @@
 import { ref, h } from 'vue'
 import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia'
-import { FileMetadata, Show } from '@/scripts/types.ts'
+import { FileMetadata, PLF, Show } from '@/scripts/types.ts'
 import { showDialog } from '@/scripts/dialogManager';
 import { getAuditoriumNumber } from '@/scripts/auditoriums';
 
@@ -54,16 +54,22 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         return new Promise<void>((resolve, reject) => {
             if (!json || !Object.values(json)?.[0] || !('timetable' in json) || !('metadata' in json)) return reject(new Error('Invalid JSON format'));
 
-            const parsedTable = json.timetable.map(obj => ({
-                ...obj,
-                /* TODO */ title: extractTags(obj.playlist).title, tags: extractTags(obj.playlist).tags, /* TODO */
-                scheduledTime: obj.scheduledTime && new Date(obj.scheduledTime),
-                showTime: obj.showTime && new Date(obj.showTime),
-                mainShowTime: obj.mainShowTime && new Date(obj.mainShowTime),
-                intermissionTime: obj.intermissionTime && new Date(obj.intermissionTime),
-                creditsTime: obj.creditsTime && new Date(obj.creditsTime),
-                endTime: obj.endTime && new Date(obj.endTime)
-            }));
+            const parsedTable = json.timetable.map(obj => {
+                let { title, tags, plfs } = extractTags(obj.playlist);
+
+                return {
+                    ...obj,
+                    title,
+                    tags,
+                    plfs,
+                    scheduledTime: obj.scheduledTime && new Date(obj.scheduledTime),
+                    showTime: obj.showTime && new Date(obj.showTime),
+                    mainShowTime: obj.mainShowTime && new Date(obj.mainShowTime),
+                    intermissionTime: obj.intermissionTime && new Date(obj.intermissionTime),
+                    creditsTime: obj.creditsTime && new Date(obj.creditsTime),
+                    endTime: obj.endTime && new Date(obj.endTime)
+                }
+            });
 
             const shiftedTable = shouldShiftToToday() ? shiftScheduleToToday(parsedTable) : parsedTable;
 
@@ -95,9 +101,12 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
                 })
                 .filter(obj => ['TMS-BLACK', 'DC Daily Startup', 'DC Daily Shutdown'].every(str => !obj.PLAYLIST.includes(str)))
                 .map(obj => {
+                    let { title, tags, plfs } = extractTags(obj.PLAYLIST);
+
                     const show: Show = {
-                        title: extractTags(obj.PLAYLIST).title,
-                        tags: extractTags(obj.PLAYLIST).tags,
+                        title,
+                        tags,
+                        plfs,
                         playlist: obj.PLAYLIST,
                         feature: obj.FEATURE,
                         featureRating: obj.FEATURE_RATING,
@@ -213,7 +222,14 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         }
     }
 
-    function extractTags(string: string): { tags: string[], title: string } {
+    function extractTags(string: string): {
+        title: string, tags: string[], plfs: PLF[]
+    } {
+        let plfs: PLF[] = [];
+        ['4DX', 'IMX', 'DOLBY', 'ATMOS', 'SCREENX'].forEach(plf => {
+            if (string.includes(plf)) plfs.push(plf as PLF);
+        });
+
         let transformedString = string
             .replace(/^[\.,]+|[\.,]+$/, '')
             .replace("Nederlandse versie", "NL")
@@ -225,8 +241,9 @@ export const useTmsScheduleStore = defineStore('tmsSchedule', () => {
         const tagsString = transformedString
             .match(new RegExp(`(\\s((${possibleTags.join(')|(')})|\\([A-Z]+\\)))+`, 'g'))?.[0].slice(1) || '';
         return {
+            title: transformedString.replace(tagsString, '').trim(),
             tags: tagsString.length > 0 ? tagsString.split(' ') : [],
-            title: transformedString.replace(tagsString, '').trim()
+            plfs
         };
     }
 

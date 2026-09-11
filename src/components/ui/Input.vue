@@ -12,7 +12,7 @@ input:not(.contents-only) {
     width: 100%;
     padding: 0 12px;
     font: 16px Heebo, arial, sans-serif;
-    border: 1px solid light-dark(#9da1ac, #30343d);
+    border: 1px solid #ffffff14;
     background-color: #ffffff06;
     color: currentColor;
     border-radius: 6px;

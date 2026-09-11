@@ -13,6 +13,7 @@ export type Show = {
     feature: string;
     featureRating: string;
     tags: string[];
+    plfs: PLF[];
     auditorium: string;
     auditoriumNumber: number | null;
     scheduledTime: Date;
@@ -26,11 +27,11 @@ export type Show = {
 };
 
 export type UsherShow = Show & {
-    overlapWithPlf?: boolean;
+    overlapWithPLF?: boolean;
     hasCreditsStinger?: boolean;
     nextStartTime?: Date;
     timeToNextUsherout?: number;
-    isNearPlf?: boolean;
+    nearbyPLFs?: PLF[];
     intermissionAfter?: boolean;
 };
 
@@ -263,3 +264,5 @@ export interface DisplayLine {
     align: 'left' | 'center' | 'right' | 'marquee' | 'marquee-reverse';
     speed: number;
 }
+
+export type PLF = '4DX' | 'IMX' | 'DOLBY' | 'ATMOS' | 'SCREENX';

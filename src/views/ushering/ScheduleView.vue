@@ -2,7 +2,7 @@
 import { ref, computed, useTemplateRef, nextTick } from 'vue'
 import { useStorage, useDropZone } from '@vueuse/core'
 import { useTmsScheduleStore } from '@/stores/tmsSchedule'
-import { Show, UsherShow } from '@/scripts/types.ts'
+import { PLF, Show, UsherShow } from '@/scripts/types.ts'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import { useVueToPrint } from 'vue-to-print'
@@ -20,6 +20,13 @@ const columns = useStorage<{ type: string; width: number }[]>('schedule-columns'
 
 const columnEditorOpen = ref(false);
 
+const plfTypes = useStorage<Record<PLF, boolean>>('plf-types', {
+    '4DX': true,
+    'DOLBY': false,
+    'ATMOS': false,
+    'IMX': false,
+    'SCREENX': false,
+})
 const plfTimeBefore = useStorage('plf-time-before', 17) // usher-in will begin 17 minutes before start
 
 const autoAdjustRowHeight = useStorage('schedule-row-height-auto-adjust', true);
@@ -28,18 +35,21 @@ const rowHeightMultiplier = useStorage('schedule-row-height-multiplier', 1);
 const main = useTemplateRef('main')
 
 const pages = computed<UsherShow[][]>(() => {
-    const plfRows = store.table?.filter(row => row.auditorium?.includes('4DX')) || []
+    const plfRows = store.table?.filter(
+        row => row.plfs.some(plf => plfTypes.value[plf])
+    ) || []
     let arr = store.table?.map((show: Show, i: number) => {
         const hasCreditsStinger = stingers.value.includes(show.title?.trim())
-        const overlapWithPlf = plfRows.some(plf =>
+        const overlapWithPLF = plfRows.some(plf =>
             (show.creditsTime || show.endTime).getTime() - plf.scheduledTime.getTime() >= plfTimeBefore.value * -60000 &&
             (show.creditsTime || show.endTime).getTime() - (plf.mainShowTime?.getTime() ?? (plf.showTime.getTime() + 900000)) <= 0
         )
         const nextShow = store.table.slice(i + 1).find(s => s.auditorium === show.auditorium)
         return {
             ...show,
-            overlapWithPlf,
+            overlapWithPLF,
             hasCreditsStinger,
+            nearbyPLFs: [],
             timeToNextUsherout: store.table[i + 1]
                 ? (store.table[i + 1].creditsTime || store.table[i + 1].endTime).getTime() - (hasCreditsStinger ? show.endTime : (show.creditsTime || show.endTime)).getTime()
                 : undefined,
@@ -47,7 +57,9 @@ const pages = computed<UsherShow[][]>(() => {
         } as UsherShow
     }) || []
 
-    arr.filter(testRow => testRow.auditorium?.includes('4DX')).forEach(plfRow => {
+    arr.filter(
+        testRow => testRow.plfs.some(plf => plfTypes.value[plf])
+    ).forEach(plfRow => {
         let index: number = 0;
         for (let i = 0; i < arr.length; i++) {
             const row = arr[i]
@@ -57,7 +69,11 @@ const pages = computed<UsherShow[][]>(() => {
                 break
             }
         }
-        arr[Math.max(index, 0)].isNearPlf = true
+
+        const nearShow = arr[Math.max(index, 0)]
+
+        nearShow.nearbyPLFs ??= []
+        nearShow.nearbyPLFs?.push(...plfRow.plfs.filter(plf => plfTypes.value[plf]))
     })
 
     const transformed = arr || [];

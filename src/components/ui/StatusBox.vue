@@ -52,7 +52,7 @@ defineEmits<{
     text-align: start;
 
     font: 16px Heebo, arial, sans-serif;
-    border: 1px solid light-dark(#9da1ac, #30343d);
+    border: 1px solid #ffffff14;
     border-radius: 6px;
     background-color: #11131677;
     background-image: radial-gradient(circle at left bottom, hsl(from var(--color) h s l / 0.2) 0%, transparent 100px);

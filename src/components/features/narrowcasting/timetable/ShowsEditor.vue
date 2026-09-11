@@ -280,7 +280,7 @@ function addEditedIntermission() {
         margin-inline: 12px;
         padding: 4px 8px;
         background-color: #8484840d;
-        border: 1px solid light-dark(#9da1ac, #30343d);
+        border: 1px solid #ffffff14;
         border-top: none;
         border-radius: 0 0 6px 6px;
         box-shadow: inset 0px 6px 6px -6px #0000007c;
