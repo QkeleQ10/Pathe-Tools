@@ -590,6 +590,14 @@ export function useAnnouncerScheduler(options: {
         if (hours < 2) addUnit(minutes, 'minutes');
         if (includeSeconds && hours < 1) addUnit(seconds, 'seconds');
 
+        const timeUnitIndices = segments
+            .map((segment, index) => (segment.spriteName.startsWith('time') ? index : -1))
+            .filter((index) => index !== -1);
+        const secondToLastTimeUnitIndex = timeUnitIndices.at(-2);
+        if (secondToLastTimeUnitIndex !== undefined) {
+            segments[secondToLastTimeUnitIndex].spriteName += 'and';
+        }
+
         return segments;
     }
 
