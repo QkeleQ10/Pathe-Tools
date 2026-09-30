@@ -12,8 +12,9 @@ import UserGuide from '@/components/features/ushering/schedule/UserGuide.vue'
 import Settings from '@/components/features/ushering/schedule/Settings.vue'
 import ColsBuilder, { defaultColumns } from '@/components/features/ushering/schedule/ColsBuilder.vue'
 
-const store = useTmsScheduleStore()
-const stingers = useStorage<string[]>('stingers', ['Spider-Man: Brand New Day'])
+const store = useTmsScheduleStore();
+
+const stingers = useStorage<string[]>('cstingers', ['Spider-Man: Brand New Day', 'Avengers: Endgame Encore', 'Resident Evil']);
 
 const sortBy = useStorage<'scheduledTime' | 'creditsTime'>('schedule-sort-by', 'creditsTime');
 const columns = useStorage<{ type: string; width: number }[]>('schedule-columns', defaultColumns);

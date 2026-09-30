@@ -20,7 +20,7 @@ const props = defineProps<{
 
 const auditoriumMappings = useStorage<Record<string, string>>('schedule-auditorium-mappings', {});
 
-const stingers = useStorage<string[]>('stingers', ['Spider-Man: Brand New Day']);
+const stingers = useStorage<string[]>('cstingers', ['Spider-Man: Brand New Day', 'Avengers: Endgame Encore', 'Resident Evil']);
 
 const displayPreshowDuration = useStorage('show-preshow-duration', 1);
 const displayCreditsDuration = useStorage('show-credits-duration', 1);
