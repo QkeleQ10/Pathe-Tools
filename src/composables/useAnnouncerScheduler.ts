@@ -219,7 +219,7 @@ export function useAnnouncerScheduler(options: {
                     ) ||
                     announcement.segments.length !== segments.length;
 
-                if (hasChanged) {
+                if (hasChanged && announcement.time.getTime() > options.internetTime.value.getTime() + 5000) {
                     cleanupAnnouncement(announcement);
                     announcement.time = new Date(booking.estimatedEndTime);
                     announcement.segments = segments.map(segment => ({ ...segment }));

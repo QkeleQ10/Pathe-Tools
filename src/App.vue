@@ -28,7 +28,7 @@ function openExternalLink(url: string) {
 </script>
 
 <template>
-    <header ref="header" v-if="$route.meta.showHeader ?? true">
+    <header ref="header" v-if="$route.meta.showHeader ?? true" :class="{ pwa: $route.meta.pwaNavigation }">
         <div class="wrapper">
 
             <nav v-if="$route.meta.pwaNavigation ?? false">
@@ -141,6 +141,11 @@ header {
         display: grid;
         grid-template-columns: 1fr auto auto;
         align-items: center;
+    }
+
+    &.pwa {
+        box-shadow: none;
+        border-bottom: none;
     }
 }
 
