@@ -59,6 +59,7 @@ const {
     saveEditedAnnouncement,
     deleteScheduledAnnouncement,
     previewCustomAnnouncementNow,
+    downloadCustomAnnouncementAudio,
     scheduleCustomAnnouncement,
 } = useAnnouncerScheduler({
     internetTime: internetTime as Ref<Date>,
@@ -132,21 +133,28 @@ const recentAnnouncementCount = computed(() =>
             <AnnouncementBuilder v-model="customAnnouncementSegments">
                 <Icon>add</Icon>
                 <span>Nieuwe omroep</span>
+                <template #title>Nieuwe omroep</template>
                 <template #footer>
                     <br>
-                    <h3 style="margin-bottom: -8px;">Timing</h3>
-                    <div class="flex buttons">
-                        <Button class="primary add-rule" @click="previewCustomAnnouncementNow()"
-                            style="align-self: end">
-                            <Icon>play_arrow</Icon>
-                            Nu afspelen
-                        </Button>
-                        <small style="align-self: center; margin-top: 28px;">of</small>
-                        <AnnouncementTimingForm v-model="customAnnouncementDate" button-icon="timer"
-                            button-label="Inplannen" button-class="secondary" heading-tag="span"
-                            :disabled="!isCustomAnnouncementDateValid" title="Inplannen voor"
-                            @submit="scheduleCustomAnnouncement()" />
-                    </div>
+                    <AnnouncementTimingForm v-model="customAnnouncementDate" :rule="true"
+                        :disabled="!isCustomAnnouncementDateValid" title="Inplannen voor"
+                        @submit="scheduleCustomAnnouncement()">
+                        <template #submit>
+                            <Icon>timer</Icon>
+                            Inplannen
+                        </template>
+                        <template #actions>
+                            <Button class="primary add-rule" @click="previewCustomAnnouncementNow()">
+                                <Icon>play_arrow</Icon>
+                                Nu afspelen
+                            </Button>
+                            <Button class="secondary" :disabled="!customAnnouncementSegments.length"
+                                @click="downloadCustomAnnouncementAudio()">
+                                <Icon>download</Icon>
+                                Downloaden
+                            </Button>
+                        </template>
+                    </AnnouncementTimingForm>
                 </template>
             </AnnouncementBuilder>
 
@@ -168,10 +176,16 @@ const recentAnnouncementCount = computed(() =>
     <Teleport to="body">
         <Transition>
             <ModalDialog v-if="announcementBeingEdited" @dismiss="closeAnnouncementEditDialog">
-                <AnnouncementTimingForm v-model="editedAnnouncementDate" button-icon="timer" button-label="Opslaan"
-                    description="De omroep wordt opnieuw ingepland op het gekozen tijdstip en de oude planning wordt verwijderd."
-                    heading-tag="h3" :disabled="!isEditedAnnouncementDateValid" title="Omroep verplaatsen"
-                    @submit="saveEditedAnnouncement" />
+                <h3>Omroep verplaatsen</h3>
+                <p>De omroep wordt opnieuw ingepland op het gekozen tijdstip en de oude planning wordt verwijderd.</p>
+                <AnnouncementTimingForm v-model="editedAnnouncementDate"
+                    :disabled="!isEditedAnnouncementDateValid" title="Nieuw tijdstip"
+                    @submit="saveEditedAnnouncement">
+                    <template #submit>
+                        <Icon>timer</Icon>
+                        Opslaan
+                    </template>
+                </AnnouncementTimingForm>
             </ModalDialog>
         </Transition>
     </Teleport>

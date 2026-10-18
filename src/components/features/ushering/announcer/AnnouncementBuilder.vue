@@ -39,9 +39,14 @@ function addSprite(spriteName: string) {
 
     <Transition>
         <ModalDialog v-if="showAnnouncementBuilder" @dismiss="showAnnouncementBuilder = false">
+            
+            <h3>
+                <slot name="title">Omroep bewerken</slot>
+            </h3>
+
             <div class="builder-layout">
                 <div class="segment-list-panel">
-                    <h3>Omroeponderdelen</h3>
+                    <span class="label">Omroeponderdelen</span>
                     <ul class="list scroll fixed segments-list">
                         <li class="segment" v-for="(segment, i) in displaySegments" :key="i">
                             <span class="segment-label">{{ segment.label }}</span>
@@ -52,14 +57,14 @@ function addSprite(spriteName: string) {
                 </div>
 
                 <div class="sprite-library-panel">
-                    <h3>Onderdelen toevoegen</h3>
-                    <SpriteLibrary
-                        :additional-sounds="auditoriumKnown ? ['auditorium#'] : []"
-                        @select="addSprite" />
+                    <span class="label">Onderdelen toevoegen</span>
+                    <SpriteLibrary :additional-sounds="auditoriumKnown ? ['auditorium#'] : []" @select="addSprite" />
                 </div>
             </div>
+
             <slot name="footer">
             </slot>
+
         </ModalDialog>
     </Transition>
 </template>

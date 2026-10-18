@@ -73,14 +73,12 @@ const showAnnouncer = useStorage('pwa-show-announcer', true);
         / auto 1fr 435px;
     gap: 0 32px;
 
-    height: 100%;
-    overflow-y: hidden;
-
     aside {
         grid-area: 1 / 1 / 2 / -1;
 
         display: grid;
         grid-template-columns: subgrid;
+        gap: 0 32px;
 
         padding: 32px;
         padding-top: 0;
@@ -96,10 +94,10 @@ const showAnnouncer = useStorage('pwa-show-announcer', true);
 
         position: relative;
         padding: 32px;
-        overflow-y: auto;
 
         display: grid;
         grid-template-columns: subgrid;
+        gap: 0 32px;
     }
 }
 

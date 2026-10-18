@@ -503,6 +503,21 @@ export function useAnnouncerScheduler(options: {
         updateScheduler();
     }
 
+    async function downloadCustomAnnouncementAudio() {
+        if (!customAnnouncementSegments.value.length) return;
+
+        const segmentsWithVoices = prepareSegments(customAnnouncementSegments.value, enabledVoices.value);
+        const url = await assembleAudioClient(segmentsWithVoices);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `announcement-${format(new Date(), 'yyyy-MM-dd-HH-mm-ss')}.wav`;
+        try {
+            link.click();
+        } finally {
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+    }
+
     function scheduleCustomAnnouncement() {
         if (!isCustomAnnouncementDateValid.value) return;
 
@@ -624,6 +639,7 @@ export function useAnnouncerScheduler(options: {
         saveEditedAnnouncement,
         deleteScheduledAnnouncement,
         previewCustomAnnouncementNow,
+        downloadCustomAnnouncementAudio,
         scheduleCustomAnnouncement,
     };
 }

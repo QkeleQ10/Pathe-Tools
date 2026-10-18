@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import { onMounted } from 'vue';
+
 defineProps<{
     title: string;
-    buttonLabel: string;
-    buttonIcon: string;
-    buttonClass?: string;
-    headingTag?: string;
     disabled?: boolean;
-    description?: string;
+    rule?: boolean;
 }>();
 
 const date = defineModel<Date>({ required: true });
+
+onMounted(() => {
+    date.value = new Date(Math.ceil((Date.now() + 1) / (5 * 60 * 1000)) * (5 * 60 * 1000));
+});
 
 defineEmits<{
     (e: 'submit'): void;
@@ -18,15 +20,22 @@ defineEmits<{
 
 <template>
     <div class="announcement-timing-form">
-        <component :is="headingTag || 'h3'" class="heading label">{{ title }}</component>
-        <p v-if="description">{{ description }}</p>
+        <span class="label" style="margin: 0;">{{ title }}</span>
 
         <div class="controls">
-            <InputDate v-model="date" class="date-field" />
-            <Button :class="buttonClass || 'primary'" :disabled="disabled" @click="$emit('submit')">
-                <Icon>{{ buttonIcon }}</Icon>
-                {{ buttonLabel }}
-            </Button>
+            <div class="primary-controls">
+                <InputDate v-model="date" class="date-field" />
+                <Button :class="buttonClass || 'secondary'" :disabled="disabled" @click="$emit('submit')">
+                    <slot name="submit">
+                        <Icon>timer</Icon>
+                        Inplannen
+                    </slot>
+                </Button>
+            </div>
+            <hr v-if="rule" />
+            <div class="secondary-controls">
+                <slot name="actions"></slot>
+            </div>
         </div>
     </div>
 </template>
@@ -36,19 +45,19 @@ defineEmits<{
     display: grid;
     gap: 8px;
 
-    .heading {
-        margin: 0;
-    }
-
-    p {
-        margin: 0;
-        opacity: 0.8;
-    }
-
     .controls {
-        display: flex;
-        gap: 8px;
-        align-items: center;
+        hr {
+            border: none;
+            border-top: 1px solid #ffffff14;
+            margin: 16px 0;
+        }
+
+        .primary-controls,
+        .secondary-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
 
         .date-field {
             height: 48px;
