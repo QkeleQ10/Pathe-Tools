@@ -194,11 +194,17 @@ export function useAnnouncerScheduler(options: {
                 if (options.announceTheAnythingNextBooking.value === true && booking.nextBookingStartTime) {
                     const timeUntilNextBooking = Math.max(0, booking.nextBookingStartTime.getTime() - booking.estimatedEndTime.getTime());
 
-                    if (timeUntilNextBooking < 28800000)
+                    if (timeUntilNextBooking < 28800000) // 8 h
                         segments.push(
                             { spriteName: 'nextbookingin', offset: 0 },
                             ...durationToSegments(timeUntilNextBooking)
                         );
+                    else
+                        segments.push(
+                            { spriteName: 'final', offset: 0 },
+                            { spriteName: 'show', offset: 0 }
+                        );
+
                 }
 
                 const announcement = announcementsByBookingId.get(booking.bookingId) as TheAnyThingAnnouncement | undefined;
