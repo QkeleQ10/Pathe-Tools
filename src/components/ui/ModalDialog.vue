@@ -48,7 +48,7 @@ onUnmounted(() => {
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    
+
     transition: opacity 150ms ease;
 
     @starting-style {
@@ -61,9 +61,9 @@ onUnmounted(() => {
     color: #fff;
     padding: 16px 20px;
     border-radius: 10px;
-    max-width: var(--modal-max-width, 650px);
+    max-width: min(var(--modal-max-width, 650px), 95vw);
     width: 100%;
-    max-height: var(--modal-max-height, 95vh);
+    max-height: min(var(--modal-max-height, 95svh), 95svh);
 
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
     position: relative;
