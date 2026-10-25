@@ -43,8 +43,9 @@ const presetRules = computed<AnnouncementRule[]>({
 
 const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
 
+const announceTheAnythingStart = useStorage('announce-the-anything-start', false);
 const announceTheAnythingEnd = useStorage('announce-the-anything-end', true);
-const announceTheAnythingNextBooking = useStorage('announce-the-anything-next-booking', true);
+const announceTheAnythingNextBooking = useStorage<'none' | 'time' | 'duration'>('announce-the-anything-next', 'time'); 
 </script>
 
 <template>
@@ -67,6 +68,12 @@ const announceTheAnythingNextBooking = useStorage('announce-the-anything-next-bo
             <SettingsCategoryButton category-id="sprites" label="Geluidsfragmenten" icon="audio_file" />
             <SettingsCategoryButton category-id="auditoriums" label="Zalen" icon="room_preferences" />
             <SettingsCategoryButton category-id="rules" label="Regels" icon="flowchart" />
+            <SettingsCategoryButton category-id="theanything" label="TheAnyThing-regels">
+                <template #icon>
+                    <img src="@/assets/partners/theAnyThing.png"
+                        style="width: 18px; height: 18px; border-radius: 4px;" />
+                </template>
+            </SettingsCategoryButton>
         </template>
 
         <template #content>
@@ -84,15 +91,6 @@ const announceTheAnythingNextBooking = useStorage('announce-the-anything-next-bo
                         <template #label>Duur filmpauzes FILM+</template>
                         <span class="unit">minuten</span>
                     </InputGroup>
-                </div>
-                <div>
-                    <span class="label">TheAnyThing</span>
-                    <InputSwitch v-model="announceTheAnythingEnd" identifier="announce-the-anything"
-                        @change="emit('scheduleAnnouncements')">
-                        Einde boeking omroepen</InputSwitch>
-                    <InputSwitch v-show="announceTheAnythingEnd" v-model="announceTheAnythingNextBooking"
-                        identifier="announce-the-anything-next-booking" @change="emit('scheduleAnnouncements')">
-                        Tijd tot volgende boeking noemen in omroep</InputSwitch>
                 </div>
             </SettingsSection>
 
@@ -134,6 +132,32 @@ const announceTheAnythingNextBooking = useStorage('announce-the-anything-next-bo
                     <span class="label">Eigen regels</span>
                     <RuleList v-model="customRules" :toggleOnly="false" @change="emit('scheduleAnnouncements')" />
                 </div>
+            </SettingsSection>
+
+            <SettingsSection category-id="theanything" title="TheAnyThing-regels">
+                <!-- <InputSwitch v-model="announceTheAnythingStart" identifier="announce-the-anything-start"
+                    @change="emit('scheduleAnnouncements')">
+                    Begin boeking omroepen</InputSwitch> -->
+                <div>
+                    <span class="label">Standaardregels</span>
+                    <ul class="list">
+                        <li>
+                            <InputSwitch v-model="announceTheAnythingEnd" identifier="announce-the-anything-end"
+                                @change="emit('scheduleAnnouncements')">
+                                Einde boeking
+                            </InputSwitch>
+                        </li>
+                    </ul>
+                </div>
+                <InputGroup type="select" id="sortBy" v-model="announceTheAnythingNextBooking"
+                    @update:model-value="emit('scheduleAnnouncements')">
+                    <template #label>Volgende boeking aankondigen</template>
+                    <template #input>
+                        <option :value="'none'">Niet aankondigen</option>
+                        <option :value="'duration'">Tijd tot volgende boeking</option>
+                        <option :value="'time'">Tijdstip van volgende boeking</option>
+                    </template>
+                </InputGroup>
             </SettingsSection>
 
         </template>

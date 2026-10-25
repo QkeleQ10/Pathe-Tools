@@ -287,6 +287,7 @@ export function getSoundName(string: string): string {
     const soundNames: { [key: string]: string } = {
         'auditorium#': '<naam zaal>',
         'chime00': "stil",
+        and: "en",
         almost: "bijna",
         attention: "let op",
         credits: "aftiteling",
@@ -313,11 +314,13 @@ export function getSoundName(string: string): string {
         plfscreenx: 'ScreenX',
         theanything: 'TheAnyThing',
         timehours: "uur",
-        timehoursand: "uur en",
+        timehoursalt: "uur",
         timeminutes: "minuten",
-        timeminutesand: "minuten en",
         timeseconds: "seconden",
         nextbookingin: "volgende boeking over",
+        nextbookingat: "volgende boeking om",
+        disabledvisitor: "mindervalide bezoeker",
+        lastoftoday: "laatste van vandaag",
     };
 
     string = string.toLowerCase().trim();

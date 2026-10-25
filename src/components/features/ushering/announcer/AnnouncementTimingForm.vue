@@ -25,7 +25,7 @@ defineEmits<{
         <div class="controls">
             <div class="primary-controls">
                 <InputDate v-model="date" class="date-field" />
-                <Button :class="buttonClass || 'secondary'" :disabled="disabled" @click="$emit('submit')">
+                <Button class="secondary" :disabled="disabled" @click="$emit('submit')">
                     <slot name="submit">
                         <Icon>timer</Icon>
                         Inplannen

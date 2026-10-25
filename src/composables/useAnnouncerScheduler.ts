@@ -30,8 +30,9 @@ export function useAnnouncerScheduler(options: {
     customRules: Ref<AnnouncementRule[]>;
     preferredVoices: Ref<string[]>;
     chimeSound: Ref<string>;
+    announceTheAnythingStart: Ref<boolean>;
     announceTheAnythingEnd: Ref<boolean>;
-    announceTheAnythingNextBooking: Ref<boolean>;
+    announceTheAnythingNextBooking: Ref<'none' | 'time' | 'duration'>;
 }) {
     const tmsScheduleStore = useTmsScheduleStore();
     const theAnyThingStore = useTheAnyThingStore();
@@ -191,20 +192,28 @@ export function useAnnouncerScheduler(options: {
                     { spriteName: `num${String(booking.roomNumber).padStart(2, '0')}`, offset: 400 },
                 ];
 
-                if (options.announceTheAnythingNextBooking.value === true && booking.nextBookingStartTime) {
+                if (booking.nextBookingStartTime) {
                     const timeUntilNextBooking = Math.max(0, booking.nextBookingStartTime.getTime() - booking.estimatedEndTime.getTime());
+                    const nextBookingIsToday = timeUntilNextBooking < 8 * 60 * 60 * 1000; // 8 h
+                    
+                    const nextBookingSegments = (() => {
+                        switch (options.announceTheAnythingNextBooking.value) {
+                            case 'duration':
+                                return nextBookingIsToday
+                                    ? [{ spriteName: 'nextbookingin', offset: 0 }, ...durationToSegments(timeUntilNextBooking)]
+                                    : [{ spriteName: 'lastoftoday', offset: 0 }];
 
-                    if (timeUntilNextBooking < 28800000) // 8 h
-                        segments.push(
-                            { spriteName: 'nextbookingin', offset: 0 },
-                            ...durationToSegments(timeUntilNextBooking)
-                        );
-                    else
-                        segments.push(
-                            { spriteName: 'final', offset: 0 },
-                            { spriteName: 'show', offset: 0 }
-                        );
+                            case 'time':
+                                return nextBookingIsToday
+                                    ? [{ spriteName: 'nextbookingat', offset: 0 }, ...timeToSegments(booking.nextBookingStartTime)]
+                                    : [{ spriteName: 'lastoftoday', offset: 0 }];
 
+                            default:
+                                return [];
+                        }
+                    })();
+
+                    segments.push(...nextBookingSegments);
                 }
 
                 const announcement = announcementsByBookingId.get(booking.bookingId) as TheAnyThingAnnouncement | undefined;
@@ -608,16 +617,43 @@ export function useAnnouncerScheduler(options: {
         };
 
         addUnit(hours, 'hours');
-        if (hours < 2) addUnit(minutes, 'minutes');
-        if (includeSeconds && hours < 1) addUnit(seconds, 'seconds');
+        if (hours < 3)
+            addUnit(minutes, 'minutes');
+        if (includeSeconds && hours < 1)
+            addUnit(seconds, 'seconds');
 
         const timeUnitIndices = segments
             .map((segment, index) => (segment.spriteName.startsWith('time') ? index : -1))
             .filter((index) => index !== -1);
         const secondToLastTimeUnitIndex = timeUnitIndices.at(-2);
         if (secondToLastTimeUnitIndex !== undefined) {
-            segments[secondToLastTimeUnitIndex].spriteName += 'and';
+            if (segments[secondToLastTimeUnitIndex].spriteName === 'timehours')
+                segments[secondToLastTimeUnitIndex].spriteName += 'alt';
+            segments.splice(secondToLastTimeUnitIndex + 1, 0, { spriteName: 'and', offset: 0 })
         }
+
+        return segments;
+    }
+
+    function timeToSegments(time: Date): AnnouncementSegment[] {
+        const segments: AnnouncementSegment[] = [];
+
+        const hours = time.getHours() || 12;
+        const minutes = time.getMinutes();
+
+        segments.push(
+            { spriteName: `num${String(hours).padStart(2, '0')}`, offset: 0 },
+        );
+
+        if (minutes > 0)
+            segments.push(
+                { spriteName: 'timehoursalt', offset: 0 },
+                { spriteName: `num${String(minutes).padStart(2, '0')}`, offset: 0 },
+            );
+        else
+            segments.push(
+                { spriteName: 'timehours', offset: 0 },
+            );
 
         return segments;
     }

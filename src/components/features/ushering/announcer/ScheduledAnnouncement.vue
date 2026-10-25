@@ -76,7 +76,7 @@ watchEffect((onCleanup) => {
             <div class="bar">
                 <!-- this is the preview button -->
                 <div class="status-light" @click="$emit('preview', announcement)" :class="{
-                    inactive: announcement.state === AnnouncementState.Pending,
+                    inactive: announcement.state === AnnouncementState.Pending || announcement.state === AnnouncementState.Generating,
                     neutral: announcement.state === AnnouncementState.Ready,
                     healthy: announcement.state === AnnouncementState.Playing,
                     working: announcement.state === AnnouncementState.Playing || announcement.state === AnnouncementState.Generating

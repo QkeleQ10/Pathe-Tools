@@ -67,8 +67,9 @@ const {
     customRules,
     preferredVoices,
     chimeSound,
+    announceTheAnythingStart: useStorage('announce-the-anything-start', false),
     announceTheAnythingEnd: useStorage('announce-the-anything-end', true),
-    announceTheAnythingNextBooking: useStorage('announce-the-anything-next-booking', true),
+    announceTheAnythingNextBooking: useStorage<'none' | 'time' | 'duration'>('announce-the-anything-next', 'time')
 });
 
 const recentAnnouncementCount = computed(() =>
@@ -178,9 +179,8 @@ const recentAnnouncementCount = computed(() =>
             <ModalDialog v-if="announcementBeingEdited" @dismiss="closeAnnouncementEditDialog">
                 <h3>Omroep verplaatsen</h3>
                 <p>De omroep wordt opnieuw ingepland op het gekozen tijdstip en de oude planning wordt verwijderd.</p>
-                <AnnouncementTimingForm v-model="editedAnnouncementDate"
-                    :disabled="!isEditedAnnouncementDateValid" title="Nieuw tijdstip"
-                    @submit="saveEditedAnnouncement">
+                <AnnouncementTimingForm v-model="editedAnnouncementDate" :disabled="!isEditedAnnouncementDateValid"
+                    title="Nieuw tijdstip" @submit="saveEditedAnnouncement">
                     <template #submit>
                         <Icon>timer</Icon>
                         Opslaan
