@@ -2,6 +2,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 
 import {
     Announcement,
+    AnnouncementSegment,
     AnnouncementRule,
     AnnouncementSource,
     AnnouncementState,
@@ -16,7 +17,6 @@ import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import { useTheAnyThingStore } from '@/stores/theAnyThing';
 import { format } from 'date-fns';
 
-type AnnouncementSegment = { spriteName: string; offset: number };
 type AnnouncementsSchedule = Announcement[];
 type PlaybackJob = { announcement?: Announcement; audio: HTMLAudioElement };
 
@@ -47,10 +47,6 @@ export function useAnnouncerScheduler(options: {
     const customAnnouncementSegments = ref<AnnouncementSegment[]>([]);
     const customAnnouncementDate = ref<Date>(new Date(options.internetTime.value.getTime() + 5 * 60000));
     const isCustomAnnouncementDateValid = computed(() => customAnnouncementDate.value.getTime() >= options.internetTime.value.getTime());
-
-    const announcementBeingEdited = ref<Announcement | null>(null);
-    const editedAnnouncementDate = ref<Date>(new Date());
-    const isEditedAnnouncementDateValid = computed(() => editedAnnouncementDate.value.getTime() >= options.internetTime.value.getTime());
 
     const enabledVoices = computed(() =>
         options.preferredVoices.value
@@ -346,10 +342,6 @@ export function useAnnouncerScheduler(options: {
         playbackQueue.push({ announcement, audio: announcement.audio as HTMLAudioElement });
     }
 
-    function queueStandalonePlayback(audio: HTMLAudioElement) {
-        playbackQueue.push({ audio });
-    }
-
     async function processPlaybackQueue() {
         if (isProcessingPlaybackQueue) return;
 
@@ -445,54 +437,29 @@ export function useAnnouncerScheduler(options: {
         announcement.state = AnnouncementState.Finished;
     }
 
-    function cloneAnnouncementForPreview(announcement: Announcement): Announcement {
-        return new Announcement(announcement.time, announcement.segments);
-    }
-
-    function previewScheduledAnnouncement(announcement: Announcement) {
-        manualAnnouncements.value.push(new Announcement(options.internetTime.value, announcement.segments));
+    function queueAnnouncementNow(announcementOrSegments: Announcement | AnnouncementSegment[]) {
+        const segments = Array.isArray(announcementOrSegments)
+            ? announcementOrSegments
+            : announcementOrSegments.segments;
+        manualAnnouncements.value.push(new Announcement(options.internetTime.value, segments));
         updateScheduler();
     }
 
-    async function previewAnnouncement(announcementOrSegments: Announcement | AnnouncementSegment[]) {
-        const announcement = Array.isArray(announcementOrSegments)
-            ? new Announcement(options.internetTime.value, announcementOrSegments)
-            : cloneAnnouncementForPreview(announcementOrSegments);
-
-        startGenerating(announcement);
-        await announcement.generatePromise;
-
-        if (announcement.state === AnnouncementState.Ready && announcement.audio) {
-            queueStandalonePlayback(announcement.audio);
-            void processPlaybackQueue();
-        }
-    }
-
-    function openAnnouncementEditDialog(announcement: Announcement) {
-        announcementBeingEdited.value = announcement;
-        editedAnnouncementDate.value = new Date(announcement.time);
-    }
-
-    function closeAnnouncementEditDialog() {
-        announcementBeingEdited.value = null;
-    }
-
-    function saveEditedAnnouncement() {
-        if (!announcementBeingEdited.value || !isEditedAnnouncementDateValid.value) return;
-
-        const announcement = announcementBeingEdited.value;
+    function saveEditedAnnouncement(
+        announcement: Announcement,
+        editedDate: Date,
+        editedSegments: AnnouncementSegment[],
+    ) {
         const collection = getAnnouncementCollection(announcement.source);
         const index = collection.indexOf(announcement);
 
         if (index < 0) {
-            closeAnnouncementEditDialog();
             return;
         }
 
         cleanupAnnouncement(announcement);
         collection.splice(index, 1);
-        manualAnnouncements.value.push(new Announcement(editedAnnouncementDate.value, announcement.segments));
-        closeAnnouncementEditDialog();
+        manualAnnouncements.value.push(new Announcement(editedDate, editedSegments));
         updateScheduler();
     }
 
@@ -506,16 +473,10 @@ export function useAnnouncerScheduler(options: {
         updateScheduler();
     }
 
-    function previewCustomAnnouncementNow() {
-        manualAnnouncements.value.push(new Announcement(options.internetTime.value, customAnnouncementSegments.value));
+    async function downloadAnnouncementAudio(segments: AnnouncementSegment[]) {
+        if (!segments.length) return;
 
-        updateScheduler();
-    }
-
-    async function downloadCustomAnnouncementAudio() {
-        if (!customAnnouncementSegments.value.length) return;
-
-        const segmentsWithVoices = prepareSegments(customAnnouncementSegments.value, enabledVoices.value);
+        const segmentsWithVoices = prepareSegments(segments, enabledVoices.value);
         const url = await assembleAudioClient(segmentsWithVoices);
         const link = document.createElement('a');
         link.href = url;
@@ -663,19 +624,12 @@ export function useAnnouncerScheduler(options: {
         customAnnouncementSegments,
         customAnnouncementDate,
         isCustomAnnouncementDateValid,
-        announcementBeingEdited,
-        editedAnnouncementDate,
-        isEditedAnnouncementDateValid,
         scheduleAnnouncements,
         regenerate,
-        previewAnnouncement,
-        previewScheduledAnnouncement,
-        openAnnouncementEditDialog,
-        closeAnnouncementEditDialog,
+        queueAnnouncementNow,
         saveEditedAnnouncement,
         deleteScheduledAnnouncement,
-        previewCustomAnnouncementNow,
-        downloadCustomAnnouncementAudio,
+        downloadAnnouncementAudio,
         scheduleCustomAnnouncement,
     };
 }

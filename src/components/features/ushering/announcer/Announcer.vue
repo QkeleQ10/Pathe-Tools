@@ -4,7 +4,7 @@ import { useStorage } from '@vueuse/core';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
-import { AnnouncementRule } from '@/scripts/types.ts';
+import { Announcement, AnnouncementRule, AnnouncementSegment } from '@/scripts/types.ts';
 import { defaultVoiceKey } from '@/scripts/voices';
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import { useTheAnyThingStore } from '@/stores/theAnyThing';
@@ -47,19 +47,12 @@ const {
     customAnnouncementSegments,
     customAnnouncementDate,
     isCustomAnnouncementDateValid,
-    announcementBeingEdited,
-    editedAnnouncementDate,
-    isEditedAnnouncementDateValid,
     scheduleAnnouncements,
     regenerate,
-    previewAnnouncement,
-    previewScheduledAnnouncement,
-    openAnnouncementEditDialog,
-    closeAnnouncementEditDialog,
-    saveEditedAnnouncement,
+    queueAnnouncementNow,
+    saveEditedAnnouncement: saveAnnouncementEdit,
     deleteScheduledAnnouncement,
-    previewCustomAnnouncementNow,
-    downloadCustomAnnouncementAudio,
+    downloadAnnouncementAudio,
     scheduleCustomAnnouncement,
 } = useAnnouncerScheduler({
     internetTime: internetTime as Ref<Date>,
@@ -75,6 +68,30 @@ const {
 const recentAnnouncementCount = computed(() =>
     scheduledAnnouncements.value.filter(announcement => internetTime.value.getTime() - announcement.time.getTime() < 10000).length
 );
+const showCustomAnnouncementBuilder = ref(false);
+const announcementBeingEdited = ref<Announcement | null>(null);
+const editedAnnouncementSegments = ref<AnnouncementSegment[]>([]);
+const editedAnnouncementDate = ref(new Date());
+const isEditedAnnouncementDateValid = computed(() =>
+    editedAnnouncementDate.value.getTime() >= internetTime.value.getTime()
+);
+
+function editAnnouncement(announcement: Announcement) {
+    announcementBeingEdited.value = announcement;
+    editedAnnouncementSegments.value = announcement.segments.map(segment => ({ ...segment }));
+    editedAnnouncementDate.value = new Date(announcement.time);
+}
+
+function saveEditedAnnouncement() {
+    if (!announcementBeingEdited.value || !isEditedAnnouncementDateValid.value) return;
+
+    saveAnnouncementEdit(
+        announcementBeingEdited.value,
+        editedAnnouncementDate.value,
+        editedAnnouncementSegments.value,
+    );
+    announcementBeingEdited.value = null;
+}
 </script>
 
 <template>
@@ -105,7 +122,7 @@ const recentAnnouncementCount = computed(() =>
                     v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
                     :announcement="announcement"
                     :key="announcement.source + announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
-                    @preview="previewScheduledAnnouncement($event)" @edit="openAnnouncementEditDialog($event)"
+                    @preview="queueAnnouncementNow($event)" @edit="editAnnouncement($event)"
                     @delete="deleteScheduledAnnouncement(announcement)" />
             </TransitionGroup>
         </ul>
@@ -131,36 +148,26 @@ const recentAnnouncementCount = computed(() =>
                 <template #description v-else>Geen gegevens</template>
             </StatusBox>
 
-            <AnnouncementBuilder v-model="customAnnouncementSegments">
+            <Button class="secondary full left" @click="showCustomAnnouncementBuilder = true">
                 <Icon>add</Icon>
                 <span>Nieuwe omroep</span>
+            </Button>
+            <AnnouncementBuilder v-if="showCustomAnnouncementBuilder" v-model="customAnnouncementSegments"
+                @preview="queueAnnouncementNow" @download="downloadAnnouncementAudio"
+                :schedule-disabled="!isCustomAnnouncementDateValid" @schedule="scheduleCustomAnnouncement()"
+                @dismiss="showCustomAnnouncementBuilder = false">
                 <template #title>Nieuwe omroep</template>
-                <template #footer>
-                    <br>
-                    <AnnouncementTimingForm v-model="customAnnouncementDate" :rule="true"
-                        :disabled="!isCustomAnnouncementDateValid" title="Inplannen voor"
-                        @submit="scheduleCustomAnnouncement()">
-                        <template #submit>
-                            <Icon>timer</Icon>
-                            Inplannen
-                        </template>
-                        <template #actions>
-                            <Button class="primary add-rule" @click="previewCustomAnnouncementNow()">
-                                <Icon>play_arrow</Icon>
-                                Nu afspelen
-                            </Button>
-                            <Button class="secondary" :disabled="!customAnnouncementSegments.length"
-                                @click="downloadCustomAnnouncementAudio()">
-                                <Icon>download</Icon>
-                                Downloaden
-                            </Button>
-                        </template>
-                    </AnnouncementTimingForm>
+                <template #schedule>
+                    <div>
+                        <span class="label">
+                            Geplande tijd
+                        </span>
+                        <AnnouncementTimingForm v-model="customAnnouncementDate" :initialise-date="true" />
+                    </div>
                 </template>
             </AnnouncementBuilder>
 
-            <Settings @regenerate="regenerate" @previewAnnouncement="previewAnnouncement"
-                @scheduleAnnouncements="scheduleAnnouncements" />
+            <Settings @regenerate="regenerate" @scheduleAnnouncements="scheduleAnnouncements" />
 
         </div>
     </Teleport>
@@ -176,17 +183,28 @@ const recentAnnouncementCount = computed(() =>
 
     <Teleport to="body">
         <Transition>
-            <ModalDialog v-if="announcementBeingEdited" @dismiss="closeAnnouncementEditDialog">
-                <h3>Omroep verplaatsen</h3>
-                <p>De omroep wordt opnieuw ingepland op het gekozen tijdstip en de oude planning wordt verwijderd.</p>
-                <AnnouncementTimingForm v-model="editedAnnouncementDate" :disabled="!isEditedAnnouncementDateValid"
-                    title="Nieuw tijdstip" @submit="saveEditedAnnouncement">
-                    <template #submit>
-                        <Icon>timer</Icon>
-                        Opslaan
-                    </template>
-                </AnnouncementTimingForm>
-            </ModalDialog>
+            <AnnouncementBuilder v-if="announcementBeingEdited" v-model="editedAnnouncementSegments"
+                @preview="queueAnnouncementNow" @download="downloadAnnouncementAudio"
+                :schedule-disabled="!isEditedAnnouncementDateValid || !editedAnnouncementSegments.length"
+                @schedule="saveEditedAnnouncement" @dismiss="announcementBeingEdited = null">
+                <template #title>Omroep bewerken</template>
+                <template #description>
+                    <p>De omroep wordt opnieuw ingepland op het gekozen tijdstip en de oude planning wordt verwijderd.
+                    </p>
+                </template>
+                <template #schedule>
+                    <div>
+                        <span class="label">
+                            Geplande tijd
+                        </span>
+                        <AnnouncementTimingForm v-model="editedAnnouncementDate" :initialise-date="false" />
+                    </div>
+                </template>
+                <template #schedule-submit>
+                    <Icon>save</Icon>
+                    Opslaan
+                </template>
+            </AnnouncementBuilder>
         </Transition>
     </Teleport>
 </template>

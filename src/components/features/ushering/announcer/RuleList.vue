@@ -145,10 +145,8 @@ function addRule() {
                             Bewerken
                         </Button>
                     </div>
-                    <AnnouncementBuilder no-button v-model="rule.segments" v-model:show="showAnnouncementBuilder" :auditorium-known="true">
-                        <Icon>build</Icon>
-                        <span>{{rule.segments.map(segment => getSoundName(segment.spriteName)).join(' - ')}}</span>
-                    </AnnouncementBuilder>
+                    <AnnouncementBuilder v-if="showAnnouncementBuilder" v-model="rule.segments"
+                        :auditorium-known="true" @dismiss="showAnnouncementBuilder = false" />
 
                     <em class="label">Voorwaarden</em>
                     <div class="dialog-section-container">
@@ -182,7 +180,7 @@ function addRule() {
             </Transition>
         </li>
         <li class="dummy add" v-if="!toggleOnly">
-            <Button class="tertiary add-rule" @click="addRule">
+            <Button class="tertiary" @click="addRule">
                 Regel toevoegen
             </Button>
         </li>

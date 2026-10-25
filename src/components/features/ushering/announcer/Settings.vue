@@ -14,7 +14,7 @@ const store = useTmsScheduleStore();
 
 const dialogActive = ref(false);
 
-const emit = defineEmits(['regenerate', 'previewAnnouncement', 'scheduleAnnouncements']);
+const emit = defineEmits(['regenerate', 'scheduleAnnouncements']);
 
 const defaultIntermissionDuration = useStorage('default-intermission-duration', 12) // duration of intermissions in minutes
 const specialIntermissionDuration = useStorage('special-intermission-duration', 20) // duration of intermissions in minutes

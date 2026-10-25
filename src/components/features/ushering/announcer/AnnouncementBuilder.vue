@@ -3,18 +3,18 @@ import { computed } from 'vue';
 import { getSoundName } from '@/scripts/voices';
 import SpriteLibrary from './SpriteLibrary.vue';
 
-const segments = defineModel<{ spriteName: string; offset: number }[]>({ default: [] });
-const showAnnouncementBuilder = defineModel<boolean>('show', { default: false });
-const props = defineProps({
-    noButton: {
-        type: Boolean,
-        default: false
-    },
-    auditoriumKnown: {
-        type: Boolean,
-        default: false
-    }
-});
+const segments = defineModel<{ spriteName: string; offset: number }[]>({ default: () => [] });
+const { auditoriumKnown = false, scheduleDisabled = false } = defineProps<{
+    auditoriumKnown?: boolean;
+    scheduleDisabled?: boolean;
+}>();
+
+const emit = defineEmits<{
+    (e: 'preview', segments: { spriteName: string; offset: number }[]): void;
+    (e: 'download', segments: { spriteName: string; offset: number }[]): void;
+    (e: 'schedule'): void;
+    (e: 'dismiss'): void;
+}>();
 
 const displaySegments = computed(() => segments.value.map(segment => ({
     ...segment,
@@ -30,16 +30,9 @@ function addSprite(spriteName: string) {
 </script>
 
 <template>
-    <Button v-if="!noButton" class="secondary full left" @click="showAnnouncementBuilder = true" v-bind="$attrs">
-        <slot>
-            <Icon>build</Icon>
-            <span>Omroep bewerken</span>
-        </slot>
-    </Button>
-
     <Transition>
-        <ModalDialog v-if="showAnnouncementBuilder" @dismiss="showAnnouncementBuilder = false">
-            
+        <ModalDialog @dismiss="emit('dismiss')">
+
             <h3>
                 <slot name="title">Omroep bewerken</slot>
             </h3>
@@ -60,10 +53,31 @@ function addSprite(spriteName: string) {
                     <span class="label">Onderdelen toevoegen</span>
                     <SpriteLibrary :additional-sounds="auditoriumKnown ? ['auditorium#'] : []" @select="addSprite" />
                 </div>
+
+                <div class="schedule">
+                    <slot name="schedule"></slot>
+                </div>
             </div>
 
-            <slot name="footer">
-            </slot>
+
+            <hr>
+
+            <div class="builder-actions">
+                <Button class="primary" :disabled="scheduleDisabled" @click="emit('schedule')">
+                    <slot name="schedule-submit">
+                        <Icon>timer</Icon>
+                        Inplannen
+                    </slot>
+                </Button>
+                <Button class="secondary" :disabled="!segments.length" @click="emit('preview', segments)">
+                    <Icon>play_arrow</Icon>
+                    Nu afspelen
+                </Button>
+                <Button class="secondary" :disabled="!segments.length" @click="emit('download', segments)">
+                    <Icon>download</Icon>
+                    Downloaden
+                </Button>
+            </div>
 
         </ModalDialog>
     </Transition>
@@ -78,6 +92,17 @@ function addSprite(spriteName: string) {
 
 .sprite-library {
     max-height: 500px;
+}
+
+.schedule {
+    grid-column: 1 / -1;
+}
+
+.builder-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    align-items: end;
 }
 
 .segment {
@@ -96,5 +121,11 @@ function addSprite(spriteName: string) {
 .empty-state {
     margin: 16px;
     opacity: .75;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #ffffff14;
+    margin: 16px 0;
 }
 </style>
