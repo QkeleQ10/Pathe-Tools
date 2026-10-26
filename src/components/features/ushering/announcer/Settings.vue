@@ -45,7 +45,7 @@ const customRules = useStorage<AnnouncementRule[]>('custom-rules', []);
 
 const announceTheAnythingStart = useStorage('announce-the-anything-start', false);
 const announceTheAnythingEnd = useStorage('announce-the-anything-end', true);
-const announceTheAnythingNextBooking = useStorage<'none' | 'time' | 'duration'>('announce-the-anything-next', 'time'); 
+const announceTheAnythingNextBooking = useStorage<'none' | 'time' | 'duration'>('announce-the-anything-next', 'duration'); 
 </script>
 
 <template>

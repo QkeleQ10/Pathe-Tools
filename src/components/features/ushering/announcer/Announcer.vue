@@ -62,7 +62,7 @@ const {
     chimeSound,
     announceTheAnythingStart: useStorage('announce-the-anything-start', false),
     announceTheAnythingEnd: useStorage('announce-the-anything-end', true),
-    announceTheAnythingNextBooking: useStorage<'none' | 'time' | 'duration'>('announce-the-anything-next', 'time')
+    announceTheAnythingNextBooking: useStorage<'none' | 'time' | 'duration'>('announce-the-anything-next', 'duration'),
 });
 
 const recentAnnouncementCount = computed(() =>
