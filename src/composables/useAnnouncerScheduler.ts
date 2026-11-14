@@ -180,7 +180,7 @@ export function useAnnouncerScheduler(options: {
 
         if (options.announceTheAnythingEnd.value === true) {
             for (const booking of theAnyThingStore.bookings) {
-                if (booking.estimatedEndTime.getTime() <= options.internetTime.value.getTime()) continue;
+                if (booking.wasAnnounced) continue;
 
                 const segments = [
                     { spriteName: 'endshow', offset: 0 },
@@ -191,7 +191,7 @@ export function useAnnouncerScheduler(options: {
                 if (booking.nextBookingStartTime) {
                     const timeUntilNextBooking = Math.max(0, booking.nextBookingStartTime.getTime() - booking.estimatedEndTime.getTime());
                     const nextBookingIsToday = timeUntilNextBooking < 8 * 60 * 60 * 1000; // 8 h
-                    
+
                     const nextBookingSegments = (() => {
                         switch (options.announceTheAnythingNextBooking.value) {
                             case 'duration':
@@ -435,6 +435,9 @@ export function useAnnouncerScheduler(options: {
     function finishAnnouncement(announcement: Announcement) {
         releaseAnnouncementAudio(announcement);
         announcement.state = AnnouncementState.Finished;
+        if (announcement instanceof TheAnyThingAnnouncement) {
+            announcement.theAnyThingBooking.wasAnnounced = true;
+        }
     }
 
     function queueAnnouncementNow(announcementOrSegments: Announcement | AnnouncementSegment[]) {

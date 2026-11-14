@@ -61,9 +61,10 @@ export type TheAnyThingBooking = {
     bookingFrom: Date;
     bookingUntil: Date;
     bookingUntilNotRounded: Date;
-    estimatedEndTime: Date;
-    nextBookingStartTime: Date | null;
     bookingState: string;
+    estimatedEndTime: Date;
+    wasAnnounced: boolean;
+    nextBookingStartTime: Date | null;
 }
 
 export enum AnnouncementState {
