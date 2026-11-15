@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed, watch } from 'vue';
+import { inject, ref, computed, watch, type Ref } from 'vue';
 import { useStorage, useWebSocket } from '@vueuse/core';
 import { TheAnyThingBooking } from '@/scripts/types';
 
@@ -29,6 +29,7 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
     const theAnyThingTheatreId = useStorage<string>('theanything-theatre-id', '')
     const bookings = ref<TheAnyThingBooking[]>([]);
     const timestamp = ref<number>(0);
+    const internetTime = inject<Ref<Date>>('internetTime', ref(new Date()));
 
     const connectionUrl = computed(() => {
         if (!theAnyThingTheatreId.value) return undefined
@@ -81,12 +82,18 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
     function updateBookings(data: BookingsData) {
         const newBookings = flattenBookings(data);
         bookings.value = mergeBookings(newBookings, bookings.value);
-        timestamp.value = Date.now();
+        timestamp.value = internetTime.value.getTime();
     }
 
     function updateStatus(data: { bookingId: string, duration: string, locationId: string, pauseRemaining: string, playerState: string, progress: string, roomId: string }) {
         const booking = bookings.value.find(b => b.bookingId === data.bookingId);
-        if (!booking) return;
+        if (!booking)
+            return;
+
+        const now = internetTime.value.getTime();
+
+        if (now - booking.bookingFrom.getTime() < 5 * 60 * 1000) // if the booking started less than 5 minutes ago, don't update the estimated end time
+            return;
 
         const durationMs = durationToMs(data.duration);
         const pauseRemainingMs = durationToMs(data.pauseRemaining);
@@ -106,14 +113,9 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
         }
 
         const estimatedEndTime = new Date(Math.min(
-            Date.now() + estimatedTimeRemaining,
-            booking.bookingUntilNotRounded.getTime(),
+            now + estimatedTimeRemaining,
+            // booking.bookingUntilNotRounded.getTime(),
         ));
-
-        if (
-            estimatedEndTime > booking.estimatedEndTime
-            || Math.abs(estimatedEndTime.getTime() - booking.estimatedEndTime.getTime()) < 1000
-        ) return;
 
         console.log(`Updating estimated end time for booking ${booking.bookingId} \nfrom ${booking.estimatedEndTime.toISOString()} \n  to ${estimatedEndTime.toISOString()}`);
 
@@ -156,7 +158,7 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
     ): TheAnyThingBooking[] {
         const newBookingIds = new Set(newBookings.map(booking => booking.bookingId));
         const currentBookingsById = new Map(currentBookings.map(booking => [booking.bookingId, booking]));
-        const now = Date.now();
+        const now = internetTime.value.getTime();
         const ongoingBookings = currentBookings.filter(booking =>
             !newBookingIds.has(booking.bookingId) &&
             booking.bookingFrom.getTime() < now &&
