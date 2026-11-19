@@ -168,7 +168,12 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
         const updatedBookings = newBookings.map(booking => {
             const currentBooking = currentBookingsById.get(booking.bookingId);
             return currentBooking
-                ? { ...booking, estimatedEndTime: currentBooking.estimatedEndTime }
+                ? {
+                    ...booking,
+                    estimatedEndTime: currentBooking.estimatedEndTime,
+                    wasAnnounced: currentBooking.wasAnnounced,
+                    nextBookingStartTime: currentBooking.nextBookingStartTime
+                }
                 : booking;
         });
 

@@ -50,6 +50,7 @@ export type TimetableShow = {
 }
 
 export type TheAnyThingBooking = {
+    // API-provided fields
     bookingId: string;
     productName: string;
     locationName: string;
@@ -62,6 +63,8 @@ export type TheAnyThingBooking = {
     bookingUntil: Date;
     bookingUntilNotRounded: Date;
     bookingState: string;
+    
+    // custom fields
     estimatedEndTime: Date;
     wasAnnounced: boolean;
     nextBookingStartTime: Date | null;

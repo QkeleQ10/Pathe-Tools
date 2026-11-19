@@ -356,6 +356,15 @@ export function useAnnouncerScheduler(options: {
                     if (job.announcement.state !== AnnouncementState.Ready || !job.announcement.audio) continue;
 
                     job.announcement.state = AnnouncementState.Playing;
+                    
+                    // Mark as announced
+                    if (job.announcement instanceof TheAnyThingAnnouncement) {
+                        const announcement = job.announcement;
+                        const booking = theAnyThingStore.bookings.find(
+                            booking => booking.bookingId === announcement.theAnyThingBooking.bookingId
+                        );
+                        if (booking) booking.wasAnnounced = true;
+                    }
 
                     try {
                         await playAudioElement(job.announcement.audio);
@@ -435,9 +444,6 @@ export function useAnnouncerScheduler(options: {
     function finishAnnouncement(announcement: Announcement) {
         releaseAnnouncementAudio(announcement);
         announcement.state = AnnouncementState.Finished;
-        if (announcement instanceof TheAnyThingAnnouncement) {
-            announcement.theAnyThingBooking.wasAnnounced = true;
-        }
     }
 
     function queueAnnouncementNow(announcementOrSegments: Announcement | AnnouncementSegment[]) {
