@@ -110,6 +110,7 @@ export function useAnnouncerScheduler(options: {
     }
 
     function cleanupAnnouncement(announcement: Announcement) {
+        console.log('Deleting announcement', announcement);
         removeAnnouncementFromPlaybackQueue(announcement);
         releaseAnnouncementAudio(announcement);
         announcement.generatePromise = undefined;
@@ -245,9 +246,9 @@ export function useAnnouncerScheduler(options: {
             }
         }
 
-        for (const announcement of announcementsByBookingId.values()) {
-            cleanupAnnouncement(announcement);
-        }
+        // for (const announcement of announcementsByBookingId.values()) {
+        //     cleanupAnnouncement(announcement);
+        // }
 
         theAnyThingAnnouncements.value = updatedAnnouncements;
         updateScheduler();
@@ -363,7 +364,10 @@ export function useAnnouncerScheduler(options: {
                         const booking = theAnyThingStore.bookings.find(
                             booking => booking.bookingId === announcement.theAnyThingBooking.bookingId
                         );
-                        if (booking) booking.wasAnnounced = true;
+                        if (booking) {
+                            booking.wasAnnounced = true;
+                            console.log(`TheAnyThing booking ${booking.bookingId} marked as announced.`);
+                        }
                     }
 
                     try {
