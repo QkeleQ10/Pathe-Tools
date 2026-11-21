@@ -118,9 +118,7 @@ function saveEditedAnnouncement() {
         </template>
         <ul id="upcoming-announcements" class="list scroll" style="max-height: none;">
             <TransitionGroup name="list">
-                <ScheduledAnnouncement
-                    v-for="announcement in [...scheduledAnnouncements].sort((a, b) => a.time.getTime() - b.time.getTime())"
-                    :announcement="announcement"
+                <ScheduledAnnouncement v-for="announcement in scheduledAnnouncements" :announcement="announcement"
                     :key="announcement.source + announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
                     @preview="queueAnnouncementNow($event)" @edit="editAnnouncement($event)"
                     @delete="deleteScheduledAnnouncement(announcement)" />
@@ -215,6 +213,8 @@ function saveEditedAnnouncement() {
     padding: 0;
     margin: 0;
     position: relative;
+
+    container-type: inline-size;
 
     background-color: #11131677;
 }

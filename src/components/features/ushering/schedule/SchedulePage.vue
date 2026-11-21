@@ -79,7 +79,7 @@ defineExpose({
                     </thead>
                     <ScheduleTableRow
                         v-for="(show, i) in [...shows].sort((a, b) => a[sortBy].getTime() - b[sortBy].getTime())"
-                        :key="i" :show="show" :sortBy="sortBy" :columns="columns" />
+                        :key="`${show.showTime}-${show.auditorium}`" :show="show" :sortBy="sortBy" :columns="columns" />
                 </table>
                 <span contenteditable class="custom-content"></span>
                 <div class="footer" contenteditable>

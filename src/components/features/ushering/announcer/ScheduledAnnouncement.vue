@@ -82,54 +82,59 @@ watchEffect((onCleanup) => {
                     working: announcement.state === AnnouncementState.Playing || announcement.state === AnnouncementState.Generating
                 }" title="Voorbeeld afspelen"></div>
                 <div class="segments">
-                    '{{announcement.segments
-                        .map((segment, i, a) => getSoundName(segment.spriteName) + ((segment.offset > 0 && i < a.length - 1) ? ` —` : ''))
-                        .join(' ')}}'
+                    '{{
+                        announcement.segments
+                            .map((segment, i, a) =>
+                                getSoundName(segment.spriteName)
+                                + ((segment.offset > 0 && i < a.length - 1) ? ` —` : '')).join(' ')
+                    }}' </div>
                 </div>
             </div>
-        </div>
 
-        <template v-if="announcement instanceof TmsAnnouncement">
-            <div>
-                <Icon class="divider-icon">link</Icon>
-                <img src="@/assets/partners/rosettaBridge.png" style="width: 18px; height: 18px; border-radius: 4px;">
-            </div>
-
-            <div class="film" style="flex: 40% 1 1;">
-                <div>{{ announcement.tmsShow.playlist }}</div>
-                <div>{{ format(announcement.tmsShow.scheduledTime, 'HH:mm') }} –
-                    {{ format(announcement.tmsShow.endTime, 'HH:mm:ss') }} (zaal {{ announcement.tmsShow.auditorium }})
+            <template v-if="announcement instanceof TmsAnnouncement && 1">
+                <!--this &&1 helps with syntax highlighting issues-->
+                <div>
+                    <Icon class="divider-icon">link</Icon>
+                    <img src="@/assets/partners/rosettaBridge.png"
+                        style="width: 18px; height: 18px; border-radius: 4px;">
                 </div>
+
+                <div class="film" style="flex: 40% 1 1;">
+                    <div>{{ announcement.tmsShow.playlist }}</div>
+                    <div>{{ format(announcement.tmsShow.scheduledTime, 'HH:mm') }} –
+                        {{ format(announcement.tmsShow.endTime, 'HH:mm:ss') }} (zaal {{ announcement.tmsShow.auditorium
+                        }})
+                    </div>
+                </div>
+            </template>
+
+            <template v-else-if="announcement instanceof TheAnyThingAnnouncement && 1">
+                <div class="divider">
+                    <Icon class="divider-icon">link</Icon>
+                    <img src="@/assets/partners/theAnyThing.png" style="width: 18px; height: 18px; border-radius: 4px;">
+                </div>
+
+                <div class="film" style="flex: 40% 1 1;">
+                    <div>{{ announcement.theAnyThingBooking.productName }}</div>
+                    <div>{{ announcement.theAnyThingBooking.userGivenName }}</div>
+                    <div>{{ format(announcement.theAnyThingBooking.bookingFrom, 'HH:mm') }} –
+                        {{ format(announcement.theAnyThingBooking.bookingUntilNotRounded, 'HH:mm') }} ({{
+                            announcement.theAnyThingBooking.roomName }})</div>
+                </div>
+            </template>
+
+            <template v-else>
+                <Icon class="divider divider-icon">link_off</Icon>
+
+                <div class="film" style="flex: 40% 1 1;">
+                    Handmatig toegevoegd
+                </div>
+            </template>
+
+            <div style="display: flex; flex-direction: column; gap: 8px">
+                <IconButton class="edit" @click="$emit('edit', announcement)" title="Tijd bewerken">edit</IconButton>
+                <IconButton class="delete" @click="$emit('delete')" title="Verwijderen">close</IconButton>
             </div>
-        </template>
-
-        <template v-else-if="announcement instanceof TheAnyThingAnnouncement">
-            <div>
-                <Icon class="divider-icon">link</Icon>
-                <img src="@/assets/partners/theAnyThing.png" style="width: 18px; height: 18px; border-radius: 4px;">
-            </div>
-
-            <div class="film" style="flex: 40% 1 1;">
-                <div>{{ announcement.theAnyThingBooking.productName }}</div>
-                <div>{{ announcement.theAnyThingBooking.userGivenName }}</div>
-                <div>{{ format(announcement.theAnyThingBooking.bookingFrom, 'HH:mm') }} –
-                    {{ format(announcement.theAnyThingBooking.bookingUntilNotRounded, 'HH:mm') }} ({{
-                        announcement.theAnyThingBooking.roomName }})</div>
-            </div>
-        </template>
-
-        <template v-else>
-            <Icon class="divider-icon">link_off</Icon>
-
-            <div class="film" style="flex: 40% 1 1;">
-                Handmatig toegevoegd
-            </div>
-        </template>
-
-        <div style="display: flex; flex-direction: column; gap: 8px">
-            <IconButton class="edit" @click="$emit('edit', announcement)" title="Tijd bewerken">edit</IconButton>
-            <IconButton class="delete" @click="$emit('delete')" title="Verwijderen">close</IconButton>
-        </div>
     </li>
 </template>
 
@@ -142,12 +147,14 @@ watchEffect((onCleanup) => {
 
 .announcement {
     display: grid;
-    grid-template-columns: 1fr 18px 1fr 18px;
+    grid-template: "contents divider linked actions" 1fr / 1fr 18px 1fr 18px;
     align-items: center;
     gap: 16px;
     padding: 16px;
 
     .contents {
+        grid-area: contents;
+
         --progress: 0%;
 
         .status {
@@ -191,13 +198,27 @@ watchEffect((onCleanup) => {
         }
     }
 
-    .divider-icon {
-        opacity: .5;
+    .divider {
+        grid-area: divider;
+
+        color: #aaa;
     }
 
     .film {
-        opacity: .5;
+        grid-area: linked;
+
+        color: #aaa;
         font-size: 14px;
+    }
+
+    .actions {
+        grid-area: actions;
+    }
+
+    @container (width < 500px) {
+        grid-template:
+            "contents contents contents" auto
+            "divider linked actions" auto / 18px 1fr 18px;
     }
 }
 </style>
