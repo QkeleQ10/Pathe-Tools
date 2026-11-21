@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
-import { useStorage, useWebSocket } from '@vueuse/core';
+import { useIntervalFn, useStorage, useWebSocket } from '@vueuse/core';
 import { TheAnyThingBooking } from '@/scripts/types';
 
 type BookingsDataObject = {
@@ -42,7 +42,11 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
         {
             immediate: true,
             autoReconnect: { retries: 5, delay: 3000, },
-            heartbeat: { message: '{"action":"getBookings"}', interval: 5 * 60 * 1000, pongTimeout: 5000, },
+            heartbeat: {
+                message: '{"action":"getBookings"}',
+                scheduler: callback => useIntervalFn(callback, 5 * 60 * 1000, { immediate: false }),
+                pongTimeout: 5000,
+            },
             onConnected(ws) {
                 console.log('WebSocket connected:', ws)
                 fetchBookingsAction()
