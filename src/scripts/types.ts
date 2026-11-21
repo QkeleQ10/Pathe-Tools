@@ -66,7 +66,6 @@ export type TheAnyThingBooking = {
     
     // custom fields
     estimatedEndTime: Date;
-    wasAnnounced: boolean;
     nextBookingStartTime: Date | null;
 }
 
@@ -80,17 +79,38 @@ export enum AnnouncementState {
 
 export type AnnouncementSource = 'manual' | 'show' | 'theanything';
 export type AnnouncementSegment = { spriteName: string; offset: number };
+export type ScheduledAnnouncementDefinition =
+    | {
+        source: 'show';
+        originKey: string;
+        time: Date;
+        segments: AnnouncementSegment[];
+        tmsShow: Show;
+    }
+    | {
+        source: 'theanything';
+        originKey: string;
+        time: Date;
+        segments: AnnouncementSegment[];
+        theAnyThingBooking: TheAnyThingBooking;
+    };
+
+let nextAnnouncementId = 0;
 
 export class Announcement {
+    readonly id = `announcement-${++nextAnnouncementId}`;
     readonly source: AnnouncementSource = 'manual';
+    readonly originKey: string;
     time: Date;
     segments: AnnouncementSegment[];
     state: AnnouncementState = AnnouncementState.Pending;
     audio?: HTMLAudioElement;
     generatePromise?: Promise<void>;
     revision = 0;
+    isOverridden = false;
 
-    constructor(time: Date, segments: AnnouncementSegment[]) {
+    constructor(time: Date, segments: AnnouncementSegment[], originKey?: string) {
+        this.originKey = originKey ?? this.id;
         this.time = new Date(time);
         this.segments = segments.map(segment => ({ ...segment }));
     }
@@ -100,8 +120,8 @@ export class TmsAnnouncement extends Announcement {
     readonly source: AnnouncementSource = 'show';
     tmsShow: Show;
 
-    constructor(time: Date, segments: AnnouncementSegment[], tmsShow: Show) {
-        super(time, segments);
+    constructor(time: Date, segments: AnnouncementSegment[], tmsShow: Show, originKey: string) {
+        super(time, segments, originKey);
         this.tmsShow = tmsShow;
     }
 }
@@ -110,8 +130,8 @@ export class TheAnyThingAnnouncement extends Announcement {
     readonly source: AnnouncementSource = 'theanything';
     theAnyThingBooking: TheAnyThingBooking;
 
-    constructor(time: Date, segments: AnnouncementSegment[], theAnyThingBooking: TheAnyThingBooking) {
-        super(time, segments);
+    constructor(time: Date, segments: AnnouncementSegment[], theAnyThingBooking: TheAnyThingBooking, originKey: string) {
+        super(time, segments, originKey);
         this.theAnyThingBooking = theAnyThingBooking;
     }
 }

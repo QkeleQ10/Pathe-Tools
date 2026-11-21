@@ -119,7 +119,7 @@ function saveEditedAnnouncement() {
         <ul id="upcoming-announcements" class="list scroll" style="max-height: none;">
             <TransitionGroup name="list">
                 <ScheduledAnnouncement v-for="announcement in scheduledAnnouncements" :announcement="announcement"
-                    :key="announcement.source + announcement.time.getTime() + announcement.segments.map(s => s.spriteName).join(',')"
+                    :key="announcement.id"
                     @preview="queueAnnouncementNow($event)" @edit="editAnnouncement($event)"
                     @delete="deleteScheduledAnnouncement(announcement)" />
             </TransitionGroup>

@@ -4,21 +4,26 @@ import {
     Announcement,
     AnnouncementSegment,
     AnnouncementRule,
+    ScheduledAnnouncementDefinition,
     AnnouncementSource,
     AnnouncementState,
-    Show,
     TheAnyThingAnnouncement,
     TmsAnnouncement,
 } from '@/scripts/types.ts';
-import { voices, Voice, defaultVoice, preloadVoiceAudio, findAuditoriumSound } from '@/scripts/voices';
+import { voices, Voice, defaultVoice, preloadVoiceAudio } from '@/scripts/voices';
 import { assembleAudioClient } from '@/scripts/assembleAudio';
+import { createTheAnyThingAnnouncementDefinition, createTmsAnnouncementDefinitions } from '@/scripts/announcementSchedule';
 
 import { useTmsScheduleStore } from '@/stores/tmsSchedule';
 import { useTheAnyThingStore } from '@/stores/theAnyThing';
 import { format } from 'date-fns';
 
 type AnnouncementsSchedule = Announcement[];
-type PlaybackJob = { announcement?: Announcement; audio: HTMLAudioElement };
+type PlaybackJob = {
+    announcement: Announcement;
+    audio: HTMLAudioElement;
+    revision: number;
+};
 
 const MAX_GENERATORS = 2;
 const MAX_BUFFERED_ANNOUNCEMENTS = 3;
@@ -57,8 +62,13 @@ export function useAnnouncerScheduler(options: {
     const preloadedVoices = computed(() => [voices.chimes, ...enabledVoices.value]);
 
     const playbackQueue: PlaybackJob[] = [];
+    const dismissedOriginKeys = {
+        show: new Set<string>(),
+        theanything: new Set<string>(),
+    };
     let interval: ReturnType<typeof setInterval> | null = null;
     let isProcessingPlaybackQueue = false;
+    let isDisposed = false;
 
     const stopTmsScheduleSubscription = tmsScheduleStore.$subscribe(() => scheduleShowAnnouncements(), { deep: true });
     const stopTheAnyThingSubscription = theAnyThingStore.$subscribe(() => scheduleTheAnyThingAnnouncements(), { deep: true });
@@ -93,6 +103,7 @@ export function useAnnouncerScheduler(options: {
     });
 
     onBeforeUnmount(() => {
+        isDisposed = true;
         if (interval) clearInterval(interval);
         stopTmsScheduleSubscription();
         stopTheAnyThingSubscription();
@@ -110,7 +121,6 @@ export function useAnnouncerScheduler(options: {
     }
 
     function cleanupAnnouncement(announcement: Announcement) {
-        console.log('Resetting announcement', announcement);
         announcement.revision += 1;
         removeAnnouncementFromPlaybackQueue(announcement);
         releaseAnnouncementAudio(announcement);
@@ -120,18 +130,9 @@ export function useAnnouncerScheduler(options: {
 
     function cleanupAnnouncements() {
         playbackQueue.length = 0;
-        isProcessingPlaybackQueue = false;
         for (const announcement of scheduledAnnouncements.value) {
             cleanupAnnouncement(announcement);
         }
-    }
-
-    function clearAnnouncements(source: AnnouncementSource) {
-        const announcements = getAnnouncementCollection(source);
-        for (const announcement of announcements) {
-            cleanupAnnouncement(announcement);
-        }
-        announcements.length = 0;
     }
 
     function getAnnouncementCollection(source: AnnouncementSource) {
@@ -141,114 +142,117 @@ export function useAnnouncerScheduler(options: {
     }
 
     function scheduleShowAnnouncements() {
-        clearAnnouncements('show');
-
-        const array: Announcement[] = [];
-        for (const rule of [...options.presetRules.value, ...options.customRules.value]) {
-            if (!rule.enabled) continue;
-
-            let arr: Announcement[] = [];
-            tmsScheduleStore.table.forEach((show, index) => {
-                if (showMatchesFilter(show, index, rule)) {
-                    const triggerTime = show[rule.trigger.property];
-                    if (!triggerTime) return;
-                    const announcement = new TmsAnnouncement(
-                        new Date(triggerTime.getTime() - (rule.trigger.preponeMinutes || 0) * 60000 - 5000),
-                        rule.segments.map(segment => ({
-                            ...segment,
-                            spriteName: segment.spriteName.replace('auditorium#', findAuditoriumSound(show.auditorium)),
-                        })),
-                        show
-                    );
-                    if (announcement.time.getTime() > options.internetTime.value.getTime()) arr.push(announcement);
-                }
-            });
-
-            arr.sort((a, b) => a.time.getTime() - b.time.getTime());
-            if (rule.filter.firstShowOnly) arr = arr.slice(0, 1);
-            if (rule.filter.lastShowOnly) arr = arr.slice(-1);
-            array.push(...arr);
-        }
-
-        showAnnouncements.value = array.sort((a, b) => a.time.getTime() - b.time.getTime());
+        const retainedOriginKeys = new Set(
+            showAnnouncements.value
+                .filter(announcement => announcement.state !== AnnouncementState.Finished)
+                .map(announcement => announcement.originKey)
+        );
+        const desired = createTmsAnnouncementDefinitions(
+            tmsScheduleStore.table,
+            [...options.presetRules.value, ...options.customRules.value],
+            options.internetTime.value.getTime(),
+            retainedOriginKeys
+        );
+        showAnnouncements.value = reconcileAnnouncements(showAnnouncements.value, desired, 'show');
         updateScheduler();
     }
 
     function scheduleTheAnyThingAnnouncements() {
-        const announcementsByBookingId = new Map(
-            theAnyThingAnnouncements.value.map(announcement => [(announcement as TheAnyThingAnnouncement).theAnyThingBooking.bookingId, announcement])
+        const existingByOriginKey = new Map(
+            theAnyThingAnnouncements.value.map(announcement => [announcement.originKey, announcement])
         );
-        const updatedAnnouncements: AnnouncementsSchedule = [];
+        const desired = options.announceTheAnythingEnd.value
+            ? theAnyThingStore.bookings
+                .map(booking => createTheAnyThingAnnouncementDefinition(booking, options.announceTheAnythingNextBooking.value))
+                .filter(definition => {
+                    if (definition.source !== 'theanything') return false;
+                    if (!theAnyThingStore.hasStartedAnnouncement(definition.theAnyThingBooking.bookingId)) return true;
+                    const existing = existingByOriginKey.get(definition.originKey);
+                    return !!existing && existing.state !== AnnouncementState.Finished;
+                })
+            : [];
 
-        if (options.announceTheAnythingEnd.value === true) {
-            for (const booking of theAnyThingStore.bookings) {
-                const announcement = announcementsByBookingId.get(booking.bookingId) as TheAnyThingAnnouncement | undefined;
-                if (booking.wasAnnounced && (!announcement || announcement.state === AnnouncementState.Finished)) continue;
+        theAnyThingAnnouncements.value = reconcileAnnouncements(theAnyThingAnnouncements.value, desired, 'theanything');
+        updateScheduler();
+    }
 
-                const segments = [
-                    { spriteName: 'endshow', offset: 0 },
-                    { spriteName: 'theanything', offset: 0 },
-                    { spriteName: `num${String(booking.roomNumber).padStart(2, '0')}`, offset: 400 },
-                ];
-
-                if (booking.nextBookingStartTime) {
-                    const timeUntilNextBooking = Math.max(0, booking.nextBookingStartTime.getTime() - booking.estimatedEndTime.getTime());
-                    const nextBookingIsToday = timeUntilNextBooking < 8 * 60 * 60 * 1000; // 8 h
-
-                    const nextBookingSegments = (() => {
-                        switch (options.announceTheAnythingNextBooking.value) {
-                            case 'duration':
-                                return nextBookingIsToday
-                                    ? [{ spriteName: 'nextbookingin', offset: 0 }, ...durationToSegments(timeUntilNextBooking)]
-                                    : [{ spriteName: 'lastoftoday', offset: 0 }];
-
-                            case 'time':
-                                return nextBookingIsToday
-                                    ? [{ spriteName: 'nextbookingat', offset: 0 }, ...timeToSegments(booking.nextBookingStartTime)]
-                                    : [{ spriteName: 'lastoftoday', offset: 0 }];
-
-                            default:
-                                return [];
-                        }
-                    })();
-
-                    segments.push(...nextBookingSegments);
-                }
-
-                if (!announcement) {
-                    updatedAnnouncements.push(new TheAnyThingAnnouncement(
-                        booking.estimatedEndTime,
-                        segments,
-                        booking
-                    ));
-                    continue;
-                }
-
-                const hasChanged =
-                    announcement.time.getTime() !== booking.estimatedEndTime.getTime() ||
-                    announcement.segments.some((segment, index) =>
-                        segment.spriteName !== segments[index]?.spriteName || segment.offset !== segments[index]?.offset
-                    ) ||
-                    announcement.segments.length !== segments.length;
-
-                if (hasChanged) {
-                    cleanupAnnouncement(announcement);
-                    announcement.time = new Date(booking.estimatedEndTime);
-                    announcement.segments = segments.map(segment => ({ ...segment }));
-                }
-
-                announcement.theAnyThingBooking = booking;
-                updatedAnnouncements.push(announcement);
-                announcementsByBookingId.delete(booking.bookingId);
-            }
+    function reconcileAnnouncements(
+        current: Announcement[],
+        desired: ScheduledAnnouncementDefinition[],
+        source: 'show' | 'theanything'
+    ): Announcement[] {
+        const dismissedKeys = dismissedOriginKeys[source];
+        const desiredOriginKeys = new Set(desired.map(definition => definition.originKey));
+        for (const originKey of dismissedKeys) {
+            if (!desiredOriginKeys.has(originKey)) dismissedKeys.delete(originKey);
         }
 
-        // for (const announcement of announcementsByBookingId.values()) {
-        //     cleanupAnnouncement(announcement);
-        // }
+        const currentByOriginKey = new Map(current.map(announcement => [announcement.originKey, announcement]));
+        const next: Announcement[] = [];
 
-        theAnyThingAnnouncements.value = updatedAnnouncements;
-        updateScheduler();
+        for (const definition of desired) {
+            if (dismissedKeys.has(definition.originKey)) continue;
+
+            const existing = currentByOriginKey.get(definition.originKey);
+            if (!existing) {
+                if (definition.time.getTime() > options.internetTime.value.getTime()) {
+                    next.push(createAnnouncement(definition));
+                }
+                continue;
+            }
+
+            currentByOriginKey.delete(definition.originKey);
+            const hasChanged = announcementDefinitionChanged(existing, definition);
+            if (existing.state === AnnouncementState.Finished &&
+                (!hasChanged || existing.isOverridden || definition.time.getTime() <= options.internetTime.value.getTime())) {
+                continue;
+            }
+
+            updateAnnouncementSource(existing, definition);
+            if (hasChanged && !existing.isOverridden) {
+                cleanupAnnouncement(existing);
+                existing.time = new Date(definition.time);
+                existing.segments = definition.segments.map(segment => ({ ...segment }));
+            }
+            next.push(existing);
+        }
+
+        for (const removed of currentByOriginKey.values()) {
+            cleanupAnnouncement(removed);
+        }
+
+        return next.sort((a, b) => a.time.getTime() - b.time.getTime());
+    }
+
+    function createAnnouncement(definition: ScheduledAnnouncementDefinition) {
+        if (definition.source === 'show') {
+            return new TmsAnnouncement(definition.time, definition.segments, definition.tmsShow, definition.originKey);
+        }
+        return new TheAnyThingAnnouncement(
+            definition.time,
+            definition.segments,
+            definition.theAnyThingBooking,
+            definition.originKey
+        );
+    }
+
+    function announcementDefinitionChanged(current: Announcement, definition: ScheduledAnnouncementDefinition) {
+        return current.time.getTime() !== definition.time.getTime() ||
+            current.segments.length !== definition.segments.length ||
+            current.segments.some((segment, index) =>
+                segment.spriteName !== definition.segments[index]?.spriteName ||
+                segment.offset !== definition.segments[index]?.offset
+            );
+    }
+
+    function updateAnnouncementSource(current: Announcement, definition: ScheduledAnnouncementDefinition) {
+        if (definition.source === 'show' && current instanceof TmsAnnouncement) {
+            current.tmsShow = definition.tmsShow;
+        } else if (definition.source === 'theanything' && current instanceof TheAnyThingAnnouncement) {
+            current.theAnyThingBooking = definition.theAnyThingBooking;
+        } else {
+            throw new Error(`Announcement origin type mismatch for ${definition.originKey}`);
+        }
     }
 
     function scheduleAnnouncements() {
@@ -267,16 +271,14 @@ export function useAnnouncerScheduler(options: {
 
     async function regenerate() {
         for (const announcement of scheduledAnnouncements.value) {
-            releaseAnnouncementAudio(announcement);
-            announcement.generatePromise = undefined;
-            if (announcement.state !== AnnouncementState.Finished) {
-                announcement.state = AnnouncementState.Pending;
-            }
+            if (announcement.state !== AnnouncementState.Finished) cleanupAnnouncement(announcement);
         }
         updateScheduler();
     }
 
     function updateScheduler() {
+        if (isDisposed) return;
+
         const now = options.internetTime.value.getTime();
         const orderedAnnouncements = [...scheduledAnnouncements.value].sort((a, b) => a.time.getTime() - b.time.getTime());
         let generatingAnnouncements = orderedAnnouncements.filter(announcement =>
@@ -347,8 +349,13 @@ export function useAnnouncerScheduler(options: {
     function queueAnnouncementForPlayback(announcement: Announcement) {
         if (announcement.state === AnnouncementState.Playing || announcement.state === AnnouncementState.Finished) return;
         if (playbackQueue.some(job => job.announcement === announcement)) return;
+        if (!announcement.audio) return;
 
-        playbackQueue.push({ announcement, audio: announcement.audio as HTMLAudioElement });
+        playbackQueue.push({
+            announcement,
+            audio: announcement.audio,
+            revision: announcement.revision,
+        });
     }
 
     async function processPlaybackQueue() {
@@ -361,41 +368,26 @@ export function useAnnouncerScheduler(options: {
                 const job = playbackQueue.shift();
                 if (!job) return;
 
-                if (job.announcement) {
-                    if (job.announcement.state !== AnnouncementState.Ready || !job.announcement.audio) continue;
+                const { announcement, audio, revision } = job;
+                if (
+                    announcement.revision !== revision ||
+                    announcement.state !== AnnouncementState.Ready ||
+                    announcement.audio !== audio
+                ) continue;
 
-                    const revision = job.announcement.revision;
-                    job.announcement.state = AnnouncementState.Playing;
-                    
-                    // Mark as announced
-                    if (job.announcement instanceof TheAnyThingAnnouncement) {
-                        const announcement = job.announcement;
-                        const booking = theAnyThingStore.bookings.find(
-                            booking => booking.bookingId === announcement.theAnyThingBooking.bookingId
-                        );
-                        if (booking) {
-                            booking.wasAnnounced = true;
-                            console.log(`TheAnyThing booking ${booking.bookingId} marked as announced.`);
-                        }
-                    }
+                announcement.state = AnnouncementState.Playing;
+                if (announcement instanceof TheAnyThingAnnouncement) {
+                    theAnyThingStore.markAnnouncementStarted(announcement.theAnyThingBooking.bookingId);
+                }
 
-                    try {
-                        await playAudioElement(job.announcement.audio);
-                    } catch (error) {
-                        console.warn('Kon omroep niet afspelen', error);
-                    }
+                try {
+                    await playAudioElement(audio);
+                } catch (error) {
+                    console.warn('Kon omroep niet afspelen', error);
+                }
 
-                    if (job.announcement.revision === revision) {
-                        finishAnnouncement(job.announcement);
-                    }
-                } else {
-                    try {
-                        await playAudioElement(job.audio);
-                    } catch (error) {
-                        console.warn('Kon preview niet afspelen', error);
-                    }
-
-                    releaseStandaloneAudio(job.audio);
+                if (announcement.revision === revision) {
+                    finishAnnouncement(announcement);
                 }
                 updateScheduler();
             }
@@ -406,8 +398,18 @@ export function useAnnouncerScheduler(options: {
 
     function playAudioElement(audio: HTMLAudioElement) {
         return new Promise<void>((resolve, reject) => {
-            const onEnded = () => resolve();
-            const onError = () => reject(new Error('Audio playback failed'));
+            const cleanup = () => {
+                audio.removeEventListener('ended', onEnded);
+                audio.removeEventListener('error', onError);
+            };
+            const onEnded = () => {
+                cleanup();
+                resolve();
+            };
+            const onError = () => {
+                cleanup();
+                reject(new Error('Audio playback failed'));
+            };
 
             audio.addEventListener('ended', onEnded, { once: true });
             audio.addEventListener('error', onError, { once: true });
@@ -415,8 +417,7 @@ export function useAnnouncerScheduler(options: {
             const result = audio.play();
             if (result) {
                 result.catch(error => {
-                    audio.removeEventListener('ended', onEnded);
-                    audio.removeEventListener('error', onError);
+                    cleanup();
                     reject(error);
                 });
             }
@@ -484,6 +485,7 @@ export function useAnnouncerScheduler(options: {
         cleanupAnnouncement(announcement);
         announcement.time = new Date(editedDate);
         announcement.segments = editedSegments.map(segment => ({ ...segment }));
+        announcement.isOverridden = true;
         updateScheduler();
     }
 
@@ -494,6 +496,9 @@ export function useAnnouncerScheduler(options: {
 
         cleanupAnnouncement(announcement);
         collection.splice(index, 1);
+        if (announcement.source !== 'manual') {
+            dismissedOriginKeys[announcement.source].add(announcement.originKey);
+        }
         updateScheduler();
     }
 
@@ -519,26 +524,13 @@ export function useAnnouncerScheduler(options: {
         updateScheduler();
     }
 
-    function showMatchesFilter(show: Show, index: number, rule: AnnouncementRule) {
-        let matches = true;
-
-        const triggerTime = show[rule.trigger.property];
-        if (!triggerTime || !triggerTime.getTime()) return false;
-
-        if (rule.filter.plfOnly && !show.auditorium.includes('4DX')) matches = false;
-        if (rule.filter.playlistTitleIncludes && !show.title.toLowerCase().includes(rule.filter.playlistTitleIncludes.toLowerCase())) matches = false;
-        if (rule.filter.playlistTitleExcludes && show.title.toLowerCase().includes(rule.filter.playlistTitleExcludes.toLowerCase())) matches = false;
-
-        return matches;
-    }
-
     function prepareSegments(
         segments: AnnouncementSegment[],
         selectedVoices: Voice[],
         includeChime: boolean = true
     ): { voice: Voice; spriteName: string; offset: number }[] {
 
-        const preferredVoices = selectedVoices.sort(() => 0.5 - Math.random());
+        const preferredVoices = [...selectedVoices].sort(() => 0.5 - Math.random());
         const allVoices = Object.values(voices);
 
         let preparedSegments: { voice: Voice; spriteName: string; offset: number }[] = [];
@@ -571,76 +563,9 @@ export function useAnnouncerScheduler(options: {
         return preparedSegments;
     }
 
-    function assembleAudio(segments: { voice: Voice; spriteName: string; offset: number }[]) {
-        return new Promise<HTMLAudioElement>(async (resolve) => {
-            const url = await assembleAudioClient(segments);
-            const audio = new Audio(url);
-            resolve(audio);
-            //download the audio
-            // const a = document.createElement('a');
-            // a.href = url;
-            // a.download = `announcement-${format(new Date(), 'yyyy-MM-dd-HH-mm-ss')}.mp3`;
-            // a.click();
-        });
-    }
-
-    function durationToSegments(durationMs: number, includeSeconds: boolean = false): AnnouncementSegment[] {
-        const segments: AnnouncementSegment[] = [];
-
-        const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        const addUnit = (value: number, unit: 'hours' | 'minutes' | 'seconds') => {
-            if (value <= 0) return;
-
-            segments.push(
-                { spriteName: `num${String(value).padStart(2, '0')}`, offset: 0 },
-                { spriteName: `time${unit}`, offset: 0 },
-            );
-        };
-
-        addUnit(hours, 'hours');
-        if (hours < 3)
-            addUnit(minutes, 'minutes');
-        if (includeSeconds && hours < 1)
-            addUnit(seconds, 'seconds');
-
-        const timeUnitIndices = segments
-            .map((segment, index) => (segment.spriteName.startsWith('time') ? index : -1))
-            .filter((index) => index !== -1);
-        const secondToLastTimeUnitIndex = timeUnitIndices.at(-2);
-        if (secondToLastTimeUnitIndex !== undefined) {
-            if (segments[secondToLastTimeUnitIndex].spriteName === 'timehours')
-                segments[secondToLastTimeUnitIndex].spriteName += 'alt';
-            segments.splice(secondToLastTimeUnitIndex + 1, 0, { spriteName: 'and', offset: 0 })
-        }
-
-        return segments;
-    }
-
-    function timeToSegments(time: Date): AnnouncementSegment[] {
-        const segments: AnnouncementSegment[] = [];
-
-        const hours = time.getHours() || 12;
-        const minutes = time.getMinutes();
-
-        segments.push(
-            { spriteName: `num${String(hours).padStart(2, '0')}`, offset: 0 },
-        );
-
-        if (minutes > 0)
-            segments.push(
-                { spriteName: 'timehoursalt', offset: 0 },
-                { spriteName: `num${String(minutes).padStart(2, '0')}`, offset: 0 },
-            );
-        else
-            segments.push(
-                { spriteName: 'timehours', offset: 0 },
-            );
-
-        return segments;
+    async function assembleAudio(segments: { voice: Voice; spriteName: string; offset: number }[]) {
+        const url = await assembleAudioClient(segments);
+        return new Audio(url);
     }
 
     return {
