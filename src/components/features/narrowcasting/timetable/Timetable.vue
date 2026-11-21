@@ -243,10 +243,11 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
 
             const title = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
             const auditorium = show.auditorium.padStart(auditoriumColumnWidth);
-            const tags =
-                + displayPlfTags.value ? show.tags.plf.map(e => ` ${e}`).join('') : ''
-                    + displayLanguageTags.value ? show.tags.language.map(e => ` ${e}`).join('') : ''
-                        + displayAgeTags.value ? show.tags.age.map(e => ` ${e}`).join('') : '';
+            const tags = [
+                ...(displayPlfTags.value ? show.tags.plf : []),
+                ...(displayLanguageTags.value ? show.tags.language : []),
+                ...(displayAgeTags.value ? show.tags.age : [])
+            ].map(e => ` ${e}`).join('');
 
             let strStart = padEnd(`${format(show.scheduledTime, 'HH:mm')} ${title}${tags}`, 60);
             let strEnd = ` ${auditorium}`;
@@ -275,10 +276,11 @@ function fillEmptyLinesWithShows(displayLines: DisplayLine[], now?: Date): Displ
 
             const title = show.title.replace(/[–-—]/g, '-').split('').filter(char => char in qmln.characterSet).join('');
             const auditorium = show.auditorium.padStart(auditoriumColumnWidth);
-            const tags =
-                + displayPlfTags ? show.tags.plf.map(e => ` ${e}`).join('') : ''
-                    + displayLanguageTags ? show.tags.language.map(e => ` ${e}`).join('') : ''
-                        + displayAgeTags ? show.tags.age.map(e => ` ${e}`).join('') : '';
+            const tags = [
+                ...(displayPlfTags.value ? show.tags.plf : []),
+                ...(displayLanguageTags.value ? show.tags.language : []),
+                ...(displayAgeTags.value ? show.tags.age : [])
+            ].map(e => ` ${e}`).join('');
             const minsRemaining = Math.floor((show.intermissionEndTime!.getTime() - internetTime.value.getTime()) / 60000);
 
             let strStart = padEnd(`~C1;PAUZE~C3; ${title}${tags}`, 60);
@@ -562,7 +564,7 @@ async function refresh() {
                 i,
                 title: cleanedTitle,
                 tags: {
-                    age: (show.featureRating === '16' || show.featureRating === '18') ? ['(16+)'] : [],
+                    age: (show.featureRating === '16' || show.featureRating === '18') ? [`(${show.featureRating}+)`] : [],
                     plf: show.tags.filter(e => ['3D', '4DX', 'IMAX', 'SCREENX', 'ATMOS', 'DOLBY', 'ROOFTOP'].includes(e)),
                     language: show.tags.filter(e => ['(NL)', '(OV)'].includes(e)),
                 },
