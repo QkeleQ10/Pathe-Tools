@@ -132,7 +132,7 @@ watchEffect((onCleanup) => {
             </template>
 
             <div style="display: flex; flex-direction: column; gap: 8px">
-                <IconButton class="edit" @click="$emit('edit', announcement)" title="Tijd bewerken">edit</IconButton>
+                <IconButton class="edit" @click="$emit('edit', announcement)" title="Omroep bewerken">edit</IconButton>
                 <IconButton class="delete" @click="$emit('delete')" title="Verwijderen">close</IconButton>
             </div>
     </li>

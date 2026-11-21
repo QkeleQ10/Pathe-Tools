@@ -88,6 +88,7 @@ export class Announcement {
     state: AnnouncementState = AnnouncementState.Pending;
     audio?: HTMLAudioElement;
     generatePromise?: Promise<void>;
+    revision = 0;
 
     constructor(time: Date, segments: AnnouncementSegment[]) {
         this.time = new Date(time);

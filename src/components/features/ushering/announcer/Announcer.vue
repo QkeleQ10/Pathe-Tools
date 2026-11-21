@@ -186,10 +186,6 @@ function saveEditedAnnouncement() {
                 :schedule-disabled="!isEditedAnnouncementDateValid || !editedAnnouncementSegments.length"
                 @schedule="saveEditedAnnouncement" @dismiss="announcementBeingEdited = null">
                 <template #title>Omroep bewerken</template>
-                <template #description>
-                    <p>De omroep wordt opnieuw ingepland op het gekozen tijdstip en de oude planning wordt verwijderd.
-                    </p>
-                </template>
                 <template #schedule>
                     <div>
                         <span class="label">

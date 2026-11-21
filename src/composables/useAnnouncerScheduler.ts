@@ -110,11 +110,12 @@ export function useAnnouncerScheduler(options: {
     }
 
     function cleanupAnnouncement(announcement: Announcement) {
-        console.log('Deleting announcement', announcement);
+        console.log('Resetting announcement', announcement);
+        announcement.revision += 1;
         removeAnnouncementFromPlaybackQueue(announcement);
         releaseAnnouncementAudio(announcement);
         announcement.generatePromise = undefined;
-        if (announcement.state !== AnnouncementState.Finished) announcement.state = AnnouncementState.Pending;
+        announcement.state = AnnouncementState.Pending;
     }
 
     function cleanupAnnouncements() {
@@ -181,7 +182,8 @@ export function useAnnouncerScheduler(options: {
 
         if (options.announceTheAnythingEnd.value === true) {
             for (const booking of theAnyThingStore.bookings) {
-                if (booking.wasAnnounced) continue;
+                const announcement = announcementsByBookingId.get(booking.bookingId) as TheAnyThingAnnouncement | undefined;
+                if (booking.wasAnnounced && (!announcement || announcement.state === AnnouncementState.Finished)) continue;
 
                 const segments = [
                     { spriteName: 'endshow', offset: 0 },
@@ -213,8 +215,6 @@ export function useAnnouncerScheduler(options: {
                     segments.push(...nextBookingSegments);
                 }
 
-                const announcement = announcementsByBookingId.get(booking.bookingId) as TheAnyThingAnnouncement | undefined;
-
                 if (!announcement) {
                     updatedAnnouncements.push(new TheAnyThingAnnouncement(
                         booking.estimatedEndTime,
@@ -231,13 +231,10 @@ export function useAnnouncerScheduler(options: {
                     ) ||
                     announcement.segments.length !== segments.length;
 
-                if (hasChanged && announcement.time.getTime() > options.internetTime.value.getTime() + 5000) {
+                if (hasChanged) {
                     cleanupAnnouncement(announcement);
                     announcement.time = new Date(booking.estimatedEndTime);
                     announcement.segments = segments.map(segment => ({ ...segment }));
-                    if (announcement.state === AnnouncementState.Finished) {
-                        announcement.state = AnnouncementState.Pending;
-                    }
                 }
 
                 announcement.theAnyThingBooking = booking;
@@ -319,19 +316,30 @@ export function useAnnouncerScheduler(options: {
         if (announcement.state !== AnnouncementState.Pending || announcement.generatePromise) return false;
 
         announcement.state = AnnouncementState.Generating;
-        announcement.generatePromise = (async () => {
+        const revision = announcement.revision;
+        let generatePromise: Promise<void>;
+        generatePromise = (async () => {
             const segmentsWithVoices = prepareSegments(announcement.segments, enabledVoices.value);
-            announcement.audio = await assembleAudio(segmentsWithVoices);
+            const audio = await assembleAudio(segmentsWithVoices);
+            if (announcement.revision !== revision) {
+                releaseStandaloneAudio(audio);
+                return;
+            }
+            announcement.audio = audio;
             announcement.state = AnnouncementState.Ready;
         })()
             .catch(error => {
+                if (announcement.revision !== revision) return;
                 console.warn('Kon omroep niet genereren', error);
                 announcement.state = AnnouncementState.Pending;
             })
             .finally(() => {
-                announcement.generatePromise = undefined;
-                updateScheduler();
+                if (announcement.revision === revision) {
+                    if (announcement.generatePromise === generatePromise) announcement.generatePromise = undefined;
+                    updateScheduler();
+                }
             });
+        announcement.generatePromise = generatePromise;
 
         return true;
     }
@@ -356,6 +364,7 @@ export function useAnnouncerScheduler(options: {
                 if (job.announcement) {
                     if (job.announcement.state !== AnnouncementState.Ready || !job.announcement.audio) continue;
 
+                    const revision = job.announcement.revision;
                     job.announcement.state = AnnouncementState.Playing;
                     
                     // Mark as announced
@@ -376,7 +385,9 @@ export function useAnnouncerScheduler(options: {
                         console.warn('Kon omroep niet afspelen', error);
                     }
 
-                    finishAnnouncement(job.announcement);
+                    if (job.announcement.revision === revision) {
+                        finishAnnouncement(job.announcement);
+                    }
                 } else {
                     try {
                         await playAudioElement(job.audio);
@@ -471,8 +482,8 @@ export function useAnnouncerScheduler(options: {
         }
 
         cleanupAnnouncement(announcement);
-        collection.splice(index, 1);
-        manualAnnouncements.value.push(new Announcement(editedDate, editedSegments));
+        announcement.time = new Date(editedDate);
+        announcement.segments = editedSegments.map(segment => ({ ...segment }));
         updateScheduler();
     }
 
