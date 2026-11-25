@@ -185,8 +185,7 @@ export const useTheAnyThingStore = defineStore('theanything', () => {
             return currentBooking
                 ? {
                     ...booking,
-                    estimatedEndTime: currentBooking.estimatedEndTime,
-                    nextBookingStartTime: currentBooking.nextBookingStartTime
+                    estimatedEndTime: currentBooking.estimatedEndTime
                 }
                 : booking;
         });
